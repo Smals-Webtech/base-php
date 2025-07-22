@@ -1,0 +1,180 @@
+---
+services:
+  nginx:
+    image: docker.io/nginx:alpine
+    restart: unless-stopped
+    ports:
+      - 9000:9000
+    command: [nginx, "-g", "daemon off;"]
+    depends_on:
+      - php-fpm
+    volumes:
+      - php_fpm_app_var:/app/var
+      - php_fpm_app_src:/usr/share/nginx/html
+      - ./test/etc/nginx/conf.d:/etc/nginx/conf.d
+    mem_limit: 128m
+
+  php-apache:
+    image: smalswebtech/base-php:apache
+    restart: unless-stopped
+    user: 1000:1000
+    depends_on:
+      php-apache-init-volumes:
+        condition: service_completed_successfully
+    ports:
+      - 9001:9000
+      - 9091:9090
+      - 6081:6081
+    environment:
+      - PHP_FPM_MAX_CHILDREN=${BATS_PHP_FPM_MAX_CHILDREN}
+      - PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES=${BATS_PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES}
+      - CONTAINER_HEAP_PERCENT=${BATS_CONTAINER_HEAP_PERCENT}
+      - VARNISH_ENABLED=true
+      - VARNISH_VCL_CONF_CUSTOM=${BATS_VARNISH_VCL_CONF_CUSTOM}
+    command: ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+    volumes:
+      - php_apache_app_bin:/app/bin/container-entrypoint.d
+      - php_apache_app_var:/app/var
+      - php_apache_app_etc:/app/etc
+      - php_apache_app_tmp:/app/tmp
+      - ./test/etc/varnish/my-vcl-test-file.vcl:/app/etc/varnish/bats.vcl
+    mem_limit: 512m
+    read_only: true
+
+  php-nginx:
+    image: smalswebtech/base-php:nginx
+    restart: unless-stopped
+    user: 1000:1000
+    depends_on:
+      php-nginx-init-volumes:
+        condition: service_completed_successfully
+    ports:
+      - 9002:9000
+      - 9092:9090
+    environment:
+      - PHP_FPM_MAX_CHILDREN=${BATS_PHP_FPM_MAX_CHILDREN}
+      - PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES=${BATS_PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES}
+      - CONTAINER_HEAP_PERCENT=${BATS_CONTAINER_HEAP_PERCENT}
+      - DB_DRIVER=${BATS_MARIADB_DB_DRIVER}
+      - DB_HOST=${BATS_MARIADB_DB_HOST}
+      - DB_PORT=${BATS_MARIADB_DB_PORT}
+      - DB_USER=${BATS_MARIADB_DB_USER}
+      - DB_PASSWORD=${BATS_MARIADB_DB_PASSWORD}
+      - DB_NAME=${BATS_MARIADB_DB_NAME}
+      - VARNISH_ENABLED=false
+    command: ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
+    volumes:
+      - php_nginx_app_bin:/app/bin/container-entrypoint.d
+      - php_nginx_app_var:/app/var
+      - php_nginx_app_etc:/app/etc
+      - php_nginx_app_tmp:/app/tmp
+      - php_nginx_app_cfg:/app/config/nginx/sites-enabled
+      - php_nginx_app_src:/app/src
+    mem_limit: 512m
+    read_only: true
+
+  php-fpm:
+    image: smalswebtech/base-php:fpm
+    restart: unless-stopped
+    depends_on:
+      php-fpm-init-volumes:
+        condition: service_completed_successfully
+    environment:
+      - PHP_FPM_MAX_CHILDREN=${BATS_PHP_FPM_MAX_CHILDREN}
+      - PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES=${BATS_PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES}
+      - CONTAINER_HEAP_PERCENT=${BATS_CONTAINER_HEAP_PERCENT}
+      - DB_DRIVER=${BATS_MARIADB_DB_DRIVER}
+      - DB_HOST=${BATS_MARIADB_DB_HOST}
+      - DB_PORT=${BATS_MARIADB_DB_PORT}
+      - DB_USER=${BATS_MARIADB_DB_USER}
+      - DB_PASSWORD=${BATS_MARIADB_DB_PASSWORD}
+      - DB_NAME=${BATS_MARIADB_DB_NAME}
+      - VARNISH_ENABLED=false
+    command: ["php-fpm", "-F", "-R"]
+    volumes:
+      - php_fpm_app_etc:/app/etc
+      - php_fpm_app_tmp:/app/tmp
+      - php_fpm_app_var:/app/var
+      - php_fpm_app_bin:/app/bin/container-entrypoint.d
+      - php_fpm_app_src:/usr/share/nginx/html
+    mem_limit: 512m
+    read_only: true
+
+  mariadb:
+    image: docker.io/mariadb:11.2.2
+    restart: unless-stopped
+    environment:
+      - MARIADB_ROOT_PASSWORD=${BATS_MARIADB_ROOT_DB_PASSWORD}
+      - MARIADB_USER=${BATS_MARIADB_DB_USER}
+      - MARIADB_PASSWORD=${BATS_MARIADB_DB_PASSWORD}
+      - MARIADB_DATABASE=${BATS_MARIADB_DB_NAME}
+      - DEBUG=false
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      test: mariadb-admin ping -h 127.0.0.1 -u $$MARIADB_USER --password=$$MARIADB_PASSWORD
+    mem_limit: 512m
+
+  php-fpm-init-volumes:
+    image: docker.io/alpine:latest
+    entrypoint: >
+      /bin/sh -c "
+        sleep 5;
+        cp -rf /test/src/. /vol_app_src
+        cp -rf /test/bin/container-entrypoint.d/. /vol_app_bin
+        exit 0;
+      "
+    volumes:
+      - ./test:/test
+      - php_fpm_app_src:/vol_app_src
+      - php_fpm_app_bin:/vol_app_bin
+
+  php-nginx-init-volumes:
+    image: docker.io/alpine:latest
+    entrypoint: >
+      /bin/sh -c "
+        sleep 5;
+        cp -rf /test/src/. /vol_app_src
+        cp -rf /test/bin/container-entrypoint.d/. /vol_app_bin
+        cp -rf /test/config/nginx/sites-enabled/. /vol_app_cfg
+        exit 0;
+      "
+    volumes:
+      - ./test:/test
+      - php_nginx_app_src:/vol_app_src
+      - php_nginx_app_bin:/vol_app_bin
+      - php_nginx_app_cfg:/vol_app_cfg
+
+  php-apache-init-volumes:
+    image: docker.io/alpine:latest
+    entrypoint: >
+      /bin/sh -c "
+        sleep 5;
+        cp -rf /test/bin/container-entrypoint.d/. /vol_app_bin
+        exit 0;
+      "
+    volumes:
+      - ./test:/test
+      - php_apache_app_bin:/vol_app_bin
+
+volumes:
+  mariadb_data:
+  php_fpm_app_bin:
+  php_fpm_app_var:
+  php_fpm_app_etc:
+  php_fpm_app_src:
+  php_fpm_app_tmp:
+  php_nginx_app_bin:
+  php_nginx_app_var:
+  php_nginx_app_etc:
+  php_nginx_app_src:
+  php_nginx_app_tmp:
+  php_nginx_app_cfg:
+  php_apache_app_bin:
+  php_apache_app_var:
+  php_apache_app_etc:
+  php_apache_app_tmp:

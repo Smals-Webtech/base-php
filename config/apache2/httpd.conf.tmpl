@@ -1,0 +1,34 @@
+PidFile /app/var/run/apache2/apache2.pid
+
+ServerTokens {{.Env.APACHE_SERVER_TOKENS}}
+Listen {{.Env.APACHE_LISTEN}}
+
+LoadModule mpm_worker_module modules/mod_mpm_worker.so
+LoadModule allowmethods_module modules/mod_allowmethods.so
+LoadModule deflate_module modules/mod_deflate.so
+LoadModule rewrite_module modules/mod_rewrite.so
+
+LogLevel warn
+
+ErrorLog /dev/stderr
+
+<IfModule log_config_module>
+    CustomLog /dev/stdout combined
+</IfModule>
+
+<IfModule deflate_module>
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/xml
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE application/xhtml+xml
+  AddOutputFilterByType DEFLATE application/rss+xml
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/x-javascript
+</IfModule>
+
+SSLSessionCache        "shmcb:/app/var/cache/apache2/mod_ssl/scache(512000)"
+SSLSessionCacheTimeout  300
+
+IncludeOptional /app/etc/apache2/conf.d/*.conf

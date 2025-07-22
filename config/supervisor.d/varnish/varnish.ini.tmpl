@@ -1,0 +1,12 @@
+[program:varnishd]
+command=/usr/sbin/varnishd -F -a 0.0.0.0:6081 -f {{.Env.VARNISH_VCL_CONF}} -T 0.0.0.0:6082 -t {{.Env.VARNISH_TTL}} -p thread_pool_min={{.Env.VARNISH_MIN_THREADS}} -p thread_pool_max={{.Env.VARNISH_MAX_THREADS}} -p thread_pool_timeout={{.Env.VARNISH_THREAD_TIMEOUT}} -s malloc,{{.Env.VARNISH_STORAGE_MALLOC_SIZE}} -S /app/var/cache/varnish/secret -n /app/var/cache/varnish/varnishd -P /app/var/run/varnish/varnishd.pid
+autorestart=true
+
+[program:varnishncsa]
+command=/usr/bin/varnishncsa -F "{{.Env.VARNISH_NCSA_LOG_FORMAT}}" -n /app/var/cache/varnish/varnishd -P /app/var/run/varnish/varnishncsa.pid
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+autorestart=true
+startretries=10

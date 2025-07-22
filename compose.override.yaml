@@ -1,0 +1,16 @@
+---
+services:
+  php-fpm:
+    build:
+      context: .
+      target: fpm-dev
+
+  php-nginx:
+    build:
+      context: .
+      target: nginx-dev
+
+  php-apache:
+    build:
+      context: .
+      target: apache-dev

@@ -1,0 +1,12 @@
+[www]
+listen = /app/var/run/php-fpm/php-fpm.sock
+listen.mode = 0777
+listen.allowed_clients = 127.0.0.1
+
+pm = ondemand
+pm.max_children = {{.Env.PHP_FPM_MAX_CHILDREN}}
+
+pm.status_path = /status
+ping.path = /ping
+
+php_admin_value[memory_limit] = {{.Env.PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES}}M

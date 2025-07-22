@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -eo pipefail
+
+export DEBUG=${DEBUG:-false}
+[[ "${DEBUG}" == "true" ]] && set -x
+
+source /usr/local/bin/container-entrypoint.d/entrypoint.d/00-functions.sh
+source /usr/local/bin/container-entrypoint.d/entrypoint.d/01-php.sh
+
+log "INFO" "+---- Configure PHP Container -----"
+
+source /usr/local/bin/container-entrypoint.d/base.d/01-php.sh
+
+log "INFO" "+---- PHP Container configured succesfully -----"
+
+# first arg is `-f` or `--some-option`
+if [ "${1#-}" != "$1" ]; then
+	set -- php "$@"
+fi
+
+exec "$@"

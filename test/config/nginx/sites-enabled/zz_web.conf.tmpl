@@ -1,0 +1,27 @@
+server {
+
+  listen       9000;
+  server_name  localhost;
+
+  index index.php;
+
+  root /app/src ;
+
+  location ~ \.php$ {
+    access_log off;
+
+    try_files $fastcgi_script_name =404;
+
+    fastcgi_split_path_info ^(.+\.php)(/.+)$;
+
+    fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    fastcgi_param PATH_INFO $fastcgi_path_info;
+
+    include        fastcgi_params;
+
+    fastcgi_pass unix:/app/var/run/php-fpm/php-fpm.sock;
+  }
+
+  more_set_headers "Test-Engine: bats";
+
+}
