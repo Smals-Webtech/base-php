@@ -117,18 +117,18 @@ target "default" {
   }
 
   labels = {
-    "be.zebbox.base.build-date"     = "${timestamp()}"
-    "be.zebbox.base.name"           = "Base PHP 8.4.x Docker Image"
-    "be.zebbox.base.description"    = "Docker base image is the basic image on which you add layers (which are basically filesystem changes) and create a final image containing your App."
-    "be.zebbox.base.url"            = "https://www.smals.be"
-    "be.zebbox.base.vcs-ref"        = GIT_HASH
-    "be.zebbox.base.vcs-url"        = "https://github.com/Smals-Webtech/base-php"
-    "be.zebbox.base.vendor"         = "sebastian.molle@smals.com"
-    "be.zebbox.base.version"        = PHP_VERSION
-    "be.zebbox.base.release"        = GIT_HASH
-    "be.zebbox.base.environment"    = tgt
-    "be.zebbox.base.variant"        = variant
-    "be.zebbox.base.schema-version" = "1.0"
+    "be.smals.webtech.base.build-date"     = "${timestamp()}"
+    "be.smals.webtech.base.name"           = "Base PHP 8.4.x Docker Image"
+    "be.smals.webtech.base.description"    = "Docker base image is the basic image on which you add layers (which are basically filesystem changes) and create a final image containing your App."
+    "be.smals.webtech.base.url"            = "https://www.smals.be"
+    "be.smals.webtech.base.vcs-ref"        = GIT_HASH
+    "be.smals.webtech.base.vcs-url"        = "https://github.com/Smals-Webtech/base-php"
+    "be.smals.webtech.base.vendor"         = "sebastian.molle@smals.com"
+    "be.smals.webtech.base.version"        = PHP_VERSION
+    "be.smals.webtech.base.release"        = GIT_HASH
+    "be.smals.webtech.base.environment"    = tgt
+    "be.smals.webtech.base.variant"        = variant
+    "be.smals.webtech.base.schema-version" = "1.0"
   }
 
   tags = distinct(flatten([

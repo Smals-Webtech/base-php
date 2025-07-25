@@ -120,8 +120,8 @@ ARG PHP_EXT_XDEBUG_VERSION_ARG
 
 ENV PHP_EXT_XDEBUG_VERSION=${PHP_EXT_XDEBUG_VERSION_ARG:-3.4.1}
 
-LABEL be.zebbox.base.node-version="${NODE_VERSION_ARG:-20}" \
-      be.zebbox.base.composer-version="${COMPOSER_VERSION_ARG:-2.8.4}"
+LABEL be.smals.webtech.base.node-version="${NODE_VERSION_ARG:-20}" \
+      be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG:-2.8.4}"
 
 USER root
 
@@ -166,7 +166,7 @@ USER 1001
 
 FROM fpm-prd AS apache-prd
 
-LABEL be.zebbox.base.variant="apache"
+LABEL be.smals.webtech.base.variant="apache"
 
 USER root
 
@@ -439,7 +439,7 @@ FROM cli-prd AS cli-dev
 ARG COMPOSER_VERSION_ARG
 ARG PHP_EXT_XDEBUG_VERSION_ARG
 
-LABEL be.zebbox.base.composer-version="${COMPOSER_VERSION_ARG:-2.8.4}"
+LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG:-2.8.4}"
 
 ENV PHP_EXT_XDEBUG_VERSION=${PHP_EXT_XDEBUG_VERSION_ARG:-3.4.1}
 
