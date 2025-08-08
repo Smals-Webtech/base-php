@@ -17,36 +17,42 @@ ARG PHP_EXT_APCU_VERSION_ARG
 
 USER root
 
-ENV PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/app/etc/php/conf.d" \
+ENV PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
     AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG:-2.22.10} \
     PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG:-6.1.0} \
     PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG:-5.1.24} \
     HOME=/home/default \
     TMPDIR=/app/tmp \
-    PATH=/app/bin:/app/sbin:/usr/local/bin:/usr/bin:$PATH
+    PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
+
+WORKDIR /app
+
+VOLUME /opt/sbin
+VOLUME /opt/etc
+VOLUME /app/var
+VOLUME /app/tmp
 
 COPY --from=wait-for-it --chmod=775 --chown=root:root /usr/bin/wait4x /usr/bin/wait4x
 COPY --from=gomplate --chmod=775 --chown=root:root /bin/gomplate /usr/bin/gomplate
 
-COPY --chmod=664 --chown=1001:0 config/php/ /app/config/php/
-COPY --chmod=664 --chown=1001:0 config/supervisor.d/ /app/config/supervisor.d/
+COPY --chmod=664 --chown=1001:0 config/php/ /opt/config/php/
+COPY --chmod=664 --chown=1001:0 config/supervisor.d/ /opt/config/supervisor.d/
 
 COPY --chmod=775 --chown=root:root bin/ /usr/local/bin/
 
-RUN mkdir -p /home/default \
+RUN mkdir -p /opt/bin \
+             /opt/sbin \
+             /opt/etc/supervisor.d \
+             /opt/bin/container-entrypoint.d \
+             /home/default \
              /app/var/lock \
              /app/var/log \
              /app/var/run/varnish \
              /app/var/run/php-fpm \
              /app/var/cache/varnish/varnishd \
-             /app/etc/php/conf.d \
-             /app/etc/php/php-fpm.d \
-             /app/etc/supervisor.d \
-             /app/bin/container-entrypoint.d \
              /app/src \
              /app/tmp \
-             /app/sbin \
-    && echo "include=/app/etc/php/php-fpm.d/*.conf" >> /usr/local/etc/php-fpm.conf \
+    && echo "include=/opt/etc/php/php-fpm.d/*.conf" >> /usr/local/etc/php-fpm.conf \
     && chmod +x /usr/local/bin/container-entrypoint \
     && echo "Upgrade all already installed packages ..." \
     && apk upgrade --available \
@@ -93,7 +99,6 @@ RUN mkdir -p /home/default \
     && echo 'opcache.max_accelerated_files=4000' >> /usr/local/etc/php/conf.d/opcache-recommended.ini \
     && echo 'opcache.revalidate_freq=2' >> /usr/local/etc/php/conf.d/opcache-recommended.ini \
     && echo 'opcache.fast_shutdown=1' >> /usr/local/etc/php/conf.d/opcache-recommended.ini \
-    && cd /opt \
     && apk del .build-deps \
     && rm -rf /var/cache/apk/* \
     && echo "Setup permissions on filesystem for non-privileged user ..." \
@@ -179,10 +184,10 @@ COPY --chmod=664 --chown=root:root etc/supervisord.apache/supervisord.conf /etc/
 # https://github.com/moby/buildkit/issues/5943
 COPY --chmod=755 --chown=1001:0 src/ /var/www/localhost/htdocs/
 
-COPY --chmod=775 --chown=1001:0 config/apache2/ /app/config/apache2/
+COPY --chmod=775 --chown=1001:0 config/apache2/ /opt/config/apache2/
 
-RUN mkdir -p /app/var/cache/apache2/mod_ssl \
-             /app/etc/apache2/conf.d \
+RUN mkdir -p /opt/etc/apache2/conf.d \
+             /app/var/cache/apache2/mod_ssl \
              /app/var/run/apache2 \
     && apk add --update --no-cache --virtual .php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl \
     && sed -i 's/^\([[:space:]]*\)Listen /\1#Listen /' /etc/apache2/httpd.conf \
@@ -191,11 +196,11 @@ RUN mkdir -p /app/var/cache/apache2/mod_ssl \
     && sed -i 's/^\([[:space:]]*\)ErrorLog /\1#ErrorLog /' /etc/apache2/httpd.conf \
     && sed -i 's/^\([[:space:]]*\)CustomLog /\1#CustomLog /' /etc/apache2/httpd.conf \
     && rm -rf /var/cache/apk/* \
-    && chown -Rf 1001:0 /app/var/cache/apache2 \
-                        /app/etc/apache2 \
+    && chown -Rf 1001:0 /opt/etc/apache2 \
+                        /app/var/cache/apache2 \
                         /app/var/run/apache2 \
-    && chmod -R ugo+rw /app/var/cache/apache2 \
-                       /app/etc/apache2 \
+    && chmod -R ugo+rw /opt/etc/apache2 \
+                       /app/var/cache/apache2 \
                        /app/var/run/apache2
 
 USER 1001
@@ -220,10 +225,10 @@ COPY --chmod=664 --chown=root:root etc/supervisord.apache/supervisord.conf /etc/
 # https://github.com/moby/buildkit/issues/5943
 COPY --chmod=755 --chown=1001:0 src/ /var/www/localhost/htdocs/
 
-COPY --chmod=775 --chown=1001:0 config/apache2/ /app/config/apache2/
+COPY --chmod=775 --chown=1001:0 config/apache2/ /opt/config/apache2/
 
-RUN mkdir -p /app/var/cache/apache2/mod_ssl \
-             /app/etc/apache2/conf.d \
+RUN mkdir -p /opt/etc/apache2/conf.d \
+             /app/var/cache/apache2/mod_ssl \
              /app/var/run/apache2 \
     && apk add --update --no-cache --virtual .php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl \
     && sed -i 's/^\([[:space:]]*\)Listen /\1#Listen /' /etc/apache2/httpd.conf \
@@ -232,11 +237,11 @@ RUN mkdir -p /app/var/cache/apache2/mod_ssl \
     && sed -i 's/^\([[:space:]]*\)ErrorLog /\1#ErrorLog /' /etc/apache2/httpd.conf \
     && sed -i 's/^\([[:space:]]*\)CustomLog /\1#CustomLog /' /etc/apache2/httpd.conf \
     && rm -rf /var/cache/apk/* \
-    && chown -Rf 1001:0 /app/var/cache/apache2 \
-                        /app/etc/apache2 \
+    && chown -Rf 1001:0 /opt/etc/apache2 \
+                        /app/var/cache/apache2 \
                         /app/var/run/apache2 \
-    && chmod -R ugo+rw /app/var/cache/apache2 \
-                       /app/etc/apache2 \
+    && chmod -R ugo+rw /opt/etc/apache2 \
+                       /app/var/cache/apache2 \
                        /app/var/run/apache2
 
 USER 1001
@@ -261,9 +266,9 @@ COPY --chmod=775 --chown=root:root etc/supervisord.nginx/supervisord.conf /etc/s
 # https://github.com/moby/buildkit/issues/5943
 COPY --chmod=755 --chown=1001:0 src/ /usr/share/nginx/html/
 
-COPY --chmod=775 --chown=1001:0 config/nginx/ /app/config/nginx/
+COPY --chmod=775 --chown=1001:0 config/nginx/ /opt/config/nginx/
 
-RUN mkdir -p /app/etc/nginx/sites-enabled \
+RUN mkdir -p /opt/etc/nginx/sites-enabled \
              /app/var/run/nginx \
              /app/var/cache/nginx/fcgi \
              /app/var/tmp/client \
@@ -277,11 +282,11 @@ RUN mkdir -p /app/etc/nginx/sites-enabled \
     && rm -rf /etc/nginx/conf.d/default.conf /var/cache/apk/* \
     && echo "Setup permissions on filesystem for non-privileged user ..." \
     && find /var/lib/nginx -type d -exec chmod ugo+rx {} \; \
-    && chown -Rf 1001:0 /app/etc/nginx \
+    && chown -Rf 1001:0 /opt/etc/nginx \
                         /app/var/run/nginx \
                         /app/var/cache/nginx \
                         /app/var/tmp \
-    && chmod -R ugo+rw /app/etc/nginx \
+    && chmod -R ugo+rw /opt/etc/nginx \
                        /app/var/run/nginx \
                        /app/var/cache/nginx \
                        /app/var/tmp
@@ -310,9 +315,9 @@ COPY --chmod=775 --chown=root:root etc/supervisord.nginx/supervisord.conf /etc/s
 # https://github.com/moby/buildkit/issues/5943
 COPY --chmod=755 --chown=1001:0 src/ /usr/share/nginx/html/
 
-COPY --chmod=775 --chown=1001:0 config/nginx/ /app/config/nginx/
+COPY --chmod=775 --chown=1001:0 config/nginx/ /opt/config/nginx/
 
-RUN mkdir -p /app/etc/nginx/sites-enabled \
+RUN mkdir -p /opt/etc/nginx/sites-enabled \
              /app/var/run/nginx \
              /app/var/cache/nginx/fcgi \
              /app/var/tmp/client \
@@ -326,11 +331,11 @@ RUN mkdir -p /app/etc/nginx/sites-enabled \
     && rm -rf /etc/nginx/conf.d/default.conf /var/cache/apk/* \
     && echo "Setup permissions on filesystem for non-privileged user ..." \
     && find /var/lib/nginx -type d -exec chmod ugo+rx {} \; \
-    && chown -Rf 1001:0 /app/etc/nginx \
+    && chown -Rf 1001:0 /opt/etc/nginx \
                         /app/var/run/nginx \
                         /app/var/cache/nginx \
                         /app/var/tmp \
-    && chmod -R ugo+rw /app/etc/nginx \
+    && chmod -R ugo+rw /opt/etc/nginx \
                        /app/var/run/nginx \
                        /app/var/cache/nginx \
                        /app/var/tmp
@@ -354,13 +359,13 @@ ARG PHP_EXT_APCU_VERSION_ARG
 
 USER root
 
-ENV PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/app/etc/php/conf.d" \
+ENV PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
     AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG:-2.22.10} \
     PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG:-6.1.0} \
     PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG:-5.1.24} \
     HOME=/home/default \
     TMPDIR=/app/tmp \
-    PATH=/app/bin:/app/sbin:/usr/local/bin:/usr/bin:$PATH
+    PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
 
 COPY --from=wait-for-it --chmod=775 --chown=root:root /usr/bin/wait4x /usr/bin/wait4x
 COPY --from=gomplate --chmod=775 --chown=root:root /bin/gomplate /usr/bin/gomplate
@@ -373,14 +378,16 @@ COPY --from=node /usr/local/bin /usr/local/bin
 
 COPY --chmod=775 --chown=1001:0 bin/ /usr/local/bin/
 
-COPY --chmod=664 --chown=1001:0 config/php/conf.d/ /app/config/php/conf.d/
+COPY --chmod=664 --chown=1001:0 config/php/conf.d/ /opt/config/php/conf.d/
 
-RUN mkdir -p /home/default \
+RUN mkdir -p /opt/bin \
+             /opt/sbin \
+             /opt/etc/supervisor.d \
+             /opt/bin/container-entrypoint.d \
+             /home/default \
              /app/src \
-             /app/etc \
              /app/tmp \
-             /app/bin \
-             /app/sbin \
+             /app/var \
     && chmod +x /usr/local/bin/container-entrypoint-cli \
     && echo "Upgrade all already installed packages ..." \
     && apk upgrade --available \

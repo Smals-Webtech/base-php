@@ -9,7 +9,7 @@
  *
  * @category Docker
  * @package  DockerBaseImage
- * @author   Sebastian Molle <sebastian.molle@gmail.com>
+ * @author   Sebastian Molle <sebastian.molle@smals.be>
  * @license  https://opensource.org/licenses/MIT MIT License
  * @link     https://github.com/smalswebtech/base-php
  */
