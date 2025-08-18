@@ -83,16 +83,16 @@ function create-symlink {
 	DEST=$2
 
 	if [ -L "$SRC" ]; then
-		echo "Lien symbolique déjà présent : $SRC"
+		log "INFO" "Symbolic link already exists: $SRC"
 	elif [ -e "$SRC" ]; then
-		echo "Un fichier ou dossier existe déjà à cet emplacement : $SRC"
-		echo "Suppression de l'ancien fichier/dossier..."
+		log "INFO" "A file or directory already exists at this location: $SRC"
+		log "INFO" "Removing the existing file/directory..."
 		rm -rf "$SRC"
 		ln -s "$DEST" "$SRC"
-		echo "Lien symbolique recréé : $SRC → $DEST"
+		log "INFO" "Symbolic link recreated: $SRC → $DEST"
 	else
 		ln -s "$DEST" "$SRC"
-		echo "Lien symbolique créé : $SRC → $DEST"
+		log "INFO" "Symbolic link created: $SRC → $DEST"
 	fi
 
 }
