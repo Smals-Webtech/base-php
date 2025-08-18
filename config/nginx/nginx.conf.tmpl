@@ -73,7 +73,7 @@ http {
       listen       unix:/app/var/run/nginx/default.localhost.sock;
       server_name  default.localhost;
 
-      root /usr/share/nginx/html;
+      root /app/var/www/html;
 
       location = /metrics {
         access_log off;
@@ -116,7 +116,7 @@ http {
 
       index index.php;
 
-      root /usr/share/nginx/html;
+      root /app/var/www/html;
 
       location ~ \.php$ {
         access_log off;

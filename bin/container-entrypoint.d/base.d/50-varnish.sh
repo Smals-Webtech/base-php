@@ -6,10 +6,10 @@ if [[ "${VARNISH_ENABLED}" == "true" ]]; then
 
 	log "INFO" "- Setup Varnish Configuration File(s) ..."
 
-	OUTDIR="/app/etc/supervisor.d /app/var/varnish /app/var/cache/varnish/varnishd /app/var/run/varnish"
-	mkdir -p "$OUTDIR"
+	OUTDIR="/opt/etc/supervisor.d /app/var/varnish /app/var/cache/varnish/varnishd /app/var/run/varnish"
+	mkdir -p $OUTDIR
 
-	apply-template /app/config/supervisor.d/varnish /app/etc/supervisor.d
+	apply-template /opt/config/supervisor.d/varnish.ini.tmpl /opt/etc/supervisor.d/varnish.ini
 
 	log "INFO" "- Create Varnish secret file ..."
 

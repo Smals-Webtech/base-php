@@ -1,4 +1,4 @@
-<VirtualHost *:9000>
+<VirtualHost *:{{.Env.APACHE_LISTEN}}>
 
     ServerName default.localhost
 
@@ -16,7 +16,7 @@
         SetHandler "proxy:unix:/app/var/run/php-fpm/php-fpm.sock|fcgi://localhost/"
     </FilesMatch>
 
-    DocumentRoot /var/www/localhost/htdocs
+    DocumentRoot /app/var/www/html
 
     Alias /real-time-status "/usr/local/php/php/fpm/status.html"
     <Directory /usr/local/php/php/fpm >
@@ -28,10 +28,20 @@
         Require all granted
     </Location>
 
+    <IfModule status_module>
     <Location /server-status >
         SetHandler server-status
         Require all granted
     </Location>
+    #ExtendedStatus On !!!!!
+    </IfModule>
+
+    <IfModule info_module>
+    <Location /server-info>
+        SetHandler server-info
+        Require all granted
+    </Location>
+    </IfModule>
 
     ErrorLog {{.Env.APACHE_DEFAULT_VHOST_ERROR_LOG_TARGET}}
     CustomLog {{.Env.APACHE_DEFAULT_VHOST_CUSTOM_LOG_TARGET}} combined

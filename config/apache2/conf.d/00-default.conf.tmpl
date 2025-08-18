@@ -1,0 +1,9 @@
+Timeout {{.Env.APACHE_TIMEOUT}}
+KeepAlive {{.Env.APACHE_KEEP_ALIVE}}
+MaxKeepAliveRequests {{.Env.APACHE_MAX_KEEP_ALIVE_REQUESTS}}
+KeepAliveTimeout {{.Env.APACHE_KEEP_ALIVE_TIMEOUT}}
+UseCanonicalName {{.Env.APACHE_USE_CANONICAL_NAME}}
+AccessFileName {{.Env.APACHE_ACCESS_FILE_NAME}}
+HostnameLookups {{.Env.APACHE_HOSTNAME_LOOKUPS}}
+
+RequestReadTimeout header=20-40,MinRate=500 body=20,MinRate=500

@@ -8,6 +8,15 @@ for FILE in $(find /usr/local/bin/container-entrypoint.d/entrypoint.d -iname \*.
 	source "${FILE}"
 done
 
+log "INFO" "  ____                   ____  _   _ ____   "
+log "INFO" " | __ )  __ _ ___  ___  |  _ \| | | |  _ \  "
+log "INFO" " |  _ \ / _\` / __|/ _ \ | |_) | |_| | |_) | "
+log "INFO" " | |_) | (_| \__ \  __/ |  __/|  _  |  __/  "
+log "INFO" " |____/ \__,_|___/\___| |_|   |_| |_|_|     "
+log "INFO" "                                            "
+log "INFO" "  ( Smals WebAgency WcmTech Base Image )    "
+log "INFO" "                                            "
+
 log "INFO" "+---- Configure PHP Container -----"
 
 for FILE in $(find /usr/local/bin/container-entrypoint.d/base.d -iname \*.sh | sort); do

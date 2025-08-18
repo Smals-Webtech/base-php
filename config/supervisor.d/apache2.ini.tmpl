@@ -1,0 +1,8 @@
+[program:apache]
+command=/usr/sbin/httpd -d {{.Env.APACHE_SERVER_ROOT}} -f /opt/etc/apache2/httpd.conf -e {{.Env.APACHE_DAEMON_LOG}} -DFOREGROUND
+stdout_logfile=/dev/stdout
+stdout_logfile_maxbytes=0
+stderr_logfile=/dev/stderr
+stderr_logfile_maxbytes=0
+autorestart=false
+startretries=0

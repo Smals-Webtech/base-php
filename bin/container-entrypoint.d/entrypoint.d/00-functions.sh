@@ -38,20 +38,62 @@ function log {
 
 function apply-template {
 
-	TPLDIR=$1
-	OUTDIR=$2
+	SRC=$1
+	DEST=$2
 
-	for f in "${TPLDIR}"/*.tmpl; do
-		ff=$(basename "$f")
-		if [ -w "$OUTDIR" ]; then
-			gomplate \
-				-f "${TPLDIR}"/"${ff}" \
-				-o "${OUTDIR}"/"${ff%.tmpl}"
+	# .tmpl file
+	if [ -f "$SRC" ]; then
+
+		if [[ "$SRC" == *.tmpl ]]; then
+			if [ -d "$(dirname "$DEST")" ] && [ -w "$(dirname "$DEST")" ]; then
+				gomplate -f "$SRC" -o "$DEST"
+			else
+				log "ERROR" "! Write permission is NOT granted on $(dirname "$DEST") ."
+			fi
 		else
-			log "ERROR" "! Write permission is NOT granted on $OUTDIR ."
+			log "ERROR" "! File $SRC is not a .tmpl file."
 		fi
 
-	done
+	# dir
+	elif [ -d "$SRC" ]; then
+
+		if [ ! -d "$DEST" ]; then
+			log "ERROR" "! $DEST is not a directory."
+			return 1
+		fi
+		if [ ! -w "$DEST" ]; then
+			log "ERROR" "! Write permission is NOT granted on $DEST ."
+			return 1
+		fi
+		for f in "$SRC"/*.tmpl; do
+			ff=$(basename "$f")
+			gomplate -f "$f" -o "$DEST/${ff%.tmpl}"
+		done
+
+	else
+		log "ERROR" "! $SRC is neither a tmpl file nor a directory."
+		return 1
+	fi
+
+}
+
+function create-symlink {
+
+	SRC=$1
+	DEST=$2
+
+	if [ -L "$SRC" ]; then
+		echo "Lien symbolique déjà présent : $SRC"
+	elif [ -e "$SRC" ]; then
+		echo "Un fichier ou dossier existe déjà à cet emplacement : $SRC"
+		echo "Suppression de l'ancien fichier/dossier..."
+		rm -rf "$SRC"
+		ln -s "$DEST" "$SRC"
+		echo "Lien symbolique recréé : $SRC → $DEST"
+	else
+		ln -s "$DEST" "$SRC"
+		echo "Lien symbolique créé : $SRC → $DEST"
+	fi
 
 }
 

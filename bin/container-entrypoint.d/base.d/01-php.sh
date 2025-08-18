@@ -2,9 +2,9 @@
 
 log "INFO" "Setup PHP INI Configuration File(s) ..."
 
-OUTDIR="/app/etc/php/conf.d"
-mkdir -p "$OUTDIR"
+OUTDIR="/opt/etc/php/conf.d"
+mkdir -p $OUTDIR
 
-apply-template /app/config/php/conf.d /app/etc/php/conf.d
+apply-template /opt/config/php/conf.d /opt/etc/php/conf.d
 
 true

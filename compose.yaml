@@ -10,7 +10,7 @@ services:
       - php-fpm
     volumes:
       - php_fpm_app_var:/app/var
-      - php_fpm_app_src:/usr/share/nginx/html
+      - php_fpm_app_src:/app/var/www/html
       - ./test/etc/nginx/conf.d:/etc/nginx/conf.d
     mem_limit: 128m
 
@@ -31,13 +31,12 @@ services:
       - CONTAINER_HEAP_PERCENT=${BATS_CONTAINER_HEAP_PERCENT}
       - VARNISH_ENABLED=true
       - VARNISH_VCL_CONF_CUSTOM=${BATS_VARNISH_VCL_CONF_CUSTOM}
-    command: ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
     volumes:
-      - php_apache_app_bin:/app/bin/container-entrypoint.d
+      - php_apache_opt_bin:/opt/bin/container-entrypoint.d
+      - php_apache_opt_etc:/opt/etc
       - php_apache_app_var:/app/var
-      - php_apache_app_etc:/app/etc
       - php_apache_app_tmp:/app/tmp
-      - ./test/etc/varnish/my-vcl-test-file.vcl:/app/etc/varnish/bats.vcl
+      - ./test/etc/varnish/my-vcl-test-file.vcl:/opt/etc/varnish/bats.vcl
     mem_limit: 512m
     read_only: true
 
@@ -62,13 +61,12 @@ services:
       - DB_PASSWORD=${BATS_MARIADB_DB_PASSWORD}
       - DB_NAME=${BATS_MARIADB_DB_NAME}
       - VARNISH_ENABLED=false
-    command: ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]
     volumes:
-      - php_nginx_app_bin:/app/bin/container-entrypoint.d
+      - php_nginx_opt_bin:/opt/bin/container-entrypoint.d
       - php_nginx_app_var:/app/var
-      - php_nginx_app_etc:/app/etc
+      - php_nginx_opt_etc:/opt/etc
       - php_nginx_app_tmp:/app/tmp
-      - php_nginx_app_cfg:/app/config/nginx/sites-enabled
+      - php_nginx_opt_cfg:/opt/config/nginx/sites-enabled
       - php_nginx_app_src:/app/src
     mem_limit: 512m
     read_only: true
@@ -92,11 +90,11 @@ services:
       - VARNISH_ENABLED=false
     command: ["php-fpm", "-F", "-R"]
     volumes:
-      - php_fpm_app_etc:/app/etc
+      - php_fpm_opt_etc:/opt/etc
       - php_fpm_app_tmp:/app/tmp
       - php_fpm_app_var:/app/var
-      - php_fpm_app_bin:/app/bin/container-entrypoint.d
-      - php_fpm_app_src:/usr/share/nginx/html
+      - php_fpm_opt_bin:/opt/bin/container-entrypoint.d
+      - php_fpm_app_src:/app/var/www/html
     mem_limit: 512m
     read_only: true
 
@@ -131,7 +129,7 @@ services:
     volumes:
       - ./test:/test
       - php_fpm_app_src:/vol_app_src
-      - php_fpm_app_bin:/vol_app_bin
+      - php_fpm_opt_bin:/vol_app_bin
 
   php-nginx-init-volumes:
     image: docker.io/alpine:latest
@@ -146,35 +144,35 @@ services:
     volumes:
       - ./test:/test
       - php_nginx_app_src:/vol_app_src
-      - php_nginx_app_bin:/vol_app_bin
-      - php_nginx_app_cfg:/vol_app_cfg
+      - php_nginx_opt_bin:/vol_app_bin
+      - php_nginx_opt_cfg:/vol_app_cfg
 
   php-apache-init-volumes:
     image: docker.io/alpine:latest
     entrypoint: >
       /bin/sh -c "
-        sleep 5;
+        sleep 5
         cp -rf /test/bin/container-entrypoint.d/. /vol_app_bin
-        exit 0;
+        exit 0
       "
     volumes:
       - ./test:/test
-      - php_apache_app_bin:/vol_app_bin
+      - php_apache_opt_bin:/vol_app_bin
 
 volumes:
   mariadb_data:
-  php_fpm_app_bin:
+  php_fpm_opt_bin:
+  php_fpm_opt_etc:
   php_fpm_app_var:
-  php_fpm_app_etc:
   php_fpm_app_src:
   php_fpm_app_tmp:
-  php_nginx_app_bin:
+  php_nginx_opt_bin:
+  php_nginx_opt_etc:
   php_nginx_app_var:
-  php_nginx_app_etc:
   php_nginx_app_src:
   php_nginx_app_tmp:
-  php_nginx_app_cfg:
-  php_apache_app_bin:
+  php_nginx_opt_cfg:
+  php_apache_opt_bin:
+  php_apache_opt_etc:
   php_apache_app_var:
-  php_apache_app_etc:
   php_apache_app_tmp:

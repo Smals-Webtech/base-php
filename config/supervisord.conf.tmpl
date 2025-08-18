@@ -1,0 +1,37 @@
+[supervisord]
+nodaemon = true
+logfile = /app/var/log/supervisord.log
+pidfile = /app/var/run/supervisord.pid
+stdout_logfile = /dev/stdout
+stdout_logfile_maxbytes = 0
+stderr_logfile = /dev/stderr
+stderr_logfile_maxbytes = 0
+
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
+[supervisorctl]
+serverurl = unix://{{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_PATH }}
+
+{{- if ne .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_ENABLED "false" }}
+
+[unix_http_server]
+file = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_PATH }}
+chmod = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_CHMOD }}
+# chown = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_CHOWN }}
+username = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_USERNAME }}
+password = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD }}
+
+{{- end -}}
+
+{{- if ne .Env.SUPERVISOR_XMLRPC_INET_ENABLED "false" }}
+
+[inet_http_server]
+port = {{ .Env.SUPERVISOR_XMLRPC_INET_HOST }}:{{ .Env.SUPERVISOR_XMLRPC_INET_PORT }}
+username = {{ .Env.SUPERVISOR_XMLRPC_INET_USERNAME }}
+password = {{ .Env.SUPERVISOR_XMLRPC_INET_PASSWORD }}
+
+{{- end }}
+
+[include]
+files = /opt/etc/supervisor.d/*.ini

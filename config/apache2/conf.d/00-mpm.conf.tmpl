@@ -1,0 +1,12 @@
+LoadModule mpm_worker_module modules/mod_mpm_worker.so
+
+PidFile "/app/var/run/apache2/apache2.pid"
+
+StartServers {{.Env.APACHE_MPM_WORKER_START_SERVERS}}
+MinSpareThreads {{.Env.APACHE_MPM_WORKER_MIN_SPARE_THREADS}}
+MaxSpareThreads {{.Env.APACHE_MPM_WORKER_MAX_SPARE_THREADS}}
+ThreadsPerChild {{.Env.APACHE_MPM_WORKER_THREADS_PER_CHILD}}
+MaxRequestWorkers {{.Env.APACHE_MPM_WORKER_MAX_REQUEST_WORKERS}}
+MaxConnectionsPerChild {{.Env.APACHE_MPM_WORKER_MAX_CONNECTIONS_PER_CHILD}}
+
+MaxMemFree {{.Env.APACHE_MPM_WORKER_MAX_MEM_FREE}}
