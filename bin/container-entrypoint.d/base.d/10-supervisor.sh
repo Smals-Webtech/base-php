@@ -3,7 +3,10 @@
 log "INFO" "| Configure Supervisor ..."
 
 OUTDIR="/opt/etc/supervisor.d /app/var/run /app/var/log"
-mkdir -p $OUTDIR
+
+for dir in $OUTDIR; do
+	mkdir -p "$dir"
+done
 
 apply-template /opt/config/supervisord.conf.tmpl /opt/etc/supervisord.conf
 

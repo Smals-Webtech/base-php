@@ -7,7 +7,10 @@ if [[ "${APACHE_ENABLED}" == "true" ]]; then
 	log "INFO" "- Setup Apache Configuration File(s) ..."
 
 	OUTDIR="/app/var/cache/apache2/mod_ssl /opt/etc/apache2/conf.d /opt/etc/apache2/sites-enabled /app/var/run/apache2 /app/var/www/html"
-	mkdir -p $OUTDIR
+
+	for dir in $OUTDIR; do
+		mkdir -p "$dir"
+	done
 
 	apply-template /opt/config/apache2 /opt/etc/apache2
 	apply-template /opt/config/apache2/conf.d /opt/etc/apache2/conf.d

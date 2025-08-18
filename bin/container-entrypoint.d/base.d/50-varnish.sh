@@ -7,7 +7,10 @@ if [[ "${VARNISH_ENABLED}" == "true" ]]; then
 	log "INFO" "- Setup Varnish Configuration File(s) ..."
 
 	OUTDIR="/opt/etc/supervisor.d /app/var/varnish /app/var/cache/varnish/varnishd /app/var/run/varnish"
-	mkdir -p $OUTDIR
+
+	for dir in $OUTDIR; do
+		mkdir -p "$dir"
+	done
 
 	apply-template /opt/config/supervisor.d/varnish.ini.tmpl /opt/etc/supervisor.d/varnish.ini
 

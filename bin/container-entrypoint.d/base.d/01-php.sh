@@ -3,7 +3,10 @@
 log "INFO" "Setup PHP INI Configuration File(s) ..."
 
 OUTDIR="/opt/etc/php/conf.d"
-mkdir -p $OUTDIR
+
+for dir in $OUTDIR; do
+	mkdir -p "$dir"
+done
 
 apply-template /opt/config/php/conf.d /opt/etc/php/conf.d
 
