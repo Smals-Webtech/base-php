@@ -123,7 +123,7 @@ target "default" {
     "be.smals.webtech.base.url"            = "https://www.smals.be"
     "be.smals.webtech.base.vcs-ref"        = GIT_HASH
     "be.smals.webtech.base.vcs-url"        = "https://github.com/Smals-Webtech/base-php"
-    "be.smals.webtech.base.vendor"         = "sebastian.molle@smals.com"
+    "be.smals.webtech.base.vendor"         = "sebastian.molle@smals.be"
     "be.smals.webtech.base.version"        = PHP_VERSION
     "be.smals.webtech.base.release"        = GIT_HASH
     "be.smals.webtech.base.environment"    = tgt
