@@ -34,6 +34,7 @@ services:
     volumes:
       - php_apache_opt_bin:/opt/bin/container-entrypoint.d
       - php_apache_opt_etc:/opt/etc
+      - php_apache_opt_sbin:/opt/sbin
       - php_apache_app_var:/app/var
       - php_apache_app_tmp:/app/tmp
       - ./test/etc/varnish/my-vcl-test-file.vcl:/opt/etc/varnish/bats.vcl
@@ -63,10 +64,11 @@ services:
       - VARNISH_ENABLED=false
     volumes:
       - php_nginx_opt_bin:/opt/bin/container-entrypoint.d
-      - php_nginx_app_var:/app/var
-      - php_nginx_opt_etc:/opt/etc
-      - php_nginx_app_tmp:/app/tmp
       - php_nginx_opt_cfg:/opt/config/nginx/sites-enabled
+      - php_nginx_opt_etc:/opt/etc
+      - php_nginx_opt_sbin:/opt/sbin
+      - php_nginx_app_var:/app/var
+      - php_nginx_app_tmp:/app/tmp
       - php_nginx_app_src:/app/src
     mem_limit: 512m
     read_only: true
@@ -90,10 +92,11 @@ services:
       - VARNISH_ENABLED=false
     command: ["php-fpm", "-F", "-R"]
     volumes:
-      - php_fpm_opt_etc:/opt/etc
-      - php_fpm_app_tmp:/app/tmp
-      - php_fpm_app_var:/app/var
       - php_fpm_opt_bin:/opt/bin/container-entrypoint.d
+      - php_fpm_opt_etc:/opt/etc
+      - php_fpm_opt_sbin:/opt/sbin
+      - php_fpm_app_tmp:/app/tmp
+      - php_fpm_app_var:/app/var   
       - php_fpm_app_src:/app/var/www/html
     mem_limit: 512m
     read_only: true
@@ -123,13 +126,13 @@ services:
       /bin/sh -c "
         sleep 5;
         cp -rf /test/src/. /vol_app_src
-        cp -rf /test/bin/container-entrypoint.d/. /vol_app_bin
+        cp -rf /test/bin/container-entrypoint.d/. /vol_opt_bin
         exit 0;
       "
     volumes:
       - ./test:/test
       - php_fpm_app_src:/vol_app_src
-      - php_fpm_opt_bin:/vol_app_bin
+      - php_fpm_opt_bin:/vol_opt_bin
 
   php-nginx-init-volumes:
     image: docker.io/alpine:latest
@@ -137,42 +140,45 @@ services:
       /bin/sh -c "
         sleep 5;
         cp -rf /test/src/. /vol_app_src
-        cp -rf /test/bin/container-entrypoint.d/. /vol_app_bin
-        cp -rf /test/config/nginx/sites-enabled/. /vol_app_cfg
+        cp -rf /test/bin/container-entrypoint.d/. /vol_opt_bin
+        cp -rf /test/config/nginx/sites-enabled/. /vol_opt_cfg
         exit 0;
       "
     volumes:
       - ./test:/test
       - php_nginx_app_src:/vol_app_src
-      - php_nginx_opt_bin:/vol_app_bin
-      - php_nginx_opt_cfg:/vol_app_cfg
+      - php_nginx_opt_bin:/vol_opt_bin
+      - php_nginx_opt_cfg:/vol_opt_cfg
 
   php-apache-init-volumes:
     image: docker.io/alpine:latest
     entrypoint: >
       /bin/sh -c "
         sleep 5
-        cp -rf /test/bin/container-entrypoint.d/. /vol_app_bin
+        cp -rf /test/bin/container-entrypoint.d/. /vol_opt_bin
         exit 0
       "
     volumes:
       - ./test:/test
-      - php_apache_opt_bin:/vol_app_bin
+      - php_apache_opt_bin:/vol_opt_bin
 
 volumes:
   mariadb_data:
   php_fpm_opt_bin:
+  php_fpm_opt_sbin:
   php_fpm_opt_etc:
   php_fpm_app_var:
   php_fpm_app_src:
   php_fpm_app_tmp:
   php_nginx_opt_bin:
+  php_nginx_opt_sbin:
   php_nginx_opt_etc:
   php_nginx_app_var:
   php_nginx_app_src:
   php_nginx_app_tmp:
   php_nginx_opt_cfg:
   php_apache_opt_bin:
+  php_apache_opt_sbin:
   php_apache_opt_etc:
   php_apache_app_var:
   php_apache_app_tmp:
