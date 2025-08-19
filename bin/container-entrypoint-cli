@@ -7,6 +7,15 @@ export DEBUG=${DEBUG:-false}
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/00-functions.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/01-php.sh
 
+log "INFO" "  ____                   ____  _   _ ____   "
+log "INFO" " | __ )  __ _ ___  ___  |  _ \| | | |  _ \  "
+log "INFO" " |  _ \ / _\` / __|/ _ \ | |_) | |_| | |_) | "
+log "INFO" " | |_) | (_| \__ \  __/ |  __/|  _  |  __/  "
+log "INFO" " |____/ \__,_|___/\___| |_|   |_| |_|_|     "
+log "INFO" "                                            "
+log "INFO" "  ( Smals WebAgency WcmTech Base Image )    "
+log "INFO" "                                            "
+
 log "INFO" "+---- Configure PHP Container -----"
 
 source /usr/local/bin/container-entrypoint.d/base.d/01-php.sh

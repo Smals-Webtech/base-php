@@ -7,15 +7,15 @@ if [ ! -f "/app/var/lock/appinit" ]; then
 	for f in /opt/bin/container-entrypoint.d/*; do
 		case "$f" in
 		*.sh)
-			log "INFO" "$0: running $f"
+			log "INFO" "- $0: running $f"
 			. "$f"
 			;;
 		*.php)
-			log "INFO" "$0: running $f"
+			log "INFO" "- $0: running $f"
 			php -f "$f"
 			echo
 			;;
-		*) log "INFO" "$0: ignoring $f" ;;
+		*) log "INFO" "- $0: ignoring $f" ;;
 		esac
 	done
 
