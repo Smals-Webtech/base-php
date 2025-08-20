@@ -45,7 +45,7 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
 # PHP-FPM / PRD
 #
 
-FROM php:${PHP_VERSION_ARG:-8.4.10}-fpm-alpine3.22 AS fpm-prd
+FROM php:${PHP_VERSION_ARG:-8.4.11}-fpm-alpine3.22 AS fpm-prd
 
 ARG AWS_CLI_VERSION_ARG
 ARG PHP_EXT_REDIS_VERSION_ARG
@@ -265,7 +265,7 @@ HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
 # PHP-CLI / PRD
 #
 
-FROM php:${PHP_VERSION_ARG:-8.4.10}-cli-alpine3.22 AS cli-prd
+FROM php:${PHP_VERSION_ARG:-8.4.11}-cli-alpine3.22 AS cli-prd
 
 ARG AWS_CLI_VERSION_ARG
 ARG PHP_EXT_REDIS_VERSION_ARG
