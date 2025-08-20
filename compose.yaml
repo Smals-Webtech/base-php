@@ -96,7 +96,7 @@ services:
       - php_fpm_opt_etc:/opt/etc
       - php_fpm_opt_sbin:/opt/sbin
       - php_fpm_app_tmp:/app/tmp
-      - php_fpm_app_var:/app/var   
+      - php_fpm_app_var:/app/var
       - php_fpm_app_src:/app/var/www/html
     mem_limit: 512m
     read_only: true
