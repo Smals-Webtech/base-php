@@ -80,7 +80,7 @@ RUN mkdir -p /home/default ; \
                            pdo_pgsql ldap mysqli pdo_mysql \
                            zip bcmath exif xsl calendar gd tidy opcache \
                            APCu-${PHP_EXT_APCU_VERSION} redis-${PHP_EXT_REDIS_VERSION} ; \
-    apk add --update --upgrade --no-cache --virtual .ems-rundeps tzdata \
+    apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
                                       libjpeg-turbo freetype libpng libwebp libxpm mailx libxslt coreutils \
                                       mysql-client jq icu-libs libxml2 python3 py3-pip groff supervisor \
@@ -134,7 +134,7 @@ COPY --from=node /usr/local/include /usr/local/include
 COPY --from=node /usr/local/bin /usr/local/bin
 
 RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION} ; \
-    apk add --no-cache --virtual .php-dev-rundeps git patch ; \
+    apk add --no-cache --virtual .base-php-dev-rundeps git patch ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir /home/default/.composer ; \
     chown 1001:0 /home/default/.composer ; \
@@ -157,7 +157,7 @@ ENV APACHE_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /app/var/www/html/
 
-RUN apk add --update --no-cache --virtual .php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
+RUN apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
     adduser default apache ; \
     rm -rf /var/cache/apk/* 
 
@@ -178,7 +178,7 @@ ENV APACHE_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /app/var/www/html/
 
-RUN apk add --update --no-cache --virtual .php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
+RUN apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
     adduser default apache ; \
     rm -rf /var/cache/apk/* 
 
@@ -199,7 +199,7 @@ ENV NGINX_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /app/var/www/html/
 
-RUN apk add --update --no-cache --virtual .php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
+RUN apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
     adduser default nginx ; \
     rm -rf /var/cache/apk/* 
 
@@ -222,7 +222,7 @@ ENV NGINX_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /app/var/www/html/
 
-RUN apk add --update --no-cache --virtual .php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
+RUN apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
     adduser default nginx ; \
     rm -rf /var/cache/apk/* 
 
@@ -269,7 +269,7 @@ RUN mkdir -p /home/default ; \
                            pdo_pgsql ldap mysqli pdo_mysql \
                            zip bcmath exif xsl calendar gd tidy \
                            APCu-${PHP_EXT_APCU_VERSION} redis-${PHP_EXT_REDIS_VERSION} ; \
-    apk add --update --upgrade --no-cache --virtual .ems-rundeps tzdata \
+    apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
                                       libjpeg-turbo freetype libpng libwebp libxpm mailx coreutils libxslt \
                                       mysql-client jq icu-libs libxml2 python3 py3-pip groff tidyhtml dumb-init \
@@ -306,7 +306,7 @@ ENV XDEBUG_MODE="develop"
 USER root
 
 RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION} ; \
-    apk add --no-cache --virtual .php-dev-rundeps git patch make g++ ; \
+    apk add --no-cache --virtual .base-php-dev-rundeps git patch make g++ ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir /home/default/.composer ; \
     chown 1001:0 /home/default/.composer ; \
