@@ -6,10 +6,10 @@ ARG COMPOSER_VERSION_ARG
 ARG GOMPLATE_VERSION_ARG
 ARG WAIT4X_VERSION_ARG
 
-FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG:-2.9.6} AS php-ext-installer
-FROM hairyhenderson/gomplate:v${GOMPLATE_VERSION_ARG:-4.3.3}-alpine AS gomplate
-FROM wait4x/wait4x:${WAIT4X_VERSION_ARG:-3.5.0} AS wait-for-it
-FROM node:${NODE_VERSION_ARG:-22}-alpine3.22 AS node
+FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext-installer
+FROM hairyhenderson/gomplate:v${GOMPLATE_VERSION_ARG}-alpine AS gomplate
+FROM wait4x/wait4x:${WAIT4X_VERSION_ARG} AS wait-for-it
+FROM node:${NODE_VERSION_ARG}-alpine3.22 AS node
 
 FROM alpine:3.22 AS builder
 
@@ -46,7 +46,7 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
 # PHP-FPM / PRD
 #
 
-FROM php:${PHP_VERSION_ARG:-8.4.11}-fpm-alpine3.22 AS fpm-prd
+FROM php:${PHP_VERSION_ARG}-fpm-alpine3.22 AS fpm-prd
 
 ARG AWS_CLI_VERSION_ARG
 ARG PHP_EXT_REDIS_VERSION_ARG
@@ -56,9 +56,9 @@ USER root
 
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
-    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG:-2.27.25} \
-    PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG:-6.1.0} \
-    PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG:-5.1.24} \
+    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG} \
+    PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG} \
+    PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG} \
     HOME=/home/default \
     TMPDIR=/app/tmp \
     PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
@@ -118,12 +118,12 @@ ARG COMPOSER_VERSION_ARG
 ARG NODE_VERSION_ARG
 ARG PHP_EXT_XDEBUG_VERSION_ARG
 
-ENV PHP_EXT_XDEBUG_VERSION=${PHP_EXT_XDEBUG_VERSION_ARG:-3.4.1}
+ENV PHP_EXT_XDEBUG_VERSION=${PHP_EXT_XDEBUG_VERSION_ARG}
 
 ENV XDEBUG_MODE="develop"
 
-LABEL be.smals.webtech.base.node-version="${NODE_VERSION_ARG:-20}" \
-      be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG:-2.8.4}"
+LABEL be.smals.webtech.base.node-version="${NODE_VERSION_ARG}" \
+      be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 
 USER root
 
@@ -237,7 +237,7 @@ HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
 # PHP-CLI / PRD
 #
 
-FROM php:${PHP_VERSION_ARG:-8.4.11}-cli-alpine3.22 AS cli-prd
+FROM php:${PHP_VERSION_ARG}-cli-alpine3.22 AS cli-prd
 
 ARG AWS_CLI_VERSION_ARG
 ARG PHP_EXT_REDIS_VERSION_ARG
@@ -247,9 +247,9 @@ USER root
 
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
-    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG:-2.27.25} \
-    PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG:-6.1.0} \
-    PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG:-5.1.24} \
+    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG} \
+    PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG} \
+    PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG} \
     HOME=/home/default \
     TMPDIR=/app/tmp \
     PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
@@ -297,9 +297,9 @@ FROM cli-prd AS cli-dev
 ARG COMPOSER_VERSION_ARG
 ARG PHP_EXT_XDEBUG_VERSION_ARG
 
-LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG:-2.8.4}"
+LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 
-ENV PHP_EXT_XDEBUG_VERSION=${PHP_EXT_XDEBUG_VERSION_ARG:-3.4.1}
+ENV PHP_EXT_XDEBUG_VERSION=${PHP_EXT_XDEBUG_VERSION_ARG}
 
 ENV XDEBUG_MODE="develop"
 
