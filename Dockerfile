@@ -1,13 +1,14 @@
 # syntax=docker/dockerfile:1.15
 ARG PHP_VERSION_ARG
+ARG PHP_EXT_INSTALLER_VERSION_ARG
 ARG NODE_VERSION_ARG
 ARG COMPOSER_VERSION_ARG
 ARG GOMPLATE_VERSION_ARG
 ARG WAIT4X_VERSION_ARG
 
+FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG:-2.9.6} AS php-ext-installer
 FROM hairyhenderson/gomplate:v${GOMPLATE_VERSION_ARG:-4.3.3}-alpine AS gomplate
 FROM wait4x/wait4x:${WAIT4X_VERSION_ARG:-3.5.0} AS wait-for-it
-FROM composer:${COMPOSER_VERSION_ARG:-2.8.4} AS composer
 FROM node:${NODE_VERSION_ARG:-22}-alpine3.22 AS node
 
 FROM alpine:3.22 AS builder
@@ -55,7 +56,7 @@ USER root
 
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
-    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG:-2.22.10} \
+    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG:-2.27.25} \
     PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG:-6.1.0} \
     PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG:-5.1.24} \
     HOME=/home/default \
@@ -69,32 +70,16 @@ VOLUME /opt/etc
 VOLUME /app/var
 VOLUME /app/tmp
 
+COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
 COPY --from=wait-for-it --chmod=775 --chown=root:root /usr/bin/wait4x /usr/bin/wait4x
 COPY --from=gomplate --chmod=775 --chown=root:root /bin/gomplate /usr/bin/gomplate
 
 RUN mkdir -p /home/default ; \
     echo "include=/opt/etc/php/php-fpm.d/*.conf" >> /usr/local/etc/php-fpm.conf ; \
-    apk upgrade --available ; \
-    apk add --update --no-cache --virtual .build-deps $PHPIZE_DEPS autoconf freetype-dev icu-dev \
-                                                libjpeg-turbo-dev libpng-dev libwebp-dev libxpm-dev \
-                                                libzip-dev openldap-dev pcre-dev gnupg git bzip2-dev \
-                                                musl-libintl postgresql-dev libxml2-dev tidyhtml-dev \
-                                                libxslt-dev ; \
-    docker-php-ext-configure gd --with-freetype --with-webp --with-jpeg ; \
-    docker-php-ext-configure tidy --with-tidy ; \
-    docker-php-ext-install -j "$(nproc)" soap bz2 fileinfo gettext intl pcntl pgsql \
-                                         pdo_pgsql ldap gd mysqli pdo_mysql \
-                                         zip bcmath exif tidy xsl calendar ; \
-    pecl install APCu-${PHP_EXT_APCU_VERSION} ; \
-    pecl install redis-${PHP_EXT_REDIS_VERSION} ; \
-    docker-php-ext-enable apcu redis opcache ; \
-    runDeps="$( \
-       scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
-       | tr ',' '\n' \
-       | sort -u \
-       | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-       )" && \
-    apk add --update --no-cache --virtual .ems-phpext-rundeps $runDeps ; \
+    install-php-extensions soap bz2 fileinfo gettext intl pcntl pgsql \
+                           pdo_pgsql ldap mysqli pdo_mysql \
+                           zip bcmath exif xsl calendar gd tidy opcache \
+                           APCu-${PHP_EXT_APCU_VERSION} redis-${PHP_EXT_REDIS_VERSION} ; \
     apk add --update --upgrade --no-cache --virtual .ems-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
                                       libjpeg-turbo freetype libpng libwebp libxpm mailx libxslt coreutils \
@@ -105,7 +90,6 @@ RUN mkdir -p /home/default ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
     adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
-    apk del .build-deps ; \
     rm -rf /var/cache/apk/* 
 
 COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/opt/ /opt/
@@ -143,30 +127,18 @@ LABEL be.smals.webtech.base.node-version="${NODE_VERSION_ARG:-20}" \
 
 USER root
 
-COPY --from=composer /usr/bin/composer /usr/bin/composer
-
 COPY --from=node /usr/lib /usr/lib
 COPY --from=node /usr/local/share /usr/local/share
 COPY --from=node /usr/local/lib /usr/local/lib
 COPY --from=node /usr/local/include /usr/local/include
 COPY --from=node /usr/local/bin /usr/local/bin
 
-RUN apk add --update --no-cache --virtual .build-deps $PHPIZE_DEPS autoconf coreutils linux-headers ; \
-    pecl install xdebug-${PHP_EXT_XDEBUG_VERSION} ; \
-    docker-php-ext-enable xdebug ; \
-    runDeps="$( \
-       scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
-       | tr ',' '\n' \
-       | sort -u \
-       | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-       )" && \
-    apk add --no-cache --virtual .php-dev-phpext-rundeps $runDeps ; \
+RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION} ; \
     apk add --no-cache --virtual .php-dev-rundeps git patch ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir /home/default/.composer ; \
     chown 1001:0 /home/default/.composer ; \
     chmod -R ugo+rw /home/default/.composer ; \
-    apk del .build-deps ; \
     rm -rf /var/cache/apk/* ;
 
 EXPOSE 9003/tcp
@@ -275,13 +247,14 @@ USER root
 
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
-    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG:-2.22.10} \
+    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG:-2.27.25} \
     PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG:-6.1.0} \
     PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG:-5.1.24} \
     HOME=/home/default \
     TMPDIR=/app/tmp \
     PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
 
+COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
 COPY --from=wait-for-it --chmod=775 --chown=root:root /usr/bin/wait4x /usr/bin/wait4x
 COPY --from=gomplate --chmod=775 --chown=root:root /bin/gomplate /usr/bin/gomplate
 
@@ -292,27 +265,10 @@ COPY --from=node /usr/local/include /usr/local/include
 COPY --from=node /usr/local/bin /usr/local/bin
 
 RUN mkdir -p /home/default ; \
-    apk upgrade --available ; \
-    apk add --update --no-cache --virtual .build-deps $PHPIZE_DEPS autoconf freetype-dev icu-dev \
-                                                libjpeg-turbo-dev libpng-dev libwebp-dev libxpm-dev \
-                                                libzip-dev openldap-dev pcre-dev gnupg git bzip2-dev \
-                                                musl-libintl postgresql-dev libxml2-dev tidyhtml-dev \
-                                                libxslt-dev ; \
-    docker-php-ext-configure gd --with-freetype --with-webp --with-jpeg ; \
-    docker-php-ext-configure tidy --with-tidy ; \
-    docker-php-ext-install -j "$(nproc)" soap bz2 fileinfo gettext intl pcntl pgsql \
-                                         pdo_pgsql simplexml ldap gd mysqli pdo_mysql \
-                                         zip bcmath exif tidy xsl calendar ; \
-    pecl install APCu-${PHP_EXT_APCU_VERSION} ; \
-    pecl install redis-${PHP_EXT_REDIS_VERSION} ; \
-    docker-php-ext-enable apcu redis opcache ; \
-    runDeps="$( \
-       scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
-       | tr ',' '\n' \
-       | sort -u \
-       | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-       )" && \
-    apk add --update --no-cache --virtual .ems-phpext-rundeps $runDeps ; \
+    install-php-extensions soap bz2 gettext intl pcntl pgsql \
+                           pdo_pgsql ldap mysqli pdo_mysql \
+                           zip bcmath exif xsl calendar gd tidy \
+                           APCu-${PHP_EXT_APCU_VERSION} redis-${PHP_EXT_REDIS_VERSION} ; \
     apk add --update --upgrade --no-cache --virtual .ems-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
                                       libjpeg-turbo freetype libpng libwebp libxpm mailx coreutils libxslt \
@@ -322,7 +278,6 @@ RUN mkdir -p /home/default ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
     adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
-    apk del .build-deps ; \
     rm -rf /var/cache/apk/*
 
 COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/opt/ /opt/
@@ -350,24 +305,12 @@ ENV XDEBUG_MODE="develop"
 
 USER root
 
-COPY --from=composer /usr/bin/composer /usr/bin/composer
-
-RUN apk add --update --no-cache --virtual .build-deps $PHPIZE_DEPS autoconf linux-headers ; \
-    pecl install xdebug-${PHP_EXT_XDEBUG_VERSION} ; \
-    docker-php-ext-enable xdebug ; \
-    runDeps="$( \
-       scanelf --needed --nobanner --format '%n#p' --recursive /usr/local/lib/php/extensions \
-       | tr ',' '\n' \
-       | sort -u \
-       | awk 'system("[ -e /usr/local/lib/" $1 " ]") == 0 { next } { print "so:" $1 }' \
-       )" && \
-    apk add --no-cache --virtual .php-dev-phpext-rundeps $runDeps ; \
+RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION} ; \
     apk add --no-cache --virtual .php-dev-rundeps git patch make g++ ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir /home/default/.composer ; \
     chown 1001:0 /home/default/.composer ; \
     chmod -R ugo+rw /home/default/.composer ; \
-    apk del .build-deps ; \
     rm -rf /var/cache/apk/*
 
 USER 1001

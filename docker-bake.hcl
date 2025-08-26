@@ -10,6 +10,10 @@ variable "PHP_VERSION" {
   default = "8.4.11"
 }
 
+variable "PHP_EXT_INSTALLER_VERSION" {
+  default = "2.9.6"
+}
+
 variable "NODE_VERSION" {
   default = "22"
 }
@@ -106,6 +110,7 @@ target "default" {
 
   args = {
     PHP_VERSION_ARG = DOCKER_IMAGE_VERSION == "snapshot" ? PHP_VERSION : DOCKER_IMAGE_VERSION
+    PHP_EXT_INSTALLER_VERSION_ARG = "${PHP_EXT_INSTALLER_VERSION}"
     NODE_VERSION_ARG = "${NODE_VERSION}"
     COMPOSER_VERSION_ARG = "${COMPOSER_VERSION}"
     AWS_CLI_VERSION_ARG = "${AWS_CLI_VERSION}"
