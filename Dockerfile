@@ -56,9 +56,6 @@ USER root
 
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
-    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG} \
-    PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG} \
-    PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG} \
     HOME=/home/default \
     TMPDIR=/app/tmp \
     PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
@@ -79,13 +76,13 @@ RUN mkdir -p /home/default ; \
     install-php-extensions soap bz2 fileinfo gettext intl pcntl pgsql \
                            pdo_pgsql ldap mysqli pdo_mysql \
                            zip bcmath exif xsl calendar gd tidy opcache \
-                           APCu-${PHP_EXT_APCU_VERSION} redis-${PHP_EXT_REDIS_VERSION} ; \
+                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} ; \
     apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
                                       libjpeg-turbo freetype libpng libwebp libxpm mailx libxslt coreutils \
                                       mysql-client jq icu-libs libxml2 python3 py3-pip groff supervisor \
                                       varnish tidyhtml dumb-init \
-                                      aws-cli=~${AWS_CLI_VERSION} ; \
+                                      aws-cli=~${AWS_CLI_VERSION_ARG} ; \
     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
@@ -118,8 +115,6 @@ ARG COMPOSER_VERSION_ARG
 ARG NODE_VERSION_ARG
 ARG PHP_EXT_XDEBUG_VERSION_ARG
 
-ENV PHP_EXT_XDEBUG_VERSION=${PHP_EXT_XDEBUG_VERSION_ARG}
-
 ENV XDEBUG_MODE="develop"
 
 LABEL be.smals.webtech.base.node-version="${NODE_VERSION_ARG}" \
@@ -133,7 +128,7 @@ COPY --from=node /usr/local/lib /usr/local/lib
 COPY --from=node /usr/local/include /usr/local/include
 COPY --from=node /usr/local/bin /usr/local/bin
 
-RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION} ; \
+RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps git patch ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir /home/default/.composer ; \
@@ -247,9 +242,6 @@ USER root
 
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
-    AWS_CLI_VERSION=${AWS_CLI_VERSION_ARG} \
-    PHP_EXT_REDIS_VERSION=${PHP_EXT_REDIS_VERSION_ARG} \
-    PHP_EXT_APCU_VERSION=${PHP_EXT_APCU_VERSION_ARG} \
     HOME=/home/default \
     TMPDIR=/app/tmp \
     PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
@@ -268,12 +260,12 @@ RUN mkdir -p /home/default ; \
     install-php-extensions soap bz2 gettext intl pcntl pgsql \
                            pdo_pgsql ldap mysqli pdo_mysql \
                            zip bcmath exif xsl calendar gd tidy \
-                           APCu-${PHP_EXT_APCU_VERSION} redis-${PHP_EXT_REDIS_VERSION} ; \
+                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} ; \
     apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
                                       libjpeg-turbo freetype libpng libwebp libxpm mailx coreutils libxslt \
                                       mysql-client jq icu-libs libxml2 python3 py3-pip groff tidyhtml dumb-init \
-                                      aws-cli=~${AWS_CLI_VERSION} ; \
+                                      aws-cli=~${AWS_CLI_VERSION_ARG} ; \
     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
@@ -299,13 +291,11 @@ ARG PHP_EXT_XDEBUG_VERSION_ARG
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 
-ENV PHP_EXT_XDEBUG_VERSION=${PHP_EXT_XDEBUG_VERSION_ARG}
-
 ENV XDEBUG_MODE="develop"
 
 USER root
 
-RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION} ; \
+RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps git patch make g++ ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir /home/default/.composer ; \
