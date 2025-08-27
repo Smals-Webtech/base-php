@@ -150,7 +150,7 @@ USER root
 
 ENV APACHE_ENABLED=true
 
-COPY --chmod=755 --chown=1001:0 src/ /app/var/www/html/
+COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
 RUN apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
     adduser default apache ; \
@@ -171,7 +171,7 @@ USER root
 
 ENV APACHE_ENABLED=true
 
-COPY --chmod=755 --chown=1001:0 src/ /app/var/www/html/
+COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
 RUN apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
     adduser default apache ; \
@@ -192,7 +192,7 @@ USER root
 
 ENV NGINX_ENABLED=true
 
-COPY --chmod=755 --chown=1001:0 src/ /app/var/www/html/
+COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
 RUN apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
     adduser default nginx ; \
@@ -215,7 +215,7 @@ USER root
 
 ENV NGINX_ENABLED=true
 
-COPY --chmod=755 --chown=1001:0 src/ /app/var/www/html/
+COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
 RUN apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
     adduser default nginx ; \

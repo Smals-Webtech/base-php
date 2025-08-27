@@ -21,6 +21,10 @@ if [[ "${APACHE_ENABLED}" == "true" ]]; then
 
 	create-symlink /app/var/www/modules /var/www/modules
 
+	log "INFO" "- Setup base static content ..."
+
+	create-symlink /app/var/www/html /var/www/html
+
 else
 
 	log "INFO" "- Apache is not enabled.  No configuration must be done."

@@ -10,7 +10,7 @@ services:
       - php-fpm
     volumes:
       - php_fpm_app_var:/app/var
-      - php_fpm_app_src:/app/var/www/html
+      - php_fpm_app_src:/var/www/html
       - ./test/etc/nginx/conf.d:/etc/nginx/conf.d
     mem_limit: 128m
 
@@ -96,7 +96,7 @@ services:
       - php_fpm_opt_sbin:/opt/sbin
       - php_fpm_app_tmp:/app/tmp
       - php_fpm_app_var:/app/var
-      - php_fpm_app_src:/app/var/www/html
+      - php_fpm_app_src:/var/www/html
     mem_limit: 512m
     read_only: true
 
