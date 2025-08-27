@@ -90,7 +90,6 @@ services:
       - DB_PASSWORD=${BATS_MARIADB_DB_PASSWORD}
       - DB_NAME=${BATS_MARIADB_DB_NAME}
       - VARNISH_ENABLED=false
-    command: ["php-fpm", "-F", "-R"]
     volumes:
       - php_fpm_opt_bin:/opt/bin/container-entrypoint.d
       - php_fpm_opt_etc:/opt/etc

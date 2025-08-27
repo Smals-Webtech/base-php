@@ -10,17 +10,25 @@ stderr_logfile_maxbytes = 0
 [rpcinterface:supervisor]
 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 
+{{- if ne .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_ENABLED "false" }}
+
 [supervisorctl]
 serverurl = unix://{{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_PATH }}
 
-{{- if ne .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_ENABLED "false" }}
+{{- if ne .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_AUTH_ENABLED "false" }}
+username = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_USERNAME }}
+password = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD }}
+{{ end }}
 
 [unix_http_server]
 file = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_PATH }}
 chmod = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_CHMOD }}
 # chown = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_CHOWN }}
+
+{{- if ne .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_AUTH_ENABLED "false" }}
 username = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_USERNAME }}
 password = {{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD }}
+{{ end }}
 
 {{- end -}}
 
