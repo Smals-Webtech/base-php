@@ -7,7 +7,7 @@ variable "VARIANTS" {
 }
 
 variable "PHP_VERSION" {
-  default = "8.4.11"
+  default = "8.4.12"
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
