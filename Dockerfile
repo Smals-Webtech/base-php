@@ -73,9 +73,9 @@ COPY --from=gomplate --chmod=775 --chown=root:root /bin/gomplate /usr/bin/gompla
 
 RUN mkdir -p /home/default ; \
     echo "include=/opt/etc/php/php-fpm.d/*.conf" >> /usr/local/etc/php-fpm.conf ; \
-    install-php-extensions soap bz2 fileinfo gettext intl pcntl pgsql \
+    install-php-extensions soap bz2 gettext intl pcntl pgsql \
                            pdo_pgsql ldap mysqli pdo_mysql \
-                           zip bcmath exif xsl calendar gd tidy opcache \
+                           zip bcmath exif xsl calendar gd tidy \
                            APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} ; \
     apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
