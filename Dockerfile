@@ -1,4 +1,5 @@
 # syntax=docker/dockerfile:1.15
+ARG ALPINE_VERSION_ARG=3.22
 ARG PHP_VERSION_ARG=8.4.12
 ARG PHP_EXT_INSTALLER_VERSION_ARG=2.9.6
 ARG NODE_VERSION_ARG=22
@@ -9,9 +10,9 @@ ARG WAIT4X_VERSION_ARG=3.5.0
 FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext-installer
 FROM hairyhenderson/gomplate:v${GOMPLATE_VERSION_ARG}-alpine AS gomplate
 FROM wait4x/wait4x:${WAIT4X_VERSION_ARG} AS wait-for-it
-FROM node:${NODE_VERSION_ARG}-alpine3.22 AS node
+FROM node:${NODE_VERSION_ARG}-alpine${ALPINE_VERSION_ARG} AS node
 
-FROM alpine:3.22 AS builder
+FROM alpine:${ALPINE_VERSION_ARG} AS builder
 
 USER root
 

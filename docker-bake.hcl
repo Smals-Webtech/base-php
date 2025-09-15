@@ -6,6 +6,10 @@ variable "VARIANTS" {
   default = ["fpm", "nginx", "apache", "cli"]
 }
 
+variable "ALPINE_VERSION" {
+  default = "3.22"
+}
+
 variable "PHP_VERSION" {
   default = "8.4.12"
 }
@@ -109,6 +113,7 @@ target "default" {
   ]
 
   args = {
+    ALPINE_VERSION_ARG = "${ALPINE_VERSION}"
     PHP_VERSION_ARG = DOCKER_IMAGE_VERSION == "snapshot" ? PHP_VERSION : DOCKER_IMAGE_VERSION
     PHP_EXT_INSTALLER_VERSION_ARG = "${PHP_EXT_INSTALLER_VERSION}"
     NODE_VERSION_ARG = "${NODE_VERSION}"
