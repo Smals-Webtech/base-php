@@ -63,8 +63,8 @@ ErrorLog /dev/stderr
 LogLevel warn
 
 <IfModule log_config_module>
-    LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
-    LogFormat "%h %l %u %t \"%r\" %>s %b" common
+    LogFormat "{{.Env.APACHE_LOG_FORMAT_COMBINED}}" combined
+    LogFormat "{{.Env.APACHE_LOG_FORMAT_COMMON}}" common
 
     CustomLog /dev/stdout combined
 </IfModule>
