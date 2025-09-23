@@ -78,8 +78,7 @@ RUN mkdir -p /home/default ; \
     install-php-extensions soap bz2 gettext intl pcntl pgsql \
                            pdo_pgsql ldap mysqli pdo_mysql \
                            zip bcmath exif xsl calendar gd tidy \
-                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} \
-                           opentelemetry-${PHP_EXT_OPENTELEMETRY_VERSION_ARG} ; \
+                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} ; \
     apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
                                       libjpeg-turbo freetype libpng libwebp libxpm mailx libxslt coreutils \
@@ -91,6 +90,8 @@ RUN mkdir -p /home/default ; \
     echo "Europe/Brussels" > /etc/timezone ; \
     adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
     rm -rf /var/cache/apk/* 
+
+RUN IPE_DONT_ENABLE=1 install-php-extensions opentelemetry-${PHP_EXT_OPENTELEMETRY_VERSION_ARG}
 
 COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/app/ /app/
