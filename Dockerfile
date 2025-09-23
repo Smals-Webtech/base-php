@@ -52,6 +52,7 @@ FROM php:${PHP_VERSION_ARG}-fpm-alpine3.22 AS fpm-prd
 ARG AWS_CLI_VERSION_ARG=2.27.25
 ARG PHP_EXT_REDIS_VERSION_ARG=6.2.0
 ARG PHP_EXT_APCU_VERSION_ARG=5.1.24
+ARG PHP_EXT_OPENTELEMETRY_VERSION_ARG=1.2.0
 
 USER root
 
@@ -77,7 +78,8 @@ RUN mkdir -p /home/default ; \
     install-php-extensions soap bz2 gettext intl pcntl pgsql \
                            pdo_pgsql ldap mysqli pdo_mysql \
                            zip bcmath exif xsl calendar gd tidy \
-                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} ; \
+                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} \
+                           opentelemetry-${PHP_EXT_OPENTELEMETRY_VERSION_ARG} ; \
     apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
                                       libjpeg-turbo freetype libpng libwebp libxpm mailx libxslt coreutils \
@@ -238,6 +240,7 @@ FROM php:${PHP_VERSION_ARG}-cli-alpine3.22 AS cli-prd
 ARG AWS_CLI_VERSION_ARG=2.27.25
 ARG PHP_EXT_REDIS_VERSION_ARG=6.2.0
 ARG PHP_EXT_APCU_VERSION_ARG=5.1.24
+ARG PHP_EXT_OPENTELEMETRY_VERSION_ARG=1.2.0
 
 USER root
 
@@ -261,7 +264,8 @@ RUN mkdir -p /home/default ; \
     install-php-extensions soap bz2 gettext intl pcntl pgsql \
                            pdo_pgsql ldap mysqli pdo_mysql \
                            zip bcmath exif xsl calendar gd tidy \
-                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} ; \
+                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} \
+                           opentelemetry-${PHP_EXT_OPENTELEMETRY_VERSION_ARG} ; \
     apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
                                       bash gettext ssmtp postgresql-client postgresql-libs \
                                       libjpeg-turbo freetype libpng libwebp libxpm mailx coreutils libxslt \
