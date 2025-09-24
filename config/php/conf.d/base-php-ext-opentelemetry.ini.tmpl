@@ -1,0 +1,11 @@
+{{- if ne (strings.ToLower .Env.PHP_OPENTELEMETRY_ENABLED) "false" -}}
+
+opentelemetry.allow_stack_extension = {{ .Env.PHP_OPENTELEMETRY_ALLOW_STACK_EXTENSION }}
+opentelemetry.attr_hooks_enabled = {{ .Env.PHP_OPENTELEMETRY_ATTR_HOOKS_ENABLED }}
+opentelemetry.attr_post_handler_function = {{ .Env.PHP_OPENTELEMETRY_ATTR_POST_HANDLER_FUNCTION }}
+opentelemetry.attr_pre_handler_function = {{ .Env.PHP_OPENTELEMETRY_ATTR_PRE_HANDLER_FUNCTION }}
+opentelemetry.conflicts = {{ .Env.PHP_OPENTELEMETRY_CONFLICTS }}
+opentelemetry.display_warnings = {{ .Env.PHP_OPENTELEMETRY_DISPLAY_WARNINGS }}
+opentelemetry.validate_hook_functions = {{ .Env.PHP_OPENTELEMETRY_VALIDATE_HOOK_FUNCTIONS }}
+
+{{- end -}}

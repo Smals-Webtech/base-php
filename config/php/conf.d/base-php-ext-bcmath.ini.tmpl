@@ -1,0 +1,5 @@
+{{- if ne (strings.ToLower .Env.PHP_BCMATH_ENABLED) "false" -}}
+
+bcmath.scale = {{ .Env.PHP_BCMATH_SCALE }}
+
+{{- end -}}

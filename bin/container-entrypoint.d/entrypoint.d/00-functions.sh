@@ -46,6 +46,7 @@ function apply-template {
 
 		if [[ "$SRC" == *.tmpl ]]; then
 			if [ -d "$(dirname "$DEST")" ] && [ -w "$(dirname "$DEST")" ]; then
+				log "INFO" "  Rendering template: $SRC → $DEST"
 				gomplate -f "$SRC" -o "$DEST"
 			else
 				log "ERROR" "! Write permission is NOT granted on $(dirname "$DEST") ."
@@ -67,6 +68,7 @@ function apply-template {
 		fi
 		for f in "$SRC"/*.tmpl; do
 			ff=$(basename "$f")
+			log "INFO" "  Rendering template: $f → $DEST/${ff%.tmpl}"
 			gomplate -f "$f" -o "$DEST/${ff%.tmpl}"
 		done
 
@@ -83,16 +85,16 @@ function create-symlink {
 	DEST=$2
 
 	if [ -L "$SRC" ]; then
-		log "INFO" "- Symbolic link already exists: $SRC"
+		log "INFO" "  Symbolic link already exists: $SRC"
 	elif [ -e "$SRC" ]; then
-		log "INFO" "- A file or directory already exists at this location: $SRC"
+		log "INFO" "  A file or directory already exists at this location: $SRC"
 		log "INFO" "  Removing the existing file/directory..."
 		rm -rf "$SRC"
 		ln -s "$DEST" "$SRC"
 		log "INFO" "  Symbolic link recreated: $SRC → $DEST"
 	else
 		ln -s "$DEST" "$SRC"
-		log "INFO" "- Symbolic link created: $SRC → $DEST"
+		log "INFO" "  Symbolic link created: $SRC → $DEST"
 	fi
 
 }

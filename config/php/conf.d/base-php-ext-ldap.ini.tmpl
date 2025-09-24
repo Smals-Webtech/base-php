@@ -1,0 +1,5 @@
+{{- if ne (strings.ToLower .Env.PHP_LDAP_ENABLED) "false" -}}
+
+ldap.max_links = {{ .Env.PHP_LDAP_MAX_LINKS }}
+
+{{- end -}}

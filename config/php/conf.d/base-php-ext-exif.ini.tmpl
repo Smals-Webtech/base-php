@@ -1,0 +1,10 @@
+{{- if ne (strings.ToLower .Env.PHP_EXIF_ENABLED) "false" -}}
+
+exif.decode_jis_intel = {{ .Env.PHP_EXIF_DECODE_JIS_INTEL }}
+exif.decode_jis_motorola = {{ .Env.PHP_EXIF_DECODE_JIS_MOTOROLA }}
+exif.decode_unicode_intel = {{ .Env.PHP_EXIF_DECODE_UNICODE_INTEL }}
+exif.decode_unicode_motorola = {{ .Env.PHP_EXIF_DECODE_UNICODE_MOTOROLA }}
+exif.encode_jis = {{ .Env.PHP_EXIF_ENCODE_JIS }}
+exif.encode_unicode = {{ .Env.PHP_EXIF_ENCODE_UNICODE }}
+
+{{- end -}}

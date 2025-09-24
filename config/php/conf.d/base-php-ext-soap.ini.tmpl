@@ -1,0 +1,9 @@
+{{- if ne (strings.ToLower .Env.PHP_SOAP_ENABLED) "false" -}}
+
+soap.wsdl_cache = {{ .Env.PHP_SOAP_WSDL_CACHE }}
+soap.wsdl_cache_dir = {{ .Env.PHP_SOAP_WSDL_CACHE_DIR }}
+soap.wsdl_cache_enabled = {{ .Env.PHP_SOAP_WSDL_CACHE_ENABLED }}
+soap.wsdl_cache_limit = {{ .Env.PHP_SOAP_WSDL_CACHE_LIMIT }}
+soap.wsdl_cache_ttl = {{ .Env.PHP_SOAP_WSDL_CACHE_TTL }}
+
+{{- end -}}

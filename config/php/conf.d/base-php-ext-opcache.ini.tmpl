@@ -1,0 +1,57 @@
+{{- if ne (strings.ToLower .Env.PHP_OPCACHE_ENABLED) "false" -}}
+
+opcache.blacklist_filename = {{ .Env.PHP_OPCACHE_BLACKLIST_FILENAME }}
+opcache.dups_fix = {{ .Env.PHP_OPCACHE_DUPS_FIX }}
+opcache.enable = {{ .Env.PHP_OPCACHE_ENABLE }}
+opcache.enable_cli = {{ .Env.PHP_OPCACHE_ENABLE_CLI }}
+opcache.enable_file_override = {{ .Env.PHP_OPCACHE_ENABLE_FILE_OVERRIDE }}
+opcache.error_log = {{ .Env.PHP_OPCACHE_ERROR_LOG }}
+opcache.file_cache = {{ .Env.PHP_OPCACHE_FILE_CACHE }}
+opcache.file_cache_consistency_checks = {{ .Env.PHP_OPCACHE_FILE_CACHE_CONSISTENCY_CHECKS }}
+opcache.file_cache_only = {{ .Env.PHP_OPCACHE_FILE_CACHE_ONLY }}
+opcache.file_update_protection = {{ .Env.PHP_OPCACHE_FILE_UPDATE_PROTECTION }}
+opcache.force_restart_timeout = {{ .Env.PHP_OPCACHE_FORCE_RESTART_TIMEOUT }}
+opcache.huge_code_pages = {{ .Env.PHP_OPCACHE_HUGE_CODE_PAGES }}
+opcache.interned_strings_buffer = {{ .Env.PHP_OPCACHE_INTERNED_STRINGS_BUFFER }}
+opcache.jit = {{ .Env.PHP_OPCACHE_JIT }}
+opcache.jit_bisect_limit = {{ .Env.PHP_OPCACHE_JIT_BISECT_LIMIT }}
+opcache.jit_blacklist_root_trace = {{ .Env.PHP_OPCACHE_JIT_BLACKLIST_ROOT_TRACE }}
+opcache.jit_blacklist_side_trace = {{ .Env.PHP_OPCACHE_JIT_BLACKLIST_SIDE_TRACE }}
+opcache.jit_buffer_size = {{ .Env.PHP_OPCACHE_JIT_BUFFER_SIZE }}
+opcache.jit_debug = {{ .Env.PHP_OPCACHE_JIT_DEBUG }}
+opcache.jit_hot_func = {{ .Env.PHP_OPCACHE_JIT_HOT_FUNC }}
+opcache.jit_hot_loop = {{ .Env.PHP_OPCACHE_JIT_HOT_LOOP }}
+opcache.jit_hot_return = {{ .Env.PHP_OPCACHE_JIT_HOT_RETURN }}
+opcache.jit_hot_side_exit = {{ .Env.PHP_OPCACHE_JIT_HOT_SIDE_EXIT }}
+opcache.jit_max_exit_counters = {{ .Env.PHP_OPCACHE_JIT_MAX_EXIT_COUNTERS }}
+opcache.jit_max_loop_unrolls = {{ .Env.PHP_OPCACHE_JIT_MAX_LOOP_UNROLLS }}
+opcache.jit_max_polymorphic_calls = {{ .Env.PHP_OPCACHE_JIT_MAX_POLYMORPHIC_CALLS }}
+opcache.jit_max_recursive_calls = {{ .Env.PHP_OPCACHE_JIT_MAX_RECURSIVE_CALLS }}
+opcache.jit_max_recursive_returns = {{ .Env.PHP_OPCACHE_JIT_MAX_RECURSIVE_RETURNS }}
+opcache.jit_max_root_traces = {{ .Env.PHP_OPCACHE_JIT_MAX_ROOT_TRACES }}
+opcache.jit_max_side_traces = {{ .Env.PHP_OPCACHE_JIT_MAX_SIDE_TRACES }}
+opcache.jit_max_trace_length = {{ .Env.PHP_OPCACHE_JIT_MAX_TRACE_LENGTH }}
+opcache.jit_prof_threshold = {{ .Env.PHP_OPCACHE_JIT_PROF_THRESHOLD }}
+opcache.lockfile_path = {{ .Env.PHP_OPCACHE_LOCKFILE_PATH }}
+opcache.log_verbosity_level = {{ .Env.PHP_OPCACHE_LOG_VERBOSITY_LEVEL }}
+opcache.max_accelerated_files = {{ .Env.PHP_OPCACHE_MAX_ACCELERATED_FILES }}
+opcache.max_file_size = {{ .Env.PHP_OPCACHE_MAX_FILE_SIZE }}
+opcache.max_wasted_percentage = {{ .Env.PHP_OPCACHE_MAX_WASTED_PERCENTAGE }}
+opcache.memory_consumption = {{ .Env.PHP_OPCACHE_MEMORY_CONSUMPTION }}
+opcache.opt_debug_level = {{ .Env.PHP_OPCACHE_OPT_DEBUG_LEVEL }}
+opcache.optimization_level = {{ .Env.PHP_OPCACHE_OPTIMIZATION_LEVEL }}
+opcache.preferred_memory_model = {{ .Env.PHP_OPCACHE_PREFERRED_MEMORY_MODEL }}
+opcache.preload = {{ .Env.PHP_OPCACHE_PRELOAD }}
+opcache.preload_user = {{ .Env.PHP_OPCACHE_PRELOAD_USER }}
+opcache.protect_memory = {{ .Env.PHP_OPCACHE_PROTECT_MEMORY }}
+opcache.record_warnings = {{ .Env.PHP_OPCACHE_RECORD_WARNINGS }}
+opcache.restrict_api = {{ .Env.PHP_OPCACHE_RESTRICT_API }}
+opcache.revalidate_freq = {{ .Env.PHP_OPCACHE_REVALIDATE_FREQ }}
+opcache.revalidate_path = {{ .Env.PHP_OPCACHE_REVALIDATE_PATH }}
+opcache.save_comments = {{ .Env.PHP_OPCACHE_SAVE_COMMENTS }}
+opcache.use_cwd = {{ .Env.PHP_OPCACHE_USE_CWD }}
+opcache.validate_permission = {{ .Env.PHP_OPCACHE_VALIDATE_PERMISSION }}
+opcache.validate_root = {{ .Env.PHP_OPCACHE_VALIDATE_ROOT }}
+opcache.validate_timestamps = {{ .Env.PHP_OPCACHE_VALIDATE_TIMESTAMPS }}
+
+{{- end -}}

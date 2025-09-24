@@ -1,0 +1,10 @@
+{{- if ne (strings.ToLower .Env.PHP_PGSQL_ENABLED) "false" -}}
+
+pgsql.allow_persistent = {{ .Env.PHP_PGSQL_ALLOW_PERSISTENT }}
+pgsql.auto_reset_persistent = {{ .Env.PHP_PGSQL_AUTO_RESET_PERSISTENT }}
+pgsql.ignore_notice = {{ .Env.PHP_PGSQL_IGNORE_NOTICE }}
+pgsql.log_notice = {{ .Env.PHP_PGSQL_LOG_NOTICE }}
+pgsql.max_links	= {{ .Env.PHP_PGSQL_MAX_LINKS }}
+pgsql.max_persistent = {{ .Env.PHP_PGSQL_MAX_PERSISTENT }}
+
+{{- end -}}

@@ -1,0 +1,38 @@
+{{- if ne (strings.ToLower .Env.PHP_REDIS_ENABLED) "false" -}}
+
+redis.arrays.algorithm = {{ .Env.PHP_REDIS_ARRAYS_ALGORITHM }}
+redis.arrays.auth = {{ .Env.PHP_REDIS_ARRAYS_AUTH }}
+redis.arrays.autorehash = {{ .Env.PHP_REDIS_ARRAYS_AUTOREHASH }}
+redis.arrays.connecttimeout = {{ .Env.PHP_REDIS_ARRAYS_CONNECTTIMEOUT }}
+redis.arrays.consistent = {{ .Env.PHP_REDIS_ARRAYS_CONSISTENT }}
+redis.arrays.distributor = {{ .Env.PHP_REDIS_ARRAYS_DISTRIBUTOR }}
+redis.arrays.functions = {{ .Env.PHP_REDIS_ARRAYS_FUNCTIONS }}
+redis.arrays.hosts = {{ .Env.PHP_REDIS_ARRAYS_HOSTS }}
+redis.arrays.index = {{ .Env.PHP_REDIS_ARRAYS_INDEX }}
+redis.arrays.lazyconnect = {{ .Env.PHP_REDIS_ARRAYS_LAZYCONNECT }}
+redis.arrays.names = {{ .Env.PHP_REDIS_ARRAYS_NAMES }}
+redis.arrays.pconnect = {{ .Env.PHP_REDIS_ARRAYS_PCONNECT }}
+redis.arrays.previous = {{ .Env.PHP_REDIS_ARRAYS_PREVIOUS }}
+redis.arrays.readtimeout = {{ .Env.PHP_REDIS_ARRAYS_READTIMEOUT }}
+redis.arrays.retryinterval = {{ .Env.PHP_REDIS_ARRAYS_RETRYINTERVAL }}
+redis.clusters.auth = {{ .Env.PHP_REDIS_CLUSTERS_AUTH }}
+redis.clusters.cache_slots = {{ .Env.PHP_REDIS_CLUSTERS_CACHE_SLOTS }}
+redis.clusters.persistent = {{ .Env.PHP_REDIS_CLUSTERS_PERSISTENT }}
+redis.clusters.read_timeout = {{ .Env.PHP_REDIS_CLUSTERS_READ_TIMEOUT }}
+redis.clusters.seeds = {{ .Env.PHP_REDIS_CLUSTERS_SEEDS }}
+redis.clusters.timeout = {{ .Env.PHP_REDIS_CLUSTERS_TIMEOUT }}
+redis.pconnect.connection_limit = {{ .Env.PHP_REDIS_PCONNECT_CONNECTION_LIMIT }}
+redis.pconnect.echo_check_liveness = {{ .Env.PHP_REDIS_PCONNECT_ECHO_CHECK_LIVENESS }}
+redis.pconnect.pool_detect_dirty = {{ .Env.PHP_REDIS_PCONNECT_POOL_DETECT_DIRTY }}
+redis.pconnect.pool_pattern = {{ .Env.PHP_REDIS_PCONNECT_POOL_PATTERN }}
+redis.pconnect.pool_poll_timeout = {{ .Env.PHP_REDIS_PCONNECT_POOL_POLL_TIMEOUT }}
+redis.pconnect.pooling_enabled = {{ .Env.PHP_REDIS_PCONNECT_POOLING_ENABLED }}
+redis.session.compression = "{{ .Env.PHP_REDIS_SESSION_COMPRESSION }}"
+redis.session.compression_level = {{ .Env.PHP_REDIS_SESSION_COMPRESSION_LEVEL }}
+redis.session.early_refresh = {{ .Env.PHP_REDIS_SESSION_EARLY_REFRESH }}
+redis.session.lock_expire = {{ .Env.PHP_REDIS_SESSION_LOCK_EXPIRE }}
+redis.session.lock_retries = {{ .Env.PHP_REDIS_SESSION_LOCK_RETRIES }}
+redis.session.lock_wait_time = {{ .Env.PHP_REDIS_SESSION_LOCK_WAIT_TIME }}
+redis.session.locking_enabled = {{ .Env.PHP_REDIS_SESSION_LOCKING_ENABLED }}
+
+{{- end -}}

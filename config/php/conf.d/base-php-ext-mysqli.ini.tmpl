@@ -1,0 +1,15 @@
+{{- if ne (strings.ToLower .Env.PHP_MYSQLI_ENABLED) "false" -}}
+
+mysqli.allow_local_infile = {{ .Env.PHP_MYSQLI_ALLOW_LOCAL_INFILE }}
+mysqli.allow_persistent = {{ .Env.PHP_MYSQLI_ALLOW_PERSISTENT }}
+mysqli.default_host = {{ .Env.PHP_MYSQLI_DEFAULT_HOST }}
+mysqli.default_port = {{ .Env.PHP_MYSQLI_DEFAULT_PORT }}
+mysqli.default_pw = {{ .Env.PHP_MYSQLI_DEFAULT_PW }}
+mysqli.default_socket = {{ .Env.PHP_MYSQLI_DEFAULT_SOCKET }}
+mysqli.default_user = {{ .Env.PHP_MYSQLI_DEFAULT_USER }}
+mysqli.local_infile_directory = {{ .Env.PHP_MYSQLI_LOCAL_INFILE_DIRECTORY }}
+mysqli.max_links = {{ .Env.PHP_MYSQLI_MAX_LINKS }}
+mysqli.max_persistent = {{ .Env.PHP_MYSQLI_MAX_PERSISTENT }}
+mysqli.rollback_on_cached_plink = {{ .Env.PHP_MYSQLI_ROLLBACK_ON_CACHED_PLINK }}
+
+{{- end -}}

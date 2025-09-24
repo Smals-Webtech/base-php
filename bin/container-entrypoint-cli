@@ -6,6 +6,7 @@ export DEBUG=${DEBUG:-false}
 
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/00-functions.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/01-php.sh
+source /usr/local/bin/container-entrypoint.d/entrypoint.d/90-export-vars.sh
 
 log "INFO" "  ____                   ____  _   _ ____   "
 log "INFO" " | __ )  __ _ ___  ___  |  _ \| | | |  _ \  "
@@ -19,6 +20,7 @@ log "INFO" "                                            "
 log "INFO" "+---- Configure PHP Container -----"
 
 source /usr/local/bin/container-entrypoint.d/base.d/01-php.sh
+source /usr/local/bin/container-entrypoint.d/base.d/90-cleanup-vars.sh
 
 log "INFO" "+---- PHP Container configured succesfully -----"
 

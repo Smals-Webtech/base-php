@@ -1,0 +1,5 @@
+{{- if ne (strings.ToLower .Env.PHP_GD_ENABLED) "false" -}}
+
+gd.jpeg_ignore_warning = {{ .Env.PHP_GD_JPEG_IGNORE_WARNING }}
+
+{{- end -}}

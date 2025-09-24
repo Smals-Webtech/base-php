@@ -1,0 +1,8 @@
+upload_max_filesize = {{ .Env.PHP_UPLOAD_MAX_FILESIZE }}M
+post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}M
+
+expose_php = {{ .Env.PHP_EXPOSE_PHP }}
+date.timezone = {{ .Env.PHP_DATE_TIMEZONE }}
+display_errors = {{ .Env.PHP_DISPLAY_ERRORS }}
+
+memory_limit = {{ .Env.PHP_MEMORY_LIMIT }}M

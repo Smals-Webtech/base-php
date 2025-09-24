@@ -1,0 +1,6 @@
+{{- if ne (strings.ToLower .Env.PHP_TIDY_ENABLED) "false" -}}
+
+tidy.clean_output = {{ .Env.PHP_TIDY_CLEAN_OUTPUT }}
+tidy.default_config = {{ .Env.PHP_TIDY_DEFAULT_CONFIG }}
+
+{{- end -}}

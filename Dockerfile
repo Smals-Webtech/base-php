@@ -50,14 +50,35 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
 FROM php:${PHP_VERSION_ARG}-fpm-alpine3.22 AS fpm-prd
 
 ARG AWS_CLI_VERSION_ARG=2.27.25
-ARG PHP_EXT_REDIS_VERSION_ARG=6.2.0
-ARG PHP_EXT_APCU_VERSION_ARG=5.1.24
-ARG PHP_EXT_OPENTELEMETRY_VERSION_ARG=1.2.0
 
 USER root
 
+ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli opcache opentelemetry pcntl pdo_mysql pdo_pgsql pgsql redis soap sodium tidy xdebug xsl zip"
+
+COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
+COPY --from=wait-for-it --chmod=775 --chown=root:root /usr/bin/wait4x /usr/bin/wait4x
+COPY --from=gomplate --chmod=775 --chown=root:root /bin/gomplate /usr/bin/gomplate
+
+RUN set -eux ; \
+    mkdir -p /home/default ; \
+    echo "include=/opt/etc/php/php-fpm.d/*.conf" >> /usr/local/etc/php-fpm.conf ; \
+    apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata bash gettext ssmtp \
+                                      postgresql-client postgresql-libs mailx coreutils mysql-client \
+                                      jq groff supervisor varnish dumb-init aws-cli=~${AWS_CLI_VERSION_ARG} ; \
+    cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
+    cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
+    echo "Europe/Brussels" > /etc/timezone ; \
+    adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
+    rm -rf /var/cache/apk/*
+
+RUN install-php-extensions ${PHP_EXT_INSTALL}
+
+COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/opt/ /opt/
+COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/app/ /app/
+COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
+
 ENV PYTHONWARNINGS="ignore" \
-    PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
+    PHP_INI_SCAN_DIR="/opt/etc/php/conf.d" \
     HOME=/home/default \
     TMPDIR=/app/tmp \
     PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
@@ -68,34 +89,6 @@ VOLUME /opt/sbin
 VOLUME /opt/etc
 VOLUME /app/var
 VOLUME /app/tmp
-
-COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
-COPY --from=wait-for-it --chmod=775 --chown=root:root /usr/bin/wait4x /usr/bin/wait4x
-COPY --from=gomplate --chmod=775 --chown=root:root /bin/gomplate /usr/bin/gomplate
-
-RUN mkdir -p /home/default ; \
-    echo "include=/opt/etc/php/php-fpm.d/*.conf" >> /usr/local/etc/php-fpm.conf ; \
-    install-php-extensions soap bz2 gettext intl pcntl pgsql \
-                           pdo_pgsql ldap mysqli pdo_mysql \
-                           zip bcmath exif xsl calendar gd tidy \
-                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} ; \
-    apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
-                                      bash gettext ssmtp postgresql-client postgresql-libs \
-                                      libjpeg-turbo freetype libpng libwebp libxpm mailx libxslt coreutils \
-                                      mysql-client jq icu-libs libxml2 python3 py3-pip groff supervisor \
-                                      varnish tidyhtml dumb-init \
-                                      aws-cli=~${AWS_CLI_VERSION_ARG} ; \
-    cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
-    cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
-    echo "Europe/Brussels" > /etc/timezone ; \
-    adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
-    rm -rf /var/cache/apk/* 
-
-RUN IPE_DONT_ENABLE=1 install-php-extensions opentelemetry-${PHP_EXT_OPENTELEMETRY_VERSION_ARG}
-
-COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/opt/ /opt/
-COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/app/ /app/
-COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
 
 USER 1001
 
@@ -117,9 +110,8 @@ FROM fpm-prd AS fpm-dev
 
 ARG COMPOSER_VERSION_ARG=2.8.10
 ARG NODE_VERSION_ARG=22
-ARG PHP_EXT_XDEBUG_VERSION_ARG=3.4.5
 
-ENV XDEBUG_MODE="develop"
+ENV PHP_XDEBUG_ENABLED="true"
 
 LABEL be.smals.webtech.base.node-version="${NODE_VERSION_ARG}" \
       be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
@@ -132,7 +124,7 @@ COPY --from=node /usr/local/lib /usr/local/lib
 COPY --from=node /usr/local/include /usr/local/include
 COPY --from=node /usr/local/bin /usr/local/bin
 
-RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION_ARG} ; \
+RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps git patch ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir /home/default/.composer ; \
@@ -158,7 +150,7 @@ COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
 RUN apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
     adduser default apache ; \
-    rm -rf /var/cache/apk/* 
+    rm -rf /var/cache/apk/*
 
 USER 1001
 
@@ -179,7 +171,7 @@ COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
 RUN apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
     adduser default apache ; \
-    rm -rf /var/cache/apk/* 
+    rm -rf /var/cache/apk/*
 
 USER 1001
 
@@ -200,7 +192,7 @@ COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
 RUN apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
     adduser default nginx ; \
-    rm -rf /var/cache/apk/* 
+    rm -rf /var/cache/apk/*
 
 USER 1001
 
@@ -223,7 +215,7 @@ COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
 RUN apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
     adduser default nginx ; \
-    rm -rf /var/cache/apk/* 
+    rm -rf /var/cache/apk/*
 
 USER 1001
 
@@ -239,17 +231,10 @@ HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
 FROM php:${PHP_VERSION_ARG}-cli-alpine3.22 AS cli-prd
 
 ARG AWS_CLI_VERSION_ARG=2.27.25
-ARG PHP_EXT_REDIS_VERSION_ARG=6.2.0
-ARG PHP_EXT_APCU_VERSION_ARG=5.1.24
-ARG PHP_EXT_OPENTELEMETRY_VERSION_ARG=1.2.0
 
 USER root
 
-ENV PYTHONWARNINGS="ignore" \
-    PHP_INI_SCAN_DIR="/usr/local/etc/php/conf.d:/opt/etc/php/conf.d" \
-    HOME=/home/default \
-    TMPDIR=/app/tmp \
-    PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
+ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli opcache opentelemetry pcntl pdo_mysql pdo_pgsql pgsql redis soap sodium tidy xdebug xsl zip"
 
 COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
 COPY --from=wait-for-it --chmod=775 --chown=root:root /usr/bin/wait4x /usr/bin/wait4x
@@ -261,25 +246,28 @@ COPY --from=node /usr/local/lib /usr/local/lib
 COPY --from=node /usr/local/include /usr/local/include
 COPY --from=node /usr/local/bin /usr/local/bin
 
-RUN mkdir -p /home/default ; \
-    install-php-extensions soap bz2 gettext intl pcntl pgsql \
-                           pdo_pgsql ldap mysqli pdo_mysql \
-                           zip bcmath exif xsl calendar gd tidy \
-                           APCu-${PHP_EXT_APCU_VERSION_ARG} redis-${PHP_EXT_REDIS_VERSION_ARG} ; \
-    apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata \
-                                      bash gettext ssmtp postgresql-client postgresql-libs \
-                                      libjpeg-turbo freetype libpng libwebp libxpm mailx coreutils libxslt \
-                                      mysql-client jq icu-libs libxml2 python3 py3-pip groff tidyhtml dumb-init \
-                                      aws-cli=~${AWS_CLI_VERSION_ARG} ; \
+RUN set eux; \
+    mkdir -p /home/default ; \
+    apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata bash gettext ssmtp \
+                                      postgresql-client postgresql-libs mailx coreutils mysql-client \
+                                      jq groff supervisor varnish dumb-init aws-cli=~${AWS_CLI_VERSION_ARG} ; \
     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
     adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
     rm -rf /var/cache/apk/*
 
+RUN install-php-extensions ${PHP_EXT_INSTALL}
+
 COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/app/ /app/
 COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
+
+ENV PYTHONWARNINGS="ignore" \
+    PHP_INI_SCAN_DIR="/opt/etc/php/conf.d" \
+    HOME=/home/default \
+    TMPDIR=/app/tmp \
+    PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
 
 USER 1001
 
@@ -292,15 +280,14 @@ ENTRYPOINT ["dumb-init","--","container-entrypoint-cli"]
 FROM cli-prd AS cli-dev
 
 ARG COMPOSER_VERSION_ARG=2.8.10
-ARG PHP_EXT_XDEBUG_VERSION_ARG=3.4.5
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 
-ENV XDEBUG_MODE="develop"
+ENV PHP_XDEBUG_ENABLED="true"
 
 USER root
 
-RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} xdebug-${PHP_EXT_XDEBUG_VERSION_ARG} ; \
+RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps git patch make g++ ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir /home/default/.composer ; \
