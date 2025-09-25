@@ -68,8 +68,15 @@ RUN set -eux ; \
     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
-    adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
-    rm -rf /var/cache/apk/*
+    adduser -D -u 1001 -g default -G root -s /sbin/nologin default ;
+
+RUN set -eux ; \
+    apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
+    adduser default apache ;
+
+RUN set -eux ; \
+    apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
+    adduser default nginx ;
 
 RUN install-php-extensions ${PHP_EXT_INSTALL}
 
@@ -94,6 +101,9 @@ USER 1001
 
 ENTRYPOINT ["dumb-init","--","container-entrypoint"]
 
+EXPOSE 9000/tcp
+EXPOSE 9003/tcp
+EXPOSE 9090/tcp
 EXPOSE 6081/tcp 6082/tcp
 
 HEALTHCHECK --start-period=2s --interval=30s --timeout=5s --retries=3 \
@@ -132,8 +142,6 @@ RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
     chmod -R ugo+rw /home/default/.composer ; \
     rm -rf /var/cache/apk/* ;
 
-EXPOSE 9003/tcp
-
 USER 1001
 
 #
@@ -142,17 +150,9 @@ USER 1001
 
 FROM fpm-prd AS apache-prd
 
-USER root
-
 ENV APACHE_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
-
-RUN apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
-    adduser default apache ; \
-    rm -rf /var/cache/apk/*
-
-USER 1001
 
 HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
         CMD curl --fail --header "Host: default.localhost" http://localhost:9000/index.php || exit 1
@@ -163,17 +163,9 @@ HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
 
 FROM fpm-dev AS apache-dev
 
-USER root
-
 ENV APACHE_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
-
-RUN apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
-    adduser default apache ; \
-    rm -rf /var/cache/apk/*
-
-USER 1001
 
 HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
         CMD curl --fail --header "Host: default.localhost" http://localhost:9000/index.php || exit 1
@@ -184,19 +176,9 @@ HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
 
 FROM fpm-prd AS nginx-prd
 
-USER root
-
 ENV NGINX_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
-
-RUN apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
-    adduser default nginx ; \
-    rm -rf /var/cache/apk/*
-
-USER 1001
-
-EXPOSE 9090/tcp
 
 HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
         CMD curl --fail --header "Host: default.localhost" http://localhost:9000/index.php || exit 1
@@ -207,19 +189,9 @@ HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
 
 FROM fpm-dev AS nginx-dev
 
-USER root
-
 ENV NGINX_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
-
-RUN apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
-    adduser default nginx ; \
-    rm -rf /var/cache/apk/*
-
-USER 1001
-
-EXPOSE 9090/tcp
 
 HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
         CMD curl --fail --header "Host: default.localhost" http://localhost:9000/index.php || exit 1
