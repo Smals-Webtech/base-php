@@ -10,7 +10,7 @@ done
 
 log "INFO" "- Setup PHP Modules Configuration File(s) ..."
 
-read -r -a EXTENSIONS <<< "$PHP_EXT_INSTALL"
+read -r -a EXTENSIONS <<<"$PHP_EXT_INSTALL"
 
 for EXT in "${EXTENSIONS[@]}"; do
 
