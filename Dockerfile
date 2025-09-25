@@ -62,20 +62,37 @@ COPY --from=gomplate --chmod=775 --chown=root:root /bin/gomplate /usr/bin/gompla
 RUN set -eux ; \
     mkdir -p /home/default ; \
     echo "include=/opt/etc/php/php-fpm.d/*.conf" >> /usr/local/etc/php-fpm.conf ; \
-    apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata bash gettext ssmtp \
-                                      postgresql-client postgresql-libs mailx coreutils mysql-client \
-                                      jq groff supervisor varnish dumb-init aws-cli=~${AWS_CLI_VERSION_ARG} ; \
+    apk add --no-cache --virtual .base-php-rundeps aws-cli=~${AWS_CLI_VERSION_ARG} \
+                                                   bash \
+                                                   coreutils \
+                                                   dumb-init \
+                                                   gettext \
+                                                   groff \
+                                                   jq \
+                                                   mailx \
+                                                   mysql-client \
+                                                   postgresql-client \
+                                                   postgresql-libs \
+                                                   ssmtp \
+                                                   supervisor \
+                                                   tzdata \
+                                                   varnish ; \
     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
     adduser -D -u 1001 -g default -G root -s /sbin/nologin default ;
 
 RUN set -eux ; \
-    apk add --update --no-cache --virtual .base-php-apache-rundeps apache2 apache2-utils apache2-proxy apache2-ssl ; \
+    apk add --no-cache --virtual .base-php-apache-rundeps apache2 \
+                                                          apache2-utils \
+                                                          apache2-proxy \
+                                                          apache2-ssl ; \
     adduser default apache ;
 
 RUN set -eux ; \
-    apk add --update --no-cache --virtual .base-php-nginx-rundeps nginx nginx-mod-http-headers-more nginx-mod-http-vts ; \
+    apk add --no-cache --virtual .base-php-nginx-rundeps nginx \
+                                                         nginx-mod-http-headers-more \
+                                                         nginx-mod-http-vts ; \
     adduser default nginx ;
 
 RUN install-php-extensions ${PHP_EXT_INSTALL}
@@ -220,9 +237,19 @@ COPY --from=node /usr/local/bin /usr/local/bin
 
 RUN set eux; \
     mkdir -p /home/default ; \
-    apk add --update --upgrade --no-cache --virtual .base-php-rundeps tzdata bash gettext ssmtp \
-                                      postgresql-client postgresql-libs mailx coreutils mysql-client \
-                                      jq groff supervisor varnish dumb-init aws-cli=~${AWS_CLI_VERSION_ARG} ; \
+    apk add --no-cache --virtual .base-php-rundeps aws-cli=~${AWS_CLI_VERSION_ARG} \
+                                                   bash \
+                                                   coreutils \
+                                                   dumb-init \
+                                                   gettext \
+                                                   groff \
+                                                   jq \
+                                                   mailx \
+                                                   mysql-client \
+                                                   postgresql-client \
+                                                   postgresql-libs \
+                                                   ssmtp \
+                                                   tzdata ; \
     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
