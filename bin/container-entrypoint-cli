@@ -6,7 +6,7 @@ export DEBUG=${DEBUG:-false}
 
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/00-functions.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/01-php.sh
-source /usr/local/bin/container-entrypoint.d/entrypoint.d/90-export-vars.sh
+source /usr/local/bin/container-entrypoint.d/entrypoint.d/99-export-vars.sh
 
 log "INFO" "  ____                   ____  _   _ ____   "
 log "INFO" " | __ )  __ _ ___  ___  |  _ \| | | |  _ \  "
