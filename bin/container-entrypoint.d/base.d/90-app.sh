@@ -2,6 +2,12 @@
 
 log "INFO" "Running Application configuration script(s) ... ..."
 
+OUTDIR="/app/var/lock"
+
+for dir in $OUTDIR; do
+	mkdir -p "$dir"
+done
+
 if [ ! -f "/app/var/lock/appinit" ]; then
 
 	for f in /opt/bin/container-entrypoint.d/*; do
