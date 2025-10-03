@@ -1,8 +1,18 @@
-upload_max_filesize = {{ .Env.PHP_UPLOAD_MAX_FILESIZE }}M
-post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}M
-
 expose_php = {{ .Env.PHP_EXPOSE_PHP }}
-date.timezone = {{ .Env.PHP_DATE_TIMEZONE }}
+error_reporting = {{ .Env.PHP_ERROR_REPORTING }}
+log_errors = {{ .Env.PHP_LOG_ERRORS }}
+ignore_repeated_errors = {{ .Env.PHP_IGNORE_REPEATED_ERRORS }}
+ignore_repeated_source = {{ .Env.PHP_IGNORE_REPEATED_SOURCE }}
+report_memleaks = {{ .Env.PHP_REPORT_MEMLEAKS }}
+auto_prepend_file = {{ .Env.PHP_AUTO_PREPEND_FILE }}
+auto_append_file = {{ .Env.PHP_AUTO_APPEND_FILE }}
+file_uploads = {{ .Env.PHP_FILE_UPLOADS }}
+max_file_uploads = {{ .Env.PHP_MAX_FILE_UPLOADS }}
+disable_functions = {{ .Env.PHP_DISABLE_FUNCTIONS }}
+post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}
+max_execution_time = {{ .Env.PHP_MAX_EXECUTION_TIME }}
+max_input_time = {{ .Env.PHP_MAX_INPUT_TIME }}
+memory_limit = {{ .Env.PHP_MEMORY_LIMIT }}
 display_errors = {{ .Env.PHP_DISPLAY_ERRORS }}
-
-memory_limit = {{ .Env.PHP_MEMORY_LIMIT }}M
+upload_max_filesize = {{ .Env.PHP_UPLOAD_MAX_FILESIZE }}
+date.timezone = {{ .Env.PHP_DATE_TIMEZONE }}
