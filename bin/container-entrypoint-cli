@@ -20,7 +20,7 @@ log "INFO" "                                            "
 log "INFO" "+---- Configure PHP Container -----"
 
 source /usr/local/bin/container-entrypoint.d/base.d/01-php.sh
-source /usr/local/bin/container-entrypoint.d/base.d/90-cleanup-vars.sh
+source /usr/local/bin/container-entrypoint.d/base.d/99-cleanup-vars.sh
 
 log "INFO" "+---- PHP Container configured succesfully -----"
 
