@@ -119,7 +119,7 @@ target "default" {
     "be.smals.webtech.base.vcs-ref"        = GIT_HASH
     "be.smals.webtech.base.vcs-url"        = "https://github.com/Smals-Webtech/base-php"
     "be.smals.webtech.base.vendor"         = "sebastian.molle@smals.be"
-    "be.smals.webtech.base.version"        = PHP_VERSION
+    "be.smals.webtech.base.version"        = DOCKER_IMAGE_VERSION == "snapshot" ? PHP_VERSION : DOCKER_IMAGE_VERSION
     "be.smals.webtech.base.release"        = GIT_HASH
     "be.smals.webtech.base.environment"    = tgt
     "be.smals.webtech.base.variant"        = variant
@@ -128,7 +128,7 @@ target "default" {
 
   tags = distinct(flatten([
       DOCKER_IMAGE_LATEST ? tag("latest", tgt, variant) : [],
-      tag(GIT_HASH == "" || DOCKER_IMAGE_VERSION != "snapshot" ? "" : "sha-${substr(GIT_HASH, 0, 7)}", tgt, variant),
+      GIT_HASH == "" || DOCKER_IMAGE_VERSION != "snapshot" ? tag("${DOCKER_IMAGE_VERSION}-${substr(GIT_HASH, 0, 7)}", tgt, variant) : [],
       DOCKER_IMAGE_VERSION == "snapshot"
         ? [tag("${PHP_VERSION}-snapshot", tgt, variant)]
         : [for v in semver(DOCKER_IMAGE_VERSION) : tag(v, tgt, variant)]
