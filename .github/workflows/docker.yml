@@ -81,10 +81,10 @@ jobs:
           set -e
           # shellcheck disable=SC2046,SC2086
           METADATA="$(docker buildx bake --print | jq -c)"
+          TARGET_KEYS=$(jq -r '.target | keys[]' <<<"${METADATA}" | grep -E '.+-.')
+          VARIANTS=$(echo "${TARGET_KEYS}" | cut -d'-' -f1 | sort -u)
+          TARGETS=$(echo "${TARGET_KEYS}" | cut -d'-' -f2 | sort -u)
           {
-            TARGET_KEYS=$(docker buildx bake --print | jq -r '.target | keys[]' | grep -E '.+-.')
-            VARIANTS=$(echo "${TARGET_KEYS}" | cut -d'-' -f1 | sort -u)
-            TARGETS=$(echo "${TARGET_KEYS}" | cut -d'-' -f2 | sort -u)
             echo metadata="${METADATA}"
             echo platforms="$(jq -c 'first(.target[]) | .platforms' <<< "${METADATA}")"
             echo targets="$(jq -nc --argjson arr "$(printf '%s\n' "${TARGETS}" | jq -R . | jq -s .)" '$arr')"
