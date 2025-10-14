@@ -53,9 +53,9 @@ variable "DOCKER_IMAGE_LATEST" {
 variable "GIT_HASH" {}
 
 function "tag" {
-  params = [version, tgt, variant]
+  params = [version, tgt, variant, githash]
   result = [
-    version == "" ? "" : "${DOCKER_IMAGE_NAME}:${trimprefix("${version}-${variant}${tgt == "dev" ? "-dev" : ""}", "latest-")}",
+    version == "" ? "" : "${DOCKER_IMAGE_NAME}:${trimprefix("${version}-${variant}${tgt == "dev" ? "-dev" : ""}${githash == "" ? "" : "-${githash}"}", "latest-")}",
   ]
 }
 
@@ -127,11 +127,11 @@ target "default" {
   }
 
   tags = distinct(flatten([
-      DOCKER_IMAGE_LATEST ? tag("latest", tgt, variant) : [],
-      GIT_HASH == "" || DOCKER_IMAGE_VERSION != "snapshot" ? tag("${DOCKER_IMAGE_VERSION}-${substr(GIT_HASH, 0, 7)}", tgt, variant) : [],
+      DOCKER_IMAGE_LATEST ? tag("latest", tgt, variant, "") : [],
+      GIT_HASH != "" && DOCKER_IMAGE_VERSION != "snapshot" ? tag("${DOCKER_IMAGE_VERSION}", tgt, variant, "${substr(GIT_HASH, 0, 7)}") : [],     
       DOCKER_IMAGE_VERSION == "snapshot"
-        ? [tag("${PHP_VERSION}-snapshot", tgt, variant)]
-        : [for v in semver(DOCKER_IMAGE_VERSION) : tag(v, tgt, variant)]
+        ? [tag("snapshot", tgt, variant, "")]
+        : [for v in semver(DOCKER_IMAGE_VERSION) : tag(v, tgt, variant, "")]
     ])
   )
 
