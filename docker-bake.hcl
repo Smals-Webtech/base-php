@@ -46,12 +46,17 @@ variable "DOCKER_IMAGE_VERSION" {
   default = "snapshot"
 }
 
+variable "DOCKER_IMAGE_LATEST" {
+  default = true
+}
+
 variable "GIT_HASH" {}
 
 function "tag" {
   params = [version, tgt, variant, githash]
   result = [
-    version == "" ? "" : "${DOCKER_IMAGE_NAME}:${version}-${variant}${tgt == "dev" ? "-dev" : ""}${githash == "" ? "" : "-${githash}"}",
+    # remove latest- prefix while "latest" version must be just $variant-$target tag
+    version == "" ? "" : "${DOCKER_IMAGE_NAME}:${trimprefix("${version}-${variant}${tgt == "dev" ? "-dev" : ""}${githash == "" ? "" : "-${githash}"}", "latest-")}",
   ]
 }
 
@@ -123,6 +128,7 @@ target "default" {
   }
 
   tags = distinct(flatten([
+      DOCKER_IMAGE_LATEST ? tag("latest", tgt, variant, "") : [],
       GIT_HASH != "" && DOCKER_IMAGE_VERSION != "snapshot" ? tag("${DOCKER_IMAGE_VERSION}", tgt, variant, "${substr(GIT_HASH, 0, 7)}") : [],     
       DOCKER_IMAGE_VERSION == "snapshot"
         ? [tag("snapshot", tgt, variant, "")]
