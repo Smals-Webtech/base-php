@@ -59,7 +59,7 @@ jobs:
           fi
 
           {
-            echo ref="$(gh release view --repo smalswebtech/base-php --json tagName --jq '.tagName')"
+            echo ref="$(gh release view --repo Smals-Webtech/base-php --json tagName --jq '.tagName')"
             echo skip=false
           } >> "${GITHUB_OUTPUT}"
 
