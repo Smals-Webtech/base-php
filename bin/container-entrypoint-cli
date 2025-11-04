@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -eo pipefail
 
+umask 002
+
 export DEBUG=${DEBUG:-false}
 [[ "${DEBUG}" == "true" ]] && set -x
 
