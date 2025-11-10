@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+
+exec /usr/bin/varnishncsa -F "{{ .Env.VARNISH_NCSA_LOG_FORMAT }}" \
+  -n /app/var/cache/varnish/varnishd \
+  -P /app/var/run/varnish/varnishncsa.pid

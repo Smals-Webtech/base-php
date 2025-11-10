@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+exec /usr/sbin/varnishd -F \
+  -a 0.0.0.0:6081 \
+  -f {{ .Env.VARNISH_VCL_CONF }} \
+  -T 0.0.0.0:6082 \
+  -t {{ .Env.VARNISH_TTL }} \
+  -p thread_pool_min={{ .Env.VARNISH_MIN_THREADS }} \
+  -p thread_pool_max={{ .Env.VARNISH_MAX_THREADS }} \
+  -p thread_pool_timeout={{ .Env.VARNISH_THREAD_TIMEOUT }} \
+{{- if ne .Env.VARNISH_STORAGE_MALLOC_ENABLED "false" }}
+  -s malloc,{{ .Env.VARNISH_STORAGE_MALLOC_SIZE }} \
+{{- end }}
+{{- if ne .Env.VARNISH_STORAGE_FILE_ENABLED "false" }}
+  -s file,/app/var/cache/varnish/storage.bin,{{ .Env.VARNISH_STORAGE_FILE_SIZE }} \
+{{- end }}
+  -S /app/var/cache/varnish/secret \
+  -n /app/var/cache/varnish/varnishd \
+  -P /app/var/run/varnish/varnishd.pid

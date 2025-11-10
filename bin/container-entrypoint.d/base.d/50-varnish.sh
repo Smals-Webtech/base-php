@@ -13,6 +13,13 @@ if [[ "${VARNISH_ENABLED}" == "true" ]]; then
 	done
 
 	apply-template /opt/config/supervisor.d/varnish.ini.tmpl /opt/etc/supervisor.d/varnish.ini
+	apply-template /opt/config/sbin/start-varnishncsa.sh.tmpl /opt/sbin/start-varnishncsa.sh
+	apply-template /opt/config/sbin/start-varnishd.sh.tmpl /opt/sbin/start-varnishd.sh
+
+	chmod +x /opt/sbin/start-varnishncsa.sh /opt/sbin/start-varnishd.sh
+
+	create-symlink /opt/sbin/start-varnishncsa /opt/sbin/start-varnishncsa.sh
+	create-symlink /opt/sbin/start-varnishd /opt/sbin/start-varnishd.sh
 
 	log "INFO" "- Create Varnish secret file ..."
 
