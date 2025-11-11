@@ -21,9 +21,21 @@
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
-| `auto_prepend_file` | PHP_AUTO_PREPEND_FILE | Empty | [Link](https://www.php.net/manual/en/ini.core.php#ini.auto-prepend-file) |
-| `auto_append_file` | PHP_AUTO_APPEND_FILE | Empty | [Link](https://www.php.net/manual/en/ini.core.php#ini.auto-append-file) |
+| `arg_separator.output` | PHP_ARG_SEPARATOR_OUTPUT | "&" | [Link](https://www.php.net/manual/en/ini.core.php#ini.arg-separator.output) |
+| `arg_separator.input` | PHP_ARG_SEPARATOR_INPUT | "&" | [Link](https://www.php.net/manual/en/ini.core.php#ini.arg-separator.input) |
+| `variables_order` | PHP_VARIABLES_ORDER | "EGPCS" | [Link](https://www.php.net/manual/en/ini.core.php#ini.variables-order) |
+| `request_order` | PHP_REQUEST_ORDER | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.request-order) |
+| `auto_globals_jit` | PHP_AUTO_GLOBALS_JIT | "1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.auto-globals-jit) |
+| `register_argc_argv` | PHP_REGISTER_ARGC_ARGV | "1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.register-argc-argv) |
+| `enable_post_data_reading` | PHP_ENABLE_POST_DATA_READING | "1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.enable-post-data-reading) |
 | `post_max_size` | PHP_POST_MAX_SIZE | "8M" | [Link](https://www.php.net/manual/en/ini.core.php#ini.post-max-size) |
+| `auto_prepend_file` | PHP_AUTO_PREPEND_FILE | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.auto-prepend-file) |
+| `auto_append_file` | PHP_AUTO_APPEND_FILE | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.auto-append-file) |
+| `default_mimetype` | PHP_DEFAULT_MIMETYPE | "text/html" | [Link](https://www.php.net/manual/en/ini.core.php#ini.default-mimetype) |
+| `default_charset` | PHP_DEFAULT_CHARSET | "UTF-8" | [Link](https://www.php.net/manual/en/ini.core.php#ini.default-charset) |
+| `input_encoding` | PHP_INPUT_ENCODING | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.input-encoding) |
+| `output_encoding` | PHP_OUTPUT_ENCODING | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.output-encoding) |
+| `internal_encoding` | PHP_INTERNAL_ENCODING | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.internal-encoding) |
 
 ### Paths and Directories
 

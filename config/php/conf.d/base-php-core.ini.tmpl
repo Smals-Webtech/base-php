@@ -20,9 +20,21 @@ display_errors = {{ .Env.PHP_DISPLAY_ERRORS }}
 
 ; Data Handling
 
+arg_separator.output = {{ .Env.PHP_ARG_SEPARATOR_OUTPUT }}
+arg_separator.input = {{ .Env.PHP_ARG_SEPARATOR_INPUT }}
+variables_order = {{ .Env.PHP_VARIABLES_ORDER }}
+request_order = {{ .Env.PHP_REQUEST_ORDER }}
+auto_globals_jit = {{ .Env.PHP_AUTO_GLOBALS_JIT }}
+register_argc_argv = {{ .Env.PHP_REGISTER_ARGC_ARGV }}
+enable_post_data_reading = {{ .Env.PHP_ENABLE_POST_DATA_READING }}
+post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}
 auto_prepend_file = {{ .Env.PHP_AUTO_PREPEND_FILE }}
 auto_append_file = {{ .Env.PHP_AUTO_APPEND_FILE }}
-post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}
+default_mimetype = {{ .Env.PHP_DEFAULT_MIMETYPE }}
+default_charset = {{ .Env.PHP_DEFAULT_CHARSET }}
+input_encoding = {{ .Env.PHP_INPUT_ENCODING }}
+output_encoding = {{ .Env.PHP_OUTPUT_ENCODING }}
+internal_encoding = {{ .Env.PHP_INTERNAL_ENCODING }}
 
 ; Paths and Directories
 
