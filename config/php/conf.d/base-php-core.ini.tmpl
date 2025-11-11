@@ -1,18 +1,38 @@
+; Resource Limits
+
+memory_limit = {{ .Env.PHP_MEMORY_LIMIT }}
+
+; Language Options
+
 expose_php = {{ .Env.PHP_EXPOSE_PHP }}
-error_reporting = {{ .Env.PHP_ERROR_REPORTING }}
+disable_functions = {{ .Env.PHP_DISABLE_FUNCTIONS }}
+
+; Runtime Configuration
+
 log_errors = {{ .Env.PHP_LOG_ERRORS }}
+error_reporting = {{ .Env.PHP_ERROR_REPORTING }}
 ignore_repeated_errors = {{ .Env.PHP_IGNORE_REPEATED_ERRORS }}
 ignore_repeated_source = {{ .Env.PHP_IGNORE_REPEATED_SOURCE }}
 report_memleaks = {{ .Env.PHP_REPORT_MEMLEAKS }}
-auto_prepend_file = {{ .Env.PHP_AUTO_PREPEND_FILE }}
-auto_append_file = {{ .Env.PHP_AUTO_APPEND_FILE }}
-file_uploads = {{ .Env.PHP_FILE_UPLOADS }}
-max_file_uploads = {{ .Env.PHP_MAX_FILE_UPLOADS }}
-disable_functions = {{ .Env.PHP_DISABLE_FUNCTIONS }}
-post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}
 max_execution_time = {{ .Env.PHP_MAX_EXECUTION_TIME }}
 max_input_time = {{ .Env.PHP_MAX_INPUT_TIME }}
-memory_limit = {{ .Env.PHP_MEMORY_LIMIT }}
 display_errors = {{ .Env.PHP_DISPLAY_ERRORS }}
+
+; Data Handling
+
+auto_prepend_file = {{ .Env.PHP_AUTO_PREPEND_FILE }}
+auto_append_file = {{ .Env.PHP_AUTO_APPEND_FILE }}
+post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}
+
+; File Uploads
+
+file_uploads = {{ .Env.PHP_FILE_UPLOADS }}
+max_file_uploads = {{ .Env.PHP_MAX_FILE_UPLOADS }}
 upload_max_filesize = {{ .Env.PHP_UPLOAD_MAX_FILESIZE }}
+upload_tmp_dir = {{ .Env.PHP_UPLOAD_TMP_DIR }}
+max_input_nesting_level = {{ .Env.PHP_MAX_INPUT_NESTING_LEVEL }}
+max_input_vars = {{ .Env.PHP_MAX_INPUT_VARS }}
+
+; Date/Time Runtime Configuration
+
 date.timezone = {{ .Env.PHP_DATE_TIMEZONE }}
