@@ -1,5 +1,6 @@
+# shellcheck disable=SC1083,SC1009,SC1054,SC1073,SC1054
 #!/usr/bin/env bash
 
 exec /usr/bin/varnishncsa -F "{{ .Env.VARNISH_NCSA_LOG_FORMAT }}" \
-  -n /app/var/cache/varnish/varnishd \
-  -P /app/var/run/varnish/varnishncsa.pid
+	-n /app/var/cache/varnish/varnishd \
+	-P /app/var/run/varnish/varnishncsa.pid
