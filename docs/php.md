@@ -1,21 +1,23 @@
-# core php.ini directives
+# PHP Configuration
 
-## Language Options
+## core php.ini directives
+
+### Language Options
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
 | `expose_php` | PHP_EXPOSE_PHP | "false" | [Link](https://www.php.net/manual/en/ini.core.php#ini.expose-php) |
 | `disable_functions` | PHP_DISABLE_FUNCTIONS | Empty | [Link](https://www.php.net/manual/en/ini.core.php#ini.disable-functions) |
 
-## Resource Limits
+### Resource Limits
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
 | `memory_limit` | PHP_MEMORY_LIMIT | "128M" | [Link](https://www.php.net/manual/en/ini.core.php#ini.memory-limit) |
 
-## Performance Tuning (manque)
+### Performance Tuning (miss)
 
-## Data Handling
+### Data Handling
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -23,9 +25,9 @@
 | `auto_append_file` | PHP_AUTO_APPEND_FILE | Empty | [Link](https://www.php.net/manual/en/ini.core.php#ini.auto-append-file) |
 | `post_max_size` | PHP_POST_MAX_SIZE | "8M" | [Link](https://www.php.net/manual/en/ini.core.php#ini.post-max-size) |
 
-## Paths and Directories (manque)
+### Paths and Directories (miss)
 
-## File Uploads
+### File Uploads
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -36,9 +38,9 @@
 | `upload_max_filesize` | PHP_UPLOAD_MAX_FILESIZE | "2M" | [Link](https://www.php.net/manual/en/ini.core.php#ini.upload-max-filesize) |
 | `max_file_uploads` | PHP_MAX_FILE_UPLOADS | "20" | [Link](https://www.php.net/manual/en/ini.core.php#ini.max-file-uploads) |
 
-# Affecting PHP's Behaviour
+## Affecting PHP's Behaviour
 
-## Error Handling and Logging
+### Error Handling and Logging
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -51,7 +53,7 @@
 | `max_input_time` | PHP_MAX_INPUT_TIME | "60" | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-time) |
 | `display_errors` | PHP_DISPLAY_ERRORS | "60" | [Link](https://www.php.net/manual/en/errorfunc.configuration.php#ini.display-errors) |
 
-## APCu
+### APCu
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -70,7 +72,7 @@
 | `apc.ttl` | PHP_APC_TTL | "0" | [Link](https://www.php.net/manual/fr/apcu.configuration.php#ini.apcu.ttl) |
 | `apc.use_request_time` | PHP_APC_USE_REQUEST_TIME | "Off" | [Link](https://www.php.net/manual/fr/apcu.configuration.php#ini.apcu.use-request-time) |
 
-## OPcache
+### OPcache
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -104,7 +106,7 @@
 | `opcache.jit_max_recursive_returns` | PHP_OPCACHE_JIT_MAX_RECURSIVE_RETURNS | "2" | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-max-recursive-return) |
 | `opcache.jit_max_root_traces` | PHP_OPCACHE_JIT_MAX_ROOT_TRACES | "1024" | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-max-root-traces) |
 | `opcache.jit_max_side_traces` | PHP_OPCACHE_JIT_MAX_SIDE_TRACES | "128" | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-max-side-traces) |
-| `opcache.jit_max_trace_length` | PHP_OPCACHE_JIT_MAX_TRACE_LENGTH | "1024" | [Link]() |
+| `opcache.jit_max_trace_length` | PHP_OPCACHE_JIT_MAX_TRACE_LENGTH | "1024" | |
 | `opcache.jit_prof_threshold` | PHP_OPCACHE_JIT_PROF_THRESHOLD | "0.005" | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-prof-threshold) |
 | `opcache.lockfile_path` | PHP_OPCACHE_LOCKFILE_PATH | "/app/tmp" | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.lockfile_path) |
 | `opcache.log_verbosity_level` | PHP_OPCACHE_LOG_VERBOSITY_LEVEL | "1" | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.log-verbosity-level) |
@@ -128,17 +130,17 @@
 | `opcache.validate_root` | PHP_OPCACHE_VALIDATE_ROOT | "Off" | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.validate-root) |
 | `opcache.validate_timestamps` | PHP_OPCACHE_VALIDATE_TIMESTAMPS | "On" | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.validate-timestamps) |
 
-# Date and Time Related Extensions
+## Date and Time Related Extensions
 
-## Date/Time
+### Date/Time
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
 | `date.timezone` | PHP_DATE_TIMEZONE | "Europe/Brussels" | [Link](https://www.php.net/manual/en/datetime.configuration.php#ini.date.timezone) |
 
-# Image Processing and Generation
+## Image Processing and Generation
 
-## Exif
+### Exif
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -149,15 +151,15 @@
 | `exif.encode_jis` | PHP_EXIF_ENCODE_JIS | Empty | [Link](https://www.php.net/manual/en/exif.configuration.php#ini.exif.encode-jis) |
 | `exif.encode_unicode` | PHP_EXIF_ENCODE_UNICODE | "ISO-8859-15" | [Link](https://www.php.net/manual/en/exif.configuration.php#ini.exif.encode-unicode) |
 
-## GD
+### GD
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
 | `gd.jpeg_ignore_warning` | PHP_GD_JPEG_IGNORE_WARNING | "On" | [Link](https://www.php.net/manual/en/image.configuration.php#ini.gd.jpeg-ignore-warning) |
 
-# Human Language and Character Encoding Support
+## Human Language and Character Encoding Support
 
-## Intl
+### Intl
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -165,17 +167,17 @@
 | `intl.error_level` | PHP_INTL_ERROR_LEVEL | "0" | [Link](https://www.php.net/manual/en/intl.configuration.php#ini.intl.error-level) |
 | `intl.use_exceptions` | PHP_INTL_USE_EXCEPTIONS | "Off" | [Link](https://www.php.net/manual/en/intl.configuration.php#ini.intl.use-exceptions) |
 
-# Other Services
+## Other Services
 
-## LDAP
+### LDAP
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
 | `ldap.max_links` | PHP_LDAP_MAX_LINKS | "-1" | [Link](https://www.php.net/manual/en/ldap.configuration.php#ini.ldap.max_links) |
 
-# Web Services
+## Web Services
 
-## SOAP
+### SOAP
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -185,9 +187,9 @@
 | `soap.wsdl_cache_limit` | PHP_SOAP_WSDL_CACHE_LIMIT | "5" | [Link](https://www.php.net/manual/en/soap.configuration.php#ini.soap.wsdl-cache-limit) |
 | `soap.wsdl_cache_ttl` | PHP_SOAP_WSDL_CACHE_TTL | "86400" | [Link](https://www.php.net/manual/en/soap.configuration.php#ini.soap.wsdl-cache-ttl) |
 
-# Database Extensions
+## Database Extensions
 
-## MySQLi
+### MySQLi
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -203,13 +205,13 @@
 | `mysqli.max_persistent` | PHP_MYSQLI_MAX_PERSISTENT | "-1" | [Link](https://www.php.net/manual/en/mysqli.configuration.php#ini.mysqli.max-persistent) |
 | `mysqli.rollback_on_cached_plink` | PHP_MYSQLI_ROLLBACK_ON_CACHED_PLINK | "Off" | [Link](https://www.php.net/manual/en/mysqli.configuration.php#ini.mysqli.rollback-on-cached-plink) |
 
-## MySQL PDO Driver
+### MySQL PDO Driver
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
 | `pdo_mysql.default_socket` | PHP_PDO_MYSQL_DEFAULT_SOCKET | Empty | [Link](https://www.php.net/manual/en/ref.pdo-mysql.php#ini.pdo-mysql.default-socket) |
 
-## PostgreSQL
+### PostgreSQL
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -220,7 +222,7 @@
 | `pgsql.max_links` | PHP_PGSQL_MAX_LINKS | "-1" | [Link](https://www.php.net/manual/en/pgsql.configuration.php#ini.pgsql.max-links) |
 | `pgsql.max_persistent` | PHP_PGSQL_MAX_PERSISTENT | "-1" | [Link](https://www.php.net/manual/en/pgsql.configuration.php#ini.pgsql.max-persistent) |
 
-## Redis
+### Redis
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -259,16 +261,16 @@
 | `redis.session.lock_wait_time` | PHP_REDIS_SESSION_LOCK_WAIT_TIME | "20000" | [Link](https://github.com/phpredis/phpredis/) |
 | `redis.session.locking_enabled` | PHP_REDIS_SESSION_LOCKING_ENABLED | "0" | [Link](https://github.com/phpredis/phpredis/) |
 
-# Other Basic Extensions
+## Other Basic Extensions
 
-## Tidy
+### Tidy
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
 | `tidy.clean_output` | PHP_TIDY_CLEAN_OUTPUT | "Off" | [Link](https://www.php.net/manual/en/tidy.configuration.php#ini.tidy.clean-output) |
 | `tidy.default_config` | PHP_TIDY_DEFAULT_CONFIG | Empty | [Link](https://www.php.net/manual/en/tidy.configuration.php#ini.tidy.default-config) |
 
-## OpenTelemetry
+### OpenTelemetry
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
@@ -280,7 +282,7 @@
 | `opentelemetry.display_warnings` | PHP_OPENTELEMETRY_DISPLAY_WARNINGS | "Off" | [Link](https://github.com/open-telemetry/opentelemetry-php-instrumentation) |
 | `opentelemetry.validate_hook_functions` | PHP_OPENTELEMETRY_VALIDATE_HOOK_FUNCTIONS | "On" | [Link](https://github.com/open-telemetry/opentelemetry-php-instrumentation) |
 
-## Xdebug
+### Xdebug
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |

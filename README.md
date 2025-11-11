@@ -83,7 +83,7 @@ This mechanism provides full flexibility at startup while keeping the base image
 | `tidy` | PHP_TIDY_ENABLED | "true" | [Link](docs/php.md#tidy) | [Link](https://www.php.net/manual/en/book.tidy.php) |
 | `xdebug` | PHP_XDEBUG_ENABLED | "false" | [Link](docs/php.md#xdebug) | [Link](https://xdebug.org/) |
 | `xsl` | PHP_XSL_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.xsl.php) |
-| `zip` | PHP_ZIP_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.zip.php) ||
+| `zip` | PHP_ZIP_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.zip.php) |
 
 ## 📦 Available Variants
 
