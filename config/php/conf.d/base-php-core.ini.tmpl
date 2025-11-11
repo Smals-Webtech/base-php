@@ -26,7 +26,24 @@ post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}
 
 ; Paths and Directories
 
+include_path = {{ .Env.PHP_INCLUDE_PATH }}
+open_basedir = {{ .Env.PHP_OPEN_BASEDIR }}
+doc_root = {{ .Env.PHP_DOC_ROOT }}
+user_dir = {{ .Env.PHP_USER_DIR }}
+user_ini.cache_ttl = {{ .Env.PHP_USER_INI_CACHE_TTL }}
+user_ini.filename = {{ .Env.PHP_USER_INI_FILENAME }}
 extension_dir = {{ .Env.PHP_EXTENSION_DIR }}
+extension = {{ .Env.PHP_EXTENSION }}
+zend_extension = {{ .Env.PHP_ZEND_EXTENSION }}
+cgi.check_shebang_line = {{ .Env.PHP_CGI_CHECK_SHEBANG_LINE }}
+cgi.discard_path = {{ .Env.PHP_CGI_DISCARD_PATH }}
+cgi.fix_pathinfo = {{ .Env.PHP_CGI_FIX_PATHINFO }}
+cgi.force_redirect = {{ .Env.PHP_CGI_FORCE_REDIRECT }}
+cgi.nph = {{ .Env.PHP_CGI_NPH }}
+cgi.redirect_status_env = {{ .Env.PHP_CGI_REDIRECT_STATUS_ENV }}
+cgi.rfc2616_headers = {{ .Env.PHP_CGI_RFC2616_HEADERS }}
+fastcgi.impersonate = {{ .Env.PHP_FASTCGI_IMPERSONATE }}
+fastcgi.logging = {{ .Env.PHP_FASTCGI_LOGGING }}
 
 ; File Uploads
 

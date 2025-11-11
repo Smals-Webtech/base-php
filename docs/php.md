@@ -25,11 +25,28 @@
 | `auto_append_file` | PHP_AUTO_APPEND_FILE | Empty | [Link](https://www.php.net/manual/en/ini.core.php#ini.auto-append-file) |
 | `post_max_size` | PHP_POST_MAX_SIZE | "8M" | [Link](https://www.php.net/manual/en/ini.core.php#ini.post-max-size) |
 
-### Paths and Directories (miss)
+### Paths and Directories
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
+| `include_path` | PHP_INCLUDE_PATH | ".:/usr/local/lib/php" | [Link](https://www.php.net/manual/en/ini.core.php#ini.include-path) |
+| `open_basedir` | PHP_OPEN_BASEDIR | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.open-basedir) |
+| `doc_root` | PHP_DOC_ROOT | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.doc-root) |
+| `user_dir` | PHP_USER_DIR | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.user-dir) |
+| `user_ini.cache_ttl` | PHP_USER_INI_CACHE_TTL | "300" | [Link](https://www.php.net/manual/en/ini.core.php#ini.user-ini.cache-ttl) |
+| `user_ini.filename` | PHP_USER_INI_FILENAME | ".user.ini" | [Link](https://www.php.net/manual/en/ini.core.php#ini.user-ini.filename) |
 | `extension_dir` | PHP_EXTENSION_DIR | "/opt/etc/php/extensions" | [Link](https://www.php.net/manual/en/ini.core.php#ini.extension-dir) |
+| `extension` | PHP_EXTENSION | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.extension) |
+| `zend_extension` | PHP_ZEND_EXTENSION | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.zend-extension) |
+| `cgi.check_shebang_line` | PHP_CGI_CHECK_SHEBANG_LINE | "1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.check-shebang-line) |
+| `cgi.discard_path` | PHP_CGI_DISCARD_PATH | "0" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.discard-path) |
+| `cgi.fix_pathinfo` | PHP_CGI_FIX_PATHINFO | "1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.fix-pathinfo) |
+| `cgi.force_redirect` | PHP_CGI_FORCE_REDIRECT | "1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.force-redirect) |
+| `cgi.nph` | PHP_CGI_NPH | "0" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.nph) |
+| `cgi.redirect_status_env` | PHP_CGI_REDIRECT_STATUS_ENV | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.redirect-status-env) |
+| `cgi.rfc2616_headers` | PHP_CGI_RFC2616_HEADERS | "0" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.rfc2616-headers) |
+| `fastcgi.impersonate` | PHP_FASTCGI_IMPERSONATE | "0" | [Link](https://www.php.net/manual/en/ini.core.php#ini.fastcgi.impersonate) |
+| `fastcgi.logging` | PHP_FASTCGI_LOGGING | "1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.fastcgi.logging) |
 
 ### File Uploads
 
