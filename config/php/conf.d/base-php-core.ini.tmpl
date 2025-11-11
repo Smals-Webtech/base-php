@@ -18,6 +18,11 @@ max_execution_time = {{ .Env.PHP_MAX_EXECUTION_TIME }}
 max_input_time = {{ .Env.PHP_MAX_INPUT_TIME }}
 display_errors = {{ .Env.PHP_DISPLAY_ERRORS }}
 
+; Performance Tuning
+
+realpath_cache_size = {{ .Env.PHP_REALPATH_CACHE_SIZE }}
+realpath_cache_ttl = {{ .Env.PHP_REALPATH_CACHE_TTL }}
+
 ; Data Handling
 
 arg_separator.output = {{ .Env.PHP_ARG_SEPARATOR_OUTPUT }}

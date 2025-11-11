@@ -15,7 +15,12 @@
 | --------- | -------------------- | ------------- | ------------- |
 | `memory_limit` | PHP_MEMORY_LIMIT | "128M" | [Link](https://www.php.net/manual/en/ini.core.php#ini.memory-limit) |
 
-### Performance Tuning (miss)
+### Performance Tuning
+
+| Directive | Environment Variable | Default Value | Documentation |
+| --------- | -------------------- | ------------- | ------------- |
+| `realpath_cache_size` | PHP_REALPATH_CACHE_SIZE | "4M" | [Link](https://www.php.net/manual/en/ini.core.php#ini.realpath-cache-size) |
+| `realpath_cache_ttl` | PHP_REALPATH_CACHE_TTL | "120" | [Link](https://www.php.net/manual/en/ini.core.php#ini.realpath-cache-ttl) |
 
 ### Data Handling
 
