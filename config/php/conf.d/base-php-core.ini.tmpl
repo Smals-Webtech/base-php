@@ -24,6 +24,10 @@ auto_prepend_file = {{ .Env.PHP_AUTO_PREPEND_FILE }}
 auto_append_file = {{ .Env.PHP_AUTO_APPEND_FILE }}
 post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}
 
+; Paths and Directories
+
+extension_dir = {{ .Env.PHP_EXTENSION_DIR }}
+
 ; File Uploads
 
 file_uploads = {{ .Env.PHP_FILE_UPLOADS }}

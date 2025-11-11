@@ -2,13 +2,15 @@
 
 log "INFO" "Configure PHP ..."
 
-OUTDIR="/opt/etc/php/conf.d"
+OUTDIR="/opt/etc/php/conf.d /opt/etc/php/extensions"
 
 for dir in $OUTDIR; do
 	mkdir -p "$dir"
 done
 
 log "INFO" "- Setup PHP Modules Configuration File(s) ..."
+
+EXTENSIONS_DIR=$(php -r 'echo ini_get("extension_dir");')
 
 read -r -a EXTENSIONS <<<"$PHP_EXT_INSTALL"
 
@@ -25,6 +27,15 @@ for EXT in "${EXTENSIONS[@]}"; do
 			create-symlink "${TGT}" "${SRC}"
 		else
 			log "WARN" "  The module ${EXT} is installed, but the corresponding .ini configuration file could not be found at ${SRC}."
+		fi
+
+		SRC="${EXTENSIONS_DIR}/${EXT}.so"
+		TGT="/opt/etc/php/extensions/${EXT}.so"
+
+		if [ -f "${SRC}" ]; then
+			create-symlink "${TGT}" "${SRC}"
+		else
+			log "WARN" "  The module ${EXT} is installed, but the corresponding .so configuration file could not be found at ${SRC}."
 		fi
 
 	fi

@@ -27,18 +27,27 @@
 
 ### Paths and Directories (miss)
 
+| Directive | Environment Variable | Default Value | Documentation |
+| --------- | -------------------- | ------------- | ------------- |
+| `extension_dir` | PHP_EXTENSION_DIR | "/opt/etc/php/extensions" | [Link](https://www.php.net/manual/en/ini.core.php#ini.extension-dir) |
+
 ### File Uploads
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
 | `file_uploads` | PHP_FILE_UPLOADS | "On" | [Link](https://www.php.net/manual/en/ini.core.php#ini.file-uploads) |
 | `upload_tmp_dir` | php_upload_tmp_dir | Empty | [Link](https://www.php.net/manual/en/ini.core.php#ini.upload-tmp-dir) |
-| `max_input_nesting_level` | php_max_input_nesting_level | 64 | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-nesting-level) |
-| `max_input_vars` | php_max_input_vars | 1000 | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-vars) |
 | `upload_max_filesize` | PHP_UPLOAD_MAX_FILESIZE | "2M" | [Link](https://www.php.net/manual/en/ini.core.php#ini.upload-max-filesize) |
 | `max_file_uploads` | PHP_MAX_FILE_UPLOADS | "20" | [Link](https://www.php.net/manual/en/ini.core.php#ini.max-file-uploads) |
 
 ## Affecting PHP's Behaviour
+
+### PHP Options/Info
+
+| Directive | Environment Variable | Default Value | Documentation |
+| --------- | -------------------- | ------------- | ------------- |
+| `max_input_nesting_level` | php_max_input_nesting_level | 64 | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-nesting-level) |
+| `max_input_vars` | php_max_input_vars | 1000 | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-vars) |
 
 ### Error Handling and Logging
 
