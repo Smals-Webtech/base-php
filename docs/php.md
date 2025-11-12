@@ -6,8 +6,21 @@
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
+| `short_open_tag` | PHP_SHORT_OPEN_TAG | "Off" | [Link](https://www.php.net/manual/en/ini.core.php#ini.short-open-tag) |
+| `precision` | PHP_PRECISION | "14" | [Link](https://www.php.net/manual/en/ini.core.php#ini.precision) |
+| `serialize_precision` | PHP_SERIALIZE_PRECISION | "-1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.serialize-precision) |
+| `disable_functions` | PHP_DISABLE_FUNCTIONS | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.disable-functions) |
+| `disable_classes` | PHP_DISABLE_CLASSES | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.disable-classes) |
+| `exit_on_timeout` | PHP_EXIT_ON_TIMEOUT | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.exit-on-timeout) |
 | `expose_php` | PHP_EXPOSE_PHP | "false" | [Link](https://www.php.net/manual/en/ini.core.php#ini.expose-php) |
-| `disable_functions` | PHP_DISABLE_FUNCTIONS | Empty | [Link](https://www.php.net/manual/en/ini.core.php#ini.disable-functions) |
+| `hard_timeout` | PHP_HARD_TIMEOUT | "2" | [Link](https://www.php.net/manual/en/ini.core.php#ini.hard-timeout) |
+| `zend.exception_ignore_args` | PHP_ZEND_EXCEPTION_IGNORE_ARGS | "On" | [Link](https://www.php.net/manual/en/ini.core.php#ini.zend.exception-ignore-args) | <- dev/prod !? >
+| `zend.multibyte` | PHP_ZEND_MULTIBYTE | "Off" | [Link](https://www.php.net/manual/en/ini.core.php#ini.zend.multibyte) |
+| `zend.script_encoding` | PHP_ZEND_SCRIPT_ENCODING | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.zend.script-encoding) |
+| `zend.detect_unicode` | PHP_ZEND_DETECT_UNICODE | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.zend.detect-unicode) |
+| `zend.signal_check` | PHP_ZEND_SIGNAL_CHECK | "0" | [Link](https://www.php.net/manual/en/ini.core.php#ini.zend.signal-check) |
+| `zend.assertions` | PHP_ZEND_ASSERTIONS | "-1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.zend.assertions) | <- dev/prod !? >
+| `zend.exception_string_param_max_len` | PHP_ZEND_EXCEPTION_STRING_PARAM_MAX_LEN | "0" | [Link](https://www.php.net/manual/en/ini.core.php#ini.zend.exception-string-param-max-len) | <- dev/prod !? >
 
 ### Resource Limits
 
@@ -80,8 +93,10 @@
 
 | Directive | Environment Variable | Default Value | Documentation |
 | --------- | -------------------- | ------------- | ------------- |
-| `max_input_nesting_level` | php_max_input_nesting_level | 64 | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-nesting-level) |
-| `max_input_vars` | php_max_input_vars | 1000 | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-vars) |
+| `max_input_nesting_level` | PHP_MAX_INPUT_NESTING_LEVEL | 64 | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-nesting-level) |
+| `max_input_vars` | PHP_MAX_INPUT_VARS | 1000 | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-vars) |
+| `max_execution_time` | PHP_MAX_EXECUTION_TIME | "30" | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-execution-time) |
+| `max_input_time` | PHP_MAX_INPUT_TIME | "60" | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-time) |
 
 ### Error Handling and Logging
 
@@ -92,8 +107,6 @@
 | `ignore_repeated_errors` | PHP_IGNORE_REPEATED_ERRORS | "Off" | [Link](https://www.php.net/manual/en/errorfunc.configuration.php#ini.ignore-repeated-errors) |
 | `ignore_repeated_source` | PHP_IGNORE_REPEATED_SOURCE | "Off" | [Link](https://www.php.net/manual/en/errorfunc.configuration.php#ini.ignore-repeated-source) |
 | `report_memleaks` | PHP_REPORT_MEMLEAKS | "On" | [Link](https://www.php.net/manual/en/errorfunc.configuration.php#ini.report-memleaks) |
-| `max_execution_time` | PHP_MAX_EXECUTION_TIME | "30" | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-execution-time) |
-| `max_input_time` | PHP_MAX_INPUT_TIME | "60" | [Link](https://www.php.net/manual/en/info.configuration.php#ini.max-input-time) |
 | `display_errors` | PHP_DISPLAY_ERRORS | "60" | [Link](https://www.php.net/manual/en/errorfunc.configuration.php#ini.display-errors) |
 
 ### APCu
