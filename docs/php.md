@@ -66,8 +66,6 @@
 | `user_ini.cache_ttl` | PHP_USER_INI_CACHE_TTL | "300" | [Link](https://www.php.net/manual/en/ini.core.php#ini.user-ini.cache-ttl) |
 | `user_ini.filename` | PHP_USER_INI_FILENAME | ".user.ini" | [Link](https://www.php.net/manual/en/ini.core.php#ini.user-ini.filename) |
 | `extension_dir` | PHP_EXTENSION_DIR | "/opt/etc/php/extensions" | [Link](https://www.php.net/manual/en/ini.core.php#ini.extension-dir) |
-| `extension` | PHP_EXTENSION | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.extension) |
-| `zend_extension` | PHP_ZEND_EXTENSION | "" | [Link](https://www.php.net/manual/en/ini.core.php#ini.zend-extension) |
 | `cgi.check_shebang_line` | PHP_CGI_CHECK_SHEBANG_LINE | "1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.check-shebang-line) |
 | `cgi.discard_path` | PHP_CGI_DISCARD_PATH | "0" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.discard-path) |
 | `cgi.fix_pathinfo` | PHP_CGI_FIX_PATHINFO | "1" | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.fix-pathinfo) |
