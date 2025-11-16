@@ -1,5 +1,5 @@
 {{- if ne (strings.ToLower .Env.PHP_PDO_MYSQL_ENABLED) "false" -}}
 
-pdo_mysql.default_socket = {{ .Env.PHP_PDO_MYSQL_DEFAULT_SOCKET }}
+pdo_mysql.default_socket = "{{ .Env.PHP_PDO_MYSQL_DEFAULT_SOCKET }}"
 
 {{- end -}}

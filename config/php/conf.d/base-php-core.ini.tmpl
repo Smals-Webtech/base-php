@@ -3,14 +3,14 @@
 short_open_tag = {{ .Env.PHP_SHORT_OPEN_TAG }}
 precision = {{ .Env.PHP_PRECISION }}
 serialize_precision = {{ .Env.PHP_SERIALIZE_PRECISION }}
-disable_functions = {{ .Env.PHP_DISABLE_FUNCTIONS }}
-disable_classes = {{ .Env.PHP_DISABLE_CLASSES }}
+disable_functions = "{{ .Env.PHP_DISABLE_FUNCTIONS }}"
+disable_classes = "{{ .Env.PHP_DISABLE_CLASSES }}"
 exit_on_timeout = {{ .Env.PHP_EXIT_ON_TIMEOUT }}
 expose_php = {{ .Env.PHP_EXPOSE_PHP }}
 hard_timeout = {{ .Env.PHP_HARD_TIMEOUT }}
 zend.exception_ignore_args = {{ .Env.PHP_ZEND_EXCEPTION_IGNORE_ARGS }}
 zend.multibyte = {{ .Env.PHP_ZEND_MULTIBYTE }}
-zend.script_encoding = {{ .Env.PHP_ZEND_SCRIPT_ENCODING }}
+zend.script_encoding = "{{ .Env.PHP_ZEND_SCRIPT_ENCODING }}"
 zend.detect_unicode = {{ .Env.PHP_ZEND_DETECT_UNICODE }}
 zend.signal_check = {{ .Env.PHP_ZEND_SIGNAL_CHECK }}
 zend.assertions = {{ .Env.PHP_ZEND_ASSERTIONS }}
@@ -18,46 +18,46 @@ zend.exception_string_param_max_len = {{ .Env.PHP_ZEND_EXCEPTION_STRING_PARAM_MA
 
 ; Resource Limits
 
-memory_limit = {{ .Env.PHP_MEMORY_LIMIT }}
+memory_limit = "{{ .Env.PHP_MEMORY_LIMIT }}"
 
 ; Performance Tuning
 
-realpath_cache_size = {{ .Env.PHP_REALPATH_CACHE_SIZE }}
+realpath_cache_size = "{{ .Env.PHP_REALPATH_CACHE_SIZE }}"
 realpath_cache_ttl = {{ .Env.PHP_REALPATH_CACHE_TTL }}
 
 ; Data Handling
 
 arg_separator.output = "{{ .Env.PHP_ARG_SEPARATOR_OUTPUT }}"
 arg_separator.input = "{{ .Env.PHP_ARG_SEPARATOR_INPUT }}"
-variables_order = {{ .Env.PHP_VARIABLES_ORDER }}
-request_order = {{ .Env.PHP_REQUEST_ORDER }}
+variables_order = "{{ .Env.PHP_VARIABLES_ORDER }}"
+request_order = "{{ .Env.PHP_REQUEST_ORDER }}"
 auto_globals_jit = {{ .Env.PHP_AUTO_GLOBALS_JIT }}
 register_argc_argv = {{ .Env.PHP_REGISTER_ARGC_ARGV }}
 enable_post_data_reading = {{ .Env.PHP_ENABLE_POST_DATA_READING }}
-post_max_size = {{ .Env.PHP_POST_MAX_SIZE }}
-auto_prepend_file = {{ .Env.PHP_AUTO_PREPEND_FILE }}
-auto_append_file = {{ .Env.PHP_AUTO_APPEND_FILE }}
-default_mimetype = {{ .Env.PHP_DEFAULT_MIMETYPE }}
-default_charset = {{ .Env.PHP_DEFAULT_CHARSET }}
-input_encoding = {{ .Env.PHP_INPUT_ENCODING }}
-output_encoding = {{ .Env.PHP_OUTPUT_ENCODING }}
-internal_encoding = {{ .Env.PHP_INTERNAL_ENCODING }}
+post_max_size = "{{ .Env.PHP_POST_MAX_SIZE }}"
+auto_prepend_file = "{{ .Env.PHP_AUTO_PREPEND_FILE }}"
+auto_append_file = "{{ .Env.PHP_AUTO_APPEND_FILE }}"
+default_mimetype = "{{ .Env.PHP_DEFAULT_MIMETYPE }}"
+default_charset = "{{ .Env.PHP_DEFAULT_CHARSET }}"
+input_encoding = "{{ .Env.PHP_INPUT_ENCODING }}"
+output_encoding = "{{ .Env.PHP_OUTPUT_ENCODING }}"
+internal_encoding = "{{ .Env.PHP_INTERNAL_ENCODING }}"
 
 ; Paths and Directories
 
-include_path = {{ .Env.PHP_INCLUDE_PATH }}
-open_basedir = {{ .Env.PHP_OPEN_BASEDIR }}
-doc_root = {{ .Env.PHP_DOC_ROOT }}
-user_dir = {{ .Env.PHP_USER_DIR }}
+include_path = "{{ .Env.PHP_INCLUDE_PATH }}"
+open_basedir = "{{ .Env.PHP_OPEN_BASEDIR }}"
+doc_root = "{{ .Env.PHP_DOC_ROOT }}"
+user_dir = "{{ .Env.PHP_USER_DIR }}"
 user_ini.cache_ttl = {{ .Env.PHP_USER_INI_CACHE_TTL }}
-user_ini.filename = {{ .Env.PHP_USER_INI_FILENAME }}
-extension_dir = {{ .Env.PHP_EXTENSION_DIR }}
+user_ini.filename = "{{ .Env.PHP_USER_INI_FILENAME }}"
+extension_dir = "{{ .Env.PHP_EXTENSION_DIR }}"
 cgi.check_shebang_line = {{ .Env.PHP_CGI_CHECK_SHEBANG_LINE }}
 cgi.discard_path = {{ .Env.PHP_CGI_DISCARD_PATH }}
 cgi.fix_pathinfo = {{ .Env.PHP_CGI_FIX_PATHINFO }}
 cgi.force_redirect = {{ .Env.PHP_CGI_FORCE_REDIRECT }}
 cgi.nph = {{ .Env.PHP_CGI_NPH }}
-cgi.redirect_status_env = {{ .Env.PHP_CGI_REDIRECT_STATUS_ENV }}
+cgi.redirect_status_env = "{{ .Env.PHP_CGI_REDIRECT_STATUS_ENV }}"
 cgi.rfc2616_headers = {{ .Env.PHP_CGI_RFC2616_HEADERS }}
 fastcgi.impersonate = {{ .Env.PHP_FASTCGI_IMPERSONATE }}
 fastcgi.logging = {{ .Env.PHP_FASTCGI_LOGGING }}
@@ -66,15 +66,15 @@ fastcgi.logging = {{ .Env.PHP_FASTCGI_LOGGING }}
 
 file_uploads = {{ .Env.PHP_FILE_UPLOADS }}
 max_file_uploads = {{ .Env.PHP_MAX_FILE_UPLOADS }}
-upload_max_filesize = {{ .Env.PHP_UPLOAD_MAX_FILESIZE }}
-upload_tmp_dir = {{ .Env.PHP_UPLOAD_TMP_DIR }}
+upload_max_filesize = "{{ .Env.PHP_UPLOAD_MAX_FILESIZE }}"
+upload_tmp_dir = "{{ .Env.PHP_UPLOAD_TMP_DIR }}"
 
 ; PHP Options/Info
 
 max_input_nesting_level = {{ .Env.PHP_MAX_INPUT_NESTING_LEVEL }}
 max_input_vars = {{ .Env.PHP_MAX_INPUT_VARS }}
-max_execution_time = {{ .Env.PHP_MAX_EXECUTION_TIME }}
-max_input_time = {{ .Env.PHP_MAX_INPUT_TIME }}
+max_execution_time = "{{ .Env.PHP_MAX_EXECUTION_TIME }}"
+max_input_time = "{{ .Env.PHP_MAX_INPUT_TIME }}"
 
 ; Error Handling and Logging
 
@@ -83,8 +83,8 @@ error_reporting = {{ .Env.PHP_ERROR_REPORTING }}
 ignore_repeated_errors = {{ .Env.PHP_IGNORE_REPEATED_ERRORS }}
 ignore_repeated_source = {{ .Env.PHP_IGNORE_REPEATED_SOURCE }}
 report_memleaks = {{ .Env.PHP_REPORT_MEMLEAKS }}
-display_errors = {{ .Env.PHP_DISPLAY_ERRORS }}
+display_errors = "{{ .Env.PHP_DISPLAY_ERRORS }}"
 
-; Date/Time Runtime Configuration
+; Date/Time
 
-date.timezone = {{ .Env.PHP_DATE_TIMEZONE }}
+date.timezone = "{{ .Env.PHP_DATE_TIMEZONE }}"

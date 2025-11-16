@@ -1,6 +1,6 @@
 {{- if ne (strings.ToLower .Env.PHP_INTL_ENABLED) "false" -}}
 
-intl.default_locale = {{ .Env.PHP_INTL_DEFAULT_LOCALE }}
+intl.default_locale = "{{ .Env.PHP_INTL_DEFAULT_LOCALE }}"
 intl.error_level = {{ .Env.PHP_INTL_ERROR_LEVEL }}
 intl.use_exceptions = {{ .Env.PHP_INTL_USE_EXCEPTIONS }}
 
