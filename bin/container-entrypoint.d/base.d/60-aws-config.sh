@@ -18,7 +18,7 @@ apply-template /opt/config/aws/credentials.tmpl /opt/etc/aws/credentials
 
 log "INFO" "- Setup AWS Wrapper Script ..."
 
-apply-template /opt/config/sbin/aws.sh.tmpl /opt/sbin/aws.sh
+apply-template /opt/config/sbin/aws.tmpl /opt/sbin/aws.sh
 
 chmod +x /opt/sbin/aws.sh
 
