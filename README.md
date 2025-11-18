@@ -50,49 +50,119 @@ Supervisor is then launched as PID 1 to manage all application processes.
 A debug mode (`DEBUG=true`) enables shell tracing (`set -x`) and extended logging to facilitate startup diagnostics.  
 This approach ensures idempotent initialization, predictable config state, and no residual secrets or transient data in the container’s environment.  
 
+## 👷 Supervisor Configuration
+
+| Environment Variable                         | Default (prd)                  | Default (dev)                  | Documentation                                                                        |
+|----------------------------------------------|--------------------------------|--------------------------------|--------------------------------------------------------------------------------------|
+| `SUPERVISOR_XMLRPC_UNIX_SOCKET_ENABLED`      | "true"                         | "true"                         | [Link](https://supervisord.org/api.html#xml-rpc-api-documentation)                   |
+| `SUPERVISOR_XMLRPC_UNIX_SOCKET_PATH`         | "/app/var/run/supervisor.sock" | "/app/var/run/supervisor.sock" | [Link](https://supervisord.org/configuration.html#supervisorctl-section-values)      |
+| `SUPERVISOR_XMLRPC_UNIX_SOCKET_CHMOD`        | "0700"                         | "0700"                         | [Link](https://supervisord.org/configuration.html#unix-http-server-section-settings) |
+| `SUPERVISOR_XMLRPC_UNIX_SOCKET_CHOWN`        | "default:root"                 | "default:root"                 | [Link](https://supervisord.org/configuration.html#unix-http-server-section-settings) |
+| `SUPERVISOR_XMLRPC_UNIX_SOCKET_AUTH_ENABLED` | "true"                         | "true"                         | [Link](https://supervisord.org/configuration.html#supervisorctl-section-values)      |
+| `SUPERVISOR_XMLRPC_UNIX_SOCKET_USERNAME`     | "admin"                        | "admin"                        | [Link](https://supervisord.org/configuration.html#supervisorctl-section-values)      |
+| `SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD`     | "pa55w0rd"                     | "pa55w0rd"                     | [Link](https://supervisord.org/configuration.html#supervisorctl-section-values)      |
+| `SUPERVISOR_XMLRPC_INET_ENABLED`             | "false"                        | "false"                        | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
+| `SUPERVISOR_XMLRPC_INET_HOST`                | ""                             | ""                             | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
+| `SUPERVISOR_XMLRPC_INET_PORT`                | "9744"                         | "9744"                         | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
+| `SUPERVISOR_XMLRPC_INET_USERNAME`            | "admin"                        | "admin"                        | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
+| `SUPERVISOR_XMLRPC_INET_PASSWORD`            | "pa55w0rd"                     | "pa55w0rd"                     | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
+
 ## 🐘 PHP Configuration
 
 The PHP image ships with all required extensions pre-installed, but it’s designed to run in read-only mode at runtime.  
-To enable dynamic configuration, a writable volume is mounted and used as the active PHP configuration directory. During container startup, the entrypoint generates configuration files via gomplate and sets `PHP_INI_SCAN_DIR` to point to this writable path.  
-
-All installed extensions are symlinked by default from their actual `.so` locations into this writable directory. Each extension’s activation can be controlled via a corresponding environment variable (e.g., `PHP_APC_ENABLED=false` disables `apcu`). When enabled, the entrypoint also generates the appropriate `.ini` configuration file for the extension within the writable volume.
+To enable dynamic configuration, a writable volume is mounted and used as the active PHP configuration directory. During container startup, the entrypoint generates configuration files
+via gomplate and sets `PHP_INI_SCAN_DIR` to point to this writable path.  The default php.ini file ( `/usr/local/etc/php/php.ini` ) — which may differ depending on the image variant — is still loaded first, and the configuration files in `PHP_INI_SCAN_DIR` override any settings defined there.
 
 This mechanism provides full flexibility at startup while keeping the base image immutable and compatible with read-only filesystem deployments.
 
-| Extension | Environment Variable | Default Enabled | Configuration | Documentation |
-| --------- | -------------------- | --------------- | ------------- | ------------- |
-| `apcu` | PHP_APC_ENABLED | "true" | [Link](docs/php.md#apcu) | [Link](https://www.php.net/manual/en/book.apcu.php) |
-| `bcmath` | PHP_BCMATH_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.bc.php) |
-| `bz2` | PHP_BZ2_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.bzip2.php) |
-| `calendar` | PHP_CALENDAR_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.calendar.php) |
-| `exif` | PHP_EXIF_ENABLED | "true" | [Link](docs/php.md#exif) | [Link](https://www.php.net/manual/en/book.exif.php) |
-| `gd` | PHP_GD_ENABLED | "true" | [Link](docs/php.md#gd) | [Link](https://www.php.net/manual/en/book.image.php) |
-| `gettext` | PHP_GETTEXT_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.gettext.php) |
-| `intl` | PHP_INTL_ENABLED | "true" | [Link](docs/php.md#intl) | [Link](https://www.php.net/manual/en/book.intl.php) |
-| `ldap` | PHP_LDAP_ENABLED | "true" | [Link](docs/php.md#ldap) | [Link](https://www.php.net/manual/en/book.ldap.php) |
-| `mysqli` | PHP_MYSQLI_ENABLED | "true" | [Link](docs/php.md#mysqli) | [Link](https://www.php.net/manual/en/book.mysqli.php) |
-| `opcache` | PHP_OPCACHE_ENABLED | "true" | [Link](docs/php.md#opcache) | [Link](https://www.php.net/manual/en/book.opcache.php) |
-| `opentelemetry` | PHP_OPENTELEMETRY_ENABLED | "false" | [Link](docs/php.md#opentelemetry) | [Link](https://github.com/open-telemetry/opentelemetry-php-instrumentation) |
-| `pcntl` | PHP_PCNTL_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.pcntl.php) |
-| `pdo_mysql` | PHP_PDO_MYSQL_ENABLED | "true" | [Link](docs/php.md#mysql-pdo-driver) | [Link](https://www.php.net/manual/en/ref.pdo-mysql.php) |
-| `pdo_pgsql` | PHP_PDO_PGSQL_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/ref.pdo-pgsql.php) |
-| `pgsql` | PHP_PGSQL_ENABLED | "true" | [Link](docs/php.md#postgresql) | [Link](https://www.php.net/manual/en/book.pgsql.php) |
-| `redis` | PHP_REDIS_ENABLED | "true" | [Link](docs/php.md#redis) | [Link](https://github.com/phpredis/phpredis/) |
-| `soap` | PHP_SOAP_ENABLED | "true" | [Link](docs/php.md#soap) | [Link](https://www.php.net/manual/en/book.soap.php) |
-| `sodium` | PHP_SODIUM_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.sodium.php) |
-| `tidy` | PHP_TIDY_ENABLED | "true" | [Link](docs/php.md#tidy) | [Link](https://www.php.net/manual/en/book.tidy.php) |
-| `xdebug` | PHP_XDEBUG_ENABLED | "false" | [Link](docs/php.md#xdebug) | [Link](https://xdebug.org/) |
-| `xsl` | PHP_XSL_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.xsl.php) |
-| `zip` | PHP_ZIP_ENABLED | "true" | No Configuration Yet | [Link](https://www.php.net/manual/en/book.zip.php) |
+### Core
 
-## 📦 Available Variants
 
-| Tag                                            |  Description              | Platform(s)            |
-|------------------------------------------------|---------------------------|------------------------|
-| `smalswebtech/base-php:${PHP_VERSION}$-cli`    | PHP CLI only              | `amd64`, `arm64`       |
-| `smalswebtech/base-php:${PHP_VERSION}$-fpm`    | PHP-FPM engine            | `amd64`, `arm64`       |
-| `smalswebtech/base-php:${PHP_VERSION}$-apache` | Apache + PHP-FPM setup    | `amd64`, `arm64`       |
-| `smalswebtech/base-php:${PHP_VERSION}$-nginx`  | Nginx + PHP-FPM setup     | `amd64`, `arm64`       |
+### PHP Extensions
+
+All installed extensions are symlinked by default from their actual `.so` locations into this writable directory. Each extension’s activation can be controlled via a corresponding environment variable (e.g., `PHP_APC_ENABLED=false` disables `apcu`). When enabled, the entrypoint also generates the appropriate `.ini` configuration file for the extension within the writable volume.
+
+| Environment Variable        | Extension       | Enabled (prd) | Enabled (dev) | Configuration                        | Documentation                                                               |
+|-----------------------------|-----------------|---------------|---------------|--------------------------------------|-----------------------------------------------------------------------------|
+| `PHP_APC_ENABLED`           | `apcu`          | `true`        | `true`        | [Link](docs/php.md#apcu)             | [Link](https://www.php.net/manual/en/book.apcu.php)                         |
+| `PHP_BCMATH_ENABLED`        | `bcmath`        | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.bc.php)                           |
+| `PHP_BZ2_ENABLED`           | `bz2`           | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.bzip2.php)                        |
+| `PHP_CALENDAR_ENABLED`      | `calendar`      | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.calendar.php)                     |
+| `PHP_EXIF_ENABLED`          | `exif`          | `true`        | `true`        | [Link](docs/php.md#exif)             | [Link](https://www.php.net/manual/en/book.exif.php)                         |
+| `PHP_GD_ENABLED`            | `gd`            | `true`        | `true`        | [Link](docs/php.md#gd)               | [Link](https://www.php.net/manual/en/book.image.php)                        |
+| `PHP_GETTEXT_ENABLED`       | `gettext`       | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.gettext.php)                      |
+| `PHP_INTL_ENABLED`          | `intl`          | `true`        | `true`        | [Link](docs/php.md#intl)             | [Link](https://www.php.net/manual/en/book.intl.php)                         |
+| `PHP_LDAP_ENABLED`          | `ldap`          | `true`        | `true`        | [Link](docs/php.md#ldap)             | [Link](https://www.php.net/manual/en/book.ldap.php)                         |
+| `PHP_MYSQLI_ENABLED`        | `mysqli`        | `true`        | `true`        | [Link](docs/php.md#mysqli)           | [Link](https://www.php.net/manual/en/book.mysqli.php)                       |
+| `PHP_OPCACHE_ENABLED`       | `opcache`       | `true`        | `true`        | [Link](docs/php.md#opcache)          | [Link](https://www.php.net/manual/en/book.opcache.php)                      |
+| `PHP_OPENTELEMETRY_ENABLED` | `opentelemetry` | `false`       | `false`       | [Link](docs/php.md#opentelemetry)    | [Link](https://github.com/open-telemetry/opentelemetry-php-instrumentation) |
+| `PHP_PCNTL_ENABLED`         | `pcntl`         | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.pcntl.php)                        |
+| `PHP_PDO_MYSQL_ENABLED`     | `pdo_mysql`     | `true`        | `true`        | [Link](docs/php.md#mysql-pdo-driver) | [Link](https://www.php.net/manual/en/ref.pdo-mysql.php)                     |
+| `PHP_PDO_PGSQL_ENABLED`     | `pdo_pgsql`     | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/ref.pdo-pgsql.php)                     |
+| `PHP_PGSQL_ENABLED`         | `pgsql`         | `true`        | `true`        | [Link](docs/php.md#postgresql)       | [Link](https://www.php.net/manual/en/book.pgsql.php)                        |
+| `PHP_REDIS_ENABLED`         | `redis`         | `true`        | `true`        | [Link](docs/php.md#redis)            | [Link](https://github.com/phpredis/phpredis/)                               |
+| `PHP_SOAP_ENABLED`          | `soap`          | `true`        | `true`        | [Link](docs/php.md#soap)             | [Link](https://www.php.net/manual/en/book.soap.php)                         |
+| `PHP_SODIUM_ENABLED`        | `sodium`        | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.sodium.php)                       |
+| `PHP_TIDY_ENABLED`          | `tidy`          | `true`        | `true`        | [Link](docs/php.md#tidy)             | [Link](https://www.php.net/manual/en/book.tidy.php)                         |
+| `PHP_XDEBUG_ENABLED`        | `xdebug`        | `false`       | `true`        | [Link](docs/php.md#xdebug)           | [Link](https://xdebug.org/)                                                 |
+| `PHP_XSL_ENABLED`           | `xsl`           | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.xsl.php)                          |
+| `PHP_ZIP_ENABLED`           | `zip`           | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.zip.php)                          |
+
+### FastCGI Process Manager (FPM)
+
+| Environment Variable                      | Default (prd) | Default (dev) | Documentation                                                       |
+|-------------------------------------------|---------------|---------------|---------------------------------------------------------------------|
+| `PHP_FPM_MAX_CHILDREN`                    | `40`          | `40`          | [Link](https://www.php.net/manual/en/install.fpm.configuration.php) |
+| `PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES` | `16`          | `16`          | [Link](https://www.php.net/manual/en/install.fpm.configuration.php) |
+
+## 🪶 Apache Configuration
+
+APACHE_ENABLED_WCMTECH_DEFAULT="false"
+
+| Environment Variable                          | Default (prd)                                                  | Default (dev)                                                  | Documentation                                                                        |
+|-----------------------------------------------|----------------------------------------------------------------|----------------------------------------------------------------|--------------------------------------------------------------------------------------|
+| `APACHE_SERVER_TOKENS`                        | `Prod`                                                         | `Prod`                                                         | [Link](https://httpd.apache.org/docs/2.4/mod/core.html#servertokens)                 |
+| `APACHE_SERVER_ROOT`                          | `/app/var/www`                                                 | `/app/var/www`                                                 | [Link](https://httpd.apache.org/docs/2.4/mod/core.html#serverroot)                   |
+| `APACHE_LISTEN`                               | `9000`                                                         | `9000`                                                         | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#listen)                 |
+| `APACHE_SERVER_ADMIN`                         | `you@example.com`                                              | `you@example.com`                                              | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#serveradmin)            |
+| `APACHE_SERVER_SIGNATURE`                     | `On`                                                           | `On`                                                           | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#serversignature)        |
+| `APACHE_LOG_FORMAT_COMBINED`                  | `%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"` | `%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"` | [Link](https://httpd.apache.org/docs/2.4/mod/mod_log_config.html)                    |
+| `APACHE_LOG_FORMAT_COMMON`                    | `%h %l %u %t \"%r\" %>s %b`                                    | `%h %l %u %t \"%r\" %>s %b`                                    | [Link](https://httpd.apache.org/docs/2.4/mod/mod_log_config.html)                    |
+| `APACHE_DAEMON_LOG`                           | `info`                                                         | `info`                                                         | [Link](https://httpd.apache.org/docs/2.4/en/mod/core.html#loglevel)                  |
+| `APACHE_TIMEOUT`                              | `60`                                                           | `60`                                                           | [Link](https://httpd.apache.org/docs/2.4/en/mod/core.html#timeout)                   |
+| `APACHE_KEEP_ALIVE`                           | `On`                                                           | `On`                                                           | [Link](https://httpd.apache.org/docs/2.4/en/mod/core.html#keepalive)                 |
+| `APACHE_KEEP_ALIVE_TIMEOUT`                   | `5`                                                            | `5`                                                            | [Link](https://httpd.apache.org/docs/2.4/en/mod/core.html#maxkeepaliverequests)      |
+| `APACHE_USE_CANONICAL_NAME`                   | `Off`                                                          | `Off`                                                          | [Link](https://httpd.apache.org/docs/2.4/en/mod/core.html#usecanonicalname)          |
+| `APACHE_ACCESS_FILE_NAME`                     | `.htaccess`                                                    | `.htaccess`                                                    | [Link](https://httpd.apache.org/docs/2.4/en/mod/core.html#accessfilename)            |
+| `APACHE_HOSTNAME_LOOKUPS`                     | `Off`                                                          | `Off`                                                          | [Link](https://httpd.apache.org/docs/2.4/en/mod/core.html#hostnamelookups)           |
+| `APACHE_MPM_WORKER_START_SERVERS`             | `3`                                                            | `3`                                                            | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#startservers)           |
+| `APACHE_MPM_WORKER_MIN_SPARE_THREADS`         | `75`                                                           | `75`                                                           | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#minsparethreads)        |
+| `APACHE_MPM_WORKER_MAX_SPARE_THREADS`         | `250`                                                          | `250`                                                          | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#maxsparethreads)        |
+| `APACHE_MPM_WORKER_THREADS_PER_CHILD`         | `25`                                                           | `25`                                                           | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#threadsperchild)        |
+| `APACHE_MPM_WORKER_MAX_REQUEST_WORKERS`       | `400`                                                          | `400`                                                          | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#maxrequestworkers)      |
+| `APACHE_MPM_WORKER_MAX_CONNECTIONS_PER_CHILD` | `0`                                                            | `0`                                                            | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#maxconnectionsperchild) |
+| `APACHE_MPM_WORKER_MAX_MEM_FREE`              | `2048`                                                         | `2048`                                                         | [Link](https://httpd.apache.org/docs/2.4/mod/mpm_common.html#maxmemfree)             |
+
+## 🟩 Nginx Configuration
+
+> TODO
+
+## 💨 Varnish Configuration
+
+> TODO
+
+## ☁️ AWS CLI Configuration
+
+> TODO
+
+## 📦 Available Docker Image Variants
+
+| Tag                                            | Description            | Platform(s)      |
+|------------------------------------------------|------------------------|------------------|
+| `smalswebtech/base-php:${PHP_VERSION}$-cli`    | PHP CLI only           | `amd64`, `arm64` |
+| `smalswebtech/base-php:${PHP_VERSION}$-fpm`    | PHP-FPM engine         | `amd64`, `arm64` |
+| `smalswebtech/base-php:${PHP_VERSION}$-apache` | Apache + PHP-FPM setup | `amd64`, `arm64` |
+| `smalswebtech/base-php:${PHP_VERSION}$-nginx`  | Nginx + PHP-FPM setup  | `amd64`, `arm64` |
 
 > Variants are defined in the `docker-bake.hcl` using the `VARIANTS` list.
 
