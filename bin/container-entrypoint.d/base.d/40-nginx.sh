@@ -24,6 +24,11 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
 	create-symlink /app/var/www/html /var/www/html
 
+	if [[ "${NGINX_BASIC_AUTH_ENABLED}" == "true" ]]; then
+		log "INFO" "Configure Basic Authentication ..."
+		htpasswd -bcB "${NGINX_BASIC_AUTH_FILE_PATH}" "${NGINX_BASIC_AUTH_USERNAME}" "${NGINX_BASIC_AUTH_PASSWORD}"
+	fi
+
 else
 
 	log "INFO" "- Nginx is not enabled.  No configuration must be done."

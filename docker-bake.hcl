@@ -18,6 +18,10 @@ variable "PHP_EXT_INSTALLER_VERSION" {
   default = "2.9.6"
 }
 
+variable "NGINX_VERSION" {
+  default = "1.28.0"
+}
+
 variable "NODE_VERSION" {
   default = "22"
 }
@@ -108,6 +112,7 @@ target "default" {
     NODE_VERSION_ARG = "${NODE_VERSION}"
     COMPOSER_VERSION_ARG = "${COMPOSER_VERSION}"
     AWS_CLI_VERSION_ARG = "${AWS_CLI_VERSION}"
+    NGINX_VERSION_ARG = "${NGINX_VERSION}"
     GOMPLATE_VERSION_ARG = "${GOMPLATE_VERSION}"
     WAIT4X_VERSION_ARG = "${WAIT4X_VERSION}"
   }
