@@ -50,6 +50,7 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
 FROM php:${PHP_VERSION_ARG}-fpm-alpine3.22 AS fpm-prd
 
 ARG AWS_CLI_VERSION_ARG=2.27.25
+ARG NGINX_VERSION_ARG=1.28.0
 
 USER root
 
@@ -90,9 +91,16 @@ RUN set -eux ; \
     adduser default apache ;
 
 RUN set -eux ; \
-    apk add --no-cache --virtual .base-php-nginx-rundeps nginx \
-                                                         nginx-mod-http-headers-more \
-                                                         nginx-mod-http-vts ; \
+    apk add --no-cache --virtual .base-php-nginx-rundeps nginx=~${NGINX_VERSION_ARG} \
+                                                         nginx-mod-http-headers-more=~${NGINX_VERSION_ARG} \
+                                                         nginx-mod-http-vts=~${NGINX_VERSION_ARG} \
+                                                         lua5.1 \
+                                                         lua5.1-cjson \
+                                                         lua-resty-core \
+                                                         nginx-mod-devel-kit=~${NGINX_VERSION_ARG} \
+                                                         nginx-mod-http-lua=~${NGINX_VERSION_ARG} \
+                                                         nginx-mod-http-lua-upstream=~${NGINX_VERSION_ARG} \
+                                                         nginx-mod-http-js=~${NGINX_VERSION_ARG} ; \
     adduser default nginx ;
 
 RUN install-php-extensions ${PHP_EXT_INSTALL}
