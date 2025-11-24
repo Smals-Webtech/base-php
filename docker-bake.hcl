@@ -15,7 +15,7 @@ variable "PHP_VERSION" {
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
-  default = "2.9.6"
+  default = "2.9.18"
 }
 
 variable "NGINX_VERSION" {
@@ -27,7 +27,7 @@ variable "NODE_VERSION" {
 }
 
 variable "COMPOSER_VERSION" {
-  default = "2.8.10"
+  default = "2.9.2"
 }
 
 variable "AWS_CLI_VERSION" {
@@ -39,7 +39,7 @@ variable "GOMPLATE_VERSION" {
 }
 
 variable "WAIT4X_VERSION" {
-  default = "3.5.0"
+  default = "3.6.0"
 }
 
 variable "DOCKER_IMAGE_NAME" {

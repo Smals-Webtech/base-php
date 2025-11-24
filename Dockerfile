@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.15
 ARG ALPINE_VERSION_ARG=3.22
 ARG PHP_VERSION_ARG=8.4.15
-ARG PHP_EXT_INSTALLER_VERSION_ARG=2.9.6
+ARG PHP_EXT_INSTALLER_VERSION_ARG=2.9.18
 ARG NODE_VERSION_ARG=22
-ARG COMPOSER_VERSION_ARG=2.8.10
+ARG COMPOSER_VERSION_ARG=2.9.2
 ARG GOMPLATE_VERSION_ARG=4.3.3
-ARG WAIT4X_VERSION_ARG=3.5.0
+ARG WAIT4X_VERSION_ARG=3.6.0
 
 FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext-installer
 FROM hairyhenderson/gomplate:v${GOMPLATE_VERSION_ARG}-alpine AS gomplate
@@ -143,7 +143,7 @@ CMD ["/usr/bin/supervisord", "-c", "/opt/etc/supervisord.conf"]
 
 FROM fpm-prd AS fpm-dev
 
-ARG COMPOSER_VERSION_ARG=2.8.10
+ARG COMPOSER_VERSION_ARG=2.9.2
 ARG NODE_VERSION_ARG=22
 
 ENV PHP_XDEBUG_ENABLED="true"
@@ -286,7 +286,7 @@ ENTRYPOINT ["dumb-init","--","container-entrypoint-cli"]
 
 FROM cli-prd AS cli-dev
 
-ARG COMPOSER_VERSION_ARG=2.8.10
+ARG COMPOSER_VERSION_ARG=2.9.2
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 
