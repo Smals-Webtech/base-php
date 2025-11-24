@@ -11,7 +11,7 @@ variable "ALPINE_VERSION" {
 }
 
 variable "PHP_VERSION" {
-  default = "8.4.14"
+  default = "8.4.15"
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
