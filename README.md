@@ -108,6 +108,21 @@ All installed extensions are symlinked by default from their actual `.so` locati
 | `PHP_XSL_ENABLED`           | `xsl`           | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.xsl.php)                          |
 | `PHP_ZIP_ENABLED`           | `zip`           | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.zip.php)                          |
 
+### Adding Custom Extensions from a Child Image
+
+The parent image uses the `PHP_EXT_INSTALL` variable to define the default list of extensions to install.
+To allow child images to add their own extensions without modifying the parent image, an additional variable is provided: **`PHP_EXT_INSTALL_CUSTOM`**.
+
+This variable can be defined or overridden directly in the child image’s `Dockerfile`. Its content will be merged with `PHP_EXT_INSTALL` during the installation process, making it easy to include extra extensions without affecting the base configuration.
+
+**Example in a child image:**
+
+```Dockerfile
+ENV PHP_EXT_INSTALL_CUSTOM="xdebug redis"
+```
+
+These extensions will automatically be processed and installed along with the default ones defined in the parent image.
+
 ### FastCGI Process Manager (FPM)
 
 | Environment Variable                      | Default (prd) | Default (dev) | Documentation                                                       |

@@ -12,7 +12,7 @@ log "INFO" "- Setup PHP Modules Configuration File(s) ..."
 
 EXTENSIONS_DIR=$(php -r 'echo ini_get("extension_dir");')
 
-read -r -a EXTENSIONS <<<"$PHP_EXT_INSTALL"
+read -r -a EXTENSIONS <<<"$PHP_EXT_INSTALL $PHP_EXT_INSTALL_CUSTOM"
 
 for EXT in "${EXTENSIONS[@]}"; do
 
