@@ -146,7 +146,8 @@ FROM fpm-prd AS fpm-dev
 ARG COMPOSER_VERSION_ARG=2.9.2
 ARG NODE_VERSION_ARG=22
 
-ENV PHP_XDEBUG_ENABLED="true"
+ENV PHP_XDEBUG_ENABLED="true" \
+    XDEBUG_MODE=develop
 
 LABEL be.smals.webtech.base.node-version="${NODE_VERSION_ARG}" \
       be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
@@ -290,7 +291,8 @@ ARG COMPOSER_VERSION_ARG=2.9.2
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 
-ENV PHP_XDEBUG_ENABLED="true"
+ENV PHP_XDEBUG_ENABLED="true" \
+    XDEBUG_MODE=develop
 
 USER root
 
