@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.15
 ARG ALPINE_VERSION_ARG=3.22
 ARG PHP_VERSION_ARG=8.4.15
-ARG PHP_EXT_INSTALLER_VERSION_ARG=2.9.18
+ARG PHP_EXT_INSTALLER_VERSION_ARG=2.9.19
 ARG NODE_VERSION_ARG=22
 ARG COMPOSER_VERSION_ARG=2.9.2
 ARG GOMPLATE_VERSION_ARG=4.3.3
@@ -47,7 +47,7 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
 # PHP-FPM / PRD
 #
 
-FROM php:${PHP_VERSION_ARG}-fpm-alpine3.22 AS fpm-prd
+FROM php:${PHP_VERSION_ARG}-fpm-alpine${ALPINE_VERSION_ARG} AS fpm-prd
 
 ARG AWS_CLI_VERSION_ARG=2.27.25
 ARG NGINX_VERSION_ARG=1.28.0
@@ -225,7 +225,7 @@ HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
 # PHP-CLI / PRD
 #
 
-FROM php:${PHP_VERSION_ARG}-cli-alpine3.22 AS cli-prd
+FROM php:${PHP_VERSION_ARG}-cli-alpine${ALPINE_VERSION_ARG} AS cli-prd
 
 ARG AWS_CLI_VERSION_ARG=2.27.25
 

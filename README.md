@@ -115,10 +115,14 @@ To allow child images to add their own extensions without modifying the parent i
 
 This variable can be defined or overridden directly in the child image’s `Dockerfile`. Its content will be merged with `PHP_EXT_INSTALL` during the installation process, making it easy to include extra extensions without affecting the base configuration.
 
+This image uses **[mlocati/docker-php-extension-installer](https://github.com/mlocati/docker-php-extension-installer)** to install PHP extensions in a simple and reliable way.  
+
 **Example in a child image:**
 
 ```Dockerfile
-ENV PHP_EXT_INSTALL_CUSTOM="xdebug redis"
+ENV PHP_EXT_INSTALL_CUSTOM="xdebug-^3.5 redis-stable apcu gd"
+
+RUN install-php-extensions ${PHP_EXT_INSTALL_CUSTOM}
 ```
 
 These extensions will automatically be processed and installed along with the default ones defined in the parent image.
@@ -132,7 +136,7 @@ These extensions will automatically be processed and installed along with the de
 
 ## 🪶 Apache Configuration
 
-APACHE_ENABLED_WCMTECH_DEFAULT="false"
+### Todo: Add explain about : `APACHE_ENABLED="true"`
 
 | Environment Variable                          | Default (prd)                                                  | Default (dev)                                                  | Documentation                                                                        |
 |-----------------------------------------------|----------------------------------------------------------------|----------------------------------------------------------------|--------------------------------------------------------------------------------------|
