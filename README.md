@@ -1,6 +1,6 @@
 # 🐘 PHP Base Image – smalswebtech/base-php
 
-This repository provides a **production-ready, multi-variant PHP base image** built on Alpine and PHP 8.4.10, ideal for extending with any PHP application or framework (Laravel, Symfony, WordPress, etc.).
+This repository provides a **production-ready, multi-variant PHP base image** built on Alpine and PHP 8.4.x, ideal for extending with any PHP application or framework (Laravel, Symfony, WordPress, etc.).
 
 ✅ Hosted on Docker Hub: [smalswebtech/base-php](https://hub.docker.com/r/smalswebtech/base-php)
 
