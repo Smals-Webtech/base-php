@@ -7,7 +7,7 @@ variable "VARIANTS" {
 }
 
 variable "ALPINE_VERSION" {
-  default = "3.22"
+  default = "3.23"
 }
 
 variable "PHP_VERSION" {
@@ -15,7 +15,7 @@ variable "PHP_VERSION" {
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
-  default = "2.9.19"
+  default = "2.9.20"
 }
 
 variable "NGINX_VERSION" {
@@ -31,7 +31,7 @@ variable "COMPOSER_VERSION" {
 }
 
 variable "AWS_CLI_VERSION" {
-  default = "2.27.25"
+  default = "2.32.7"
 }
 
 variable "GOMPLATE_VERSION" {
