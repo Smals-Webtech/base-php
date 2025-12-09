@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+PHP_BYPASS_INI_DEFAULT_VALUES="${PHP_BYPASS_INI_DEFAULT_VALUES:-false}"
+
 # IF NOT RETRIEVED FROM .ini FILE
 #
 # Note:

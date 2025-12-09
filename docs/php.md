@@ -15,6 +15,7 @@ The final value of a PHP directive is determined in the following order:
 2. **`.ini` file value**
    - If no container override is provided, the value is read from the active PHP `.ini` file (`php.ini`, `php-fpm.ini`, etc.).
    - This covers both development and production `.ini` variants.
+   - You can avoid this behaviour by setting `PHP_BYPASS_INI_DEFAULT_VALUES` environment variable to `true`.
 
 3. **Fixed default value**
    - If the directive is not defined in the `.ini` file, a built-in **fixed default** is used.

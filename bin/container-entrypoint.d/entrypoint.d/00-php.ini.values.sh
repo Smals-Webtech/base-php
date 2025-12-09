@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 
+if [[ "${PHP_BYPASS_INI_DEFAULT_VALUES}" == "true" ]]; then
+  return 0
+fi
+
 # Core Language Options
 
 PHP_SHORT_OPEN_TAG_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("short_open_tag");')"
