@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 if [[ "${PHP_BYPASS_INI_DEFAULT_VALUES}" == "true" ]]; then
-  return 0
+	return 0
 fi
 
 # Core Language Options
