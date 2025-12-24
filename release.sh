@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 
-# Release script to create tags and manage Caddy module releases.
+# Release script to create tags and manage releases.
 # This script follows semantic versioning and interacts with GitHub.
 # It requires git, gh, and brew to be installed.
+# Howto use :
+#
+#     $>git checkout main
+#     $>./release.sh x.y.z
+#
+#     $>git checkout 8.4
+#     $>./release.sh 8.4.z
 
 set -o nounset  # Exit on unset variable
 set -o errexit  # Exit on error
@@ -40,9 +47,15 @@ fi
 # Define version from argument
 VERSION="$1"
 
-# Ensure we are on the 'main' branch
-echo "Switching to 'main' branch..."
-git checkout main
+# Ensure we are on the 'releaseable' branch
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+
+if [[ "$CURRENT_BRANCH" != "main" && ! "$CURRENT_BRANCH" =~ ^[0-9]+\.[0-9]+$ ]]; then
+	echo "Error: Releases are only allowed from main or x.y branches." >&2
+	exit 1
+fi
+
+echo "Releasing from branch: $CURRENT_BRANCH"
 git pull
 
 # Commit changes (if any) and prepare for release
@@ -68,6 +81,17 @@ fi
 
 # Create a new GitHub release with the generated notes
 echo "Creating GitHub release for $VERSION..."
-gh release create --generate-notes --latest --notes-start-tag "${previous_tag}" --verify-tag "$VERSION"
+
+LATEST_FLAG=""
+
+if [[ "CURRENT_BRANCH" == "main" ]]; then
+	LATEST_FLAG="--latest"
+fi
+
+gh release create \
+	--generate-notes \
+	$LATEST_FLAG \
+	--notes-start-tag "${previous_tag}" \
+	--verify-tag "$VERSION"
 
 echo "Release $VERSION created successfully."
