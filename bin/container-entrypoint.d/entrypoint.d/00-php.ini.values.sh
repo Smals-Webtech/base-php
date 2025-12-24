@@ -10,7 +10,6 @@ PHP_SHORT_OPEN_TAG_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("short_open_tag");'
 PHP_PRECISION_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("precision");')"
 PHP_SERIALIZE_PRECISION_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("serialize_precision");')"
 PHP_DISABLE_FUNCTIONS_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("disable_functions");')"
-PHP_DISABLE_CLASSES_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("disable_classes");')"
 PHP_EXIT_ON_TIMEOUT_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("exit_on_timeout");')"
 PHP_EXPOSE_PHP_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("expose_php");')"
 PHP_HARD_TIMEOUT_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("hard_timeout");')"
@@ -25,6 +24,7 @@ PHP_ZEND_EXCEPTION_STRING_PARAM_MAX_LEN_INI_DEFAULT_VALUE="$(php -r 'echo ini_ge
 # Core Resource Limits
 
 PHP_MEMORY_LIMIT_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("memory_limit");')"
+PHP_MAX_MEMORY_LIMIT_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("max_memory_limit");')"
 
 # Core Performance Tuning
 
@@ -119,6 +119,7 @@ PHP_OPCACHE_ERROR_LOG_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("opcache.error_l
 PHP_OPCACHE_FILE_CACHE_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("opcache.file_cache");')"
 PHP_OPCACHE_FILE_CACHE_CONSISTENCY_CHECKS_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("opcache.file_cache_consistency_checks");')"
 PHP_OPCACHE_FILE_CACHE_ONLY_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("opcache.file_cache_only");')"
+PHP_OPCACHE_FILE_CACHE_READ_ONLY_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("opcache.file_cache_read_only");')"
 PHP_OPCACHE_FILE_UPDATE_PROTECTION_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("opcache.file_update_protection");')"
 PHP_OPCACHE_FORCE_RESTART_TIMEOUT_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("opcache.force_restart_timeout");')"
 PHP_OPCACHE_HUGE_CODE_PAGES_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("opcache.huge_code_pages");')"

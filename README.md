@@ -1,6 +1,6 @@
 # 🐘 PHP Base Image – smalswebtech/base-php
 
-This repository provides a **production-ready, multi-variant PHP base image** built on Alpine and PHP 8.4.x, ideal for extending with any PHP application or framework (Laravel, Symfony, WordPress, etc.).
+This repository provides a **production-ready, multi-variant PHP base image** built on Alpine and PHP 8.5.x, ideal for extending with any PHP application or framework (Laravel, Symfony, WordPress, etc.).
 
 ✅ Hosted on Docker Hub: [smalswebtech/base-php](https://hub.docker.com/r/smalswebtech/base-php)
 
@@ -210,7 +210,7 @@ docker buildx bake default
 Extend from this image in your own `Dockerfile`:
 
 ```dockerfile
-FROM smalswebtech/base-php:8.4.10-fpm
+FROM smalswebtech/base-php:8.5-fpm
 
 COPY . /app
 WORKDIR /app
@@ -229,7 +229,7 @@ These are generated dynamically based on Git metadata and bake target.
 - `smalswebtech/base-php:${PHP_VERSION}$-apache`
 - `smalswebtech/base-php:${PHP_VERSION}$-nginx`
 
-> Optionally with `-dev` suffix (e.g. `:8.4.10-cli-dev`)
+> Optionally with `-dev` suffix (e.g. `:8.5.0-cli-dev`)
 
 ## 📬 Contact
 

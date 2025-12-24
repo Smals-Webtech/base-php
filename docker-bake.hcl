@@ -11,7 +11,7 @@ variable "ALPINE_VERSION" {
 }
 
 variable "PHP_VERSION" {
-  default = "8.4.15"
+  default = "8.5.0"
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
@@ -119,7 +119,7 @@ target "default" {
 
   labels = {
     "be.smals.webtech.base.build-date"     = "${timestamp()}"
-    "be.smals.webtech.base.name"           = "Base PHP 8.4.x Docker Image"
+    "be.smals.webtech.base.name"           = "Base PHP 8.5.x Docker Image"
     "be.smals.webtech.base.description"    = "Docker base image is the basic image on which you add layers (which are basically filesystem changes) and create a final image containing your App."
     "be.smals.webtech.base.url"            = "https://www.smals.be"
     "be.smals.webtech.base.vcs-ref"        = GIT_HASH

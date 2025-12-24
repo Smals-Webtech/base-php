@@ -35,7 +35,6 @@ This table summarizes how PHP configuration directives are mapped to environment
 | `precision`                           | `PHP_PRECISION`                           | `14`          | `14`          | [Link](https://www.php.net/manual/en/ini.core.php#ini.precision)                           |
 | `serialize_precision`                 | `PHP_SERIALIZE_PRECISION`                 | `-1`          | `-1`          | [Link](https://www.php.net/manual/en/ini.core.php#ini.serialize-precision)                 |
 | `disable_functions`                   | `PHP_DISABLE_FUNCTIONS`                   | `""`          | `""`          | [Link](https://www.php.net/manual/en/ini.core.php#ini.disable-functions)                   |
-| `disable_classes`                     | `PHP_DISABLE_CLASSES`                     | `""`          | `""`          | [Link](https://www.php.net/manual/en/ini.core.php#ini.disable-classes)                     |
 | `exit_on_timeout`                     | `PHP_EXIT_ON_TIMEOUT`                     | `""`          | `""`          | [Link](https://www.php.net/manual/en/ini.core.php#ini.exit-on-timeout)                     |
 | `expose_php`                          | `PHP_EXPOSE_PHP`                          | `false`       | `false`       | [Link](https://www.php.net/manual/en/ini.core.php#ini.expose-php)                          |
 | `hard_timeout`                        | `PHP_HARD_TIMEOUT`                        | `2`           | `2`           | [Link](https://www.php.net/manual/en/ini.core.php#ini.hard-timeout)                        |
@@ -49,9 +48,10 @@ This table summarizes how PHP configuration directives are mapped to environment
 
 ### Resource Limits
 
-| Directive      | Environment Variable | Default (prd) | Default (dev) | Documentation                                                       |
-|----------------|----------------------|---------------|---------------|---------------------------------------------------------------------|
-| `memory_limit` | `PHP_MEMORY_LIMIT`   | `128M`        | `128M`        | [Link](https://www.php.net/manual/en/ini.core.php#ini.memory-limit) |
+| Directive          | Environment Variable   | Default (prd) | Default (dev) | Documentation                                                       |
+|--------------------|------------------------|---------------|---------------|---------------------------------------------------------------------|
+| `memory_limit`     | `PHP_MEMORY_LIMIT`     | `128M`        | `128M`        | [Link](https://www.php.net/manual/en/ini.core.php#ini.memory-limit) |
+| `max_memory_limit` | `PHP_MAX_MEMORY_LIMIT` | `-1`          | `-1`          | [Link](https://www.php.net/manual/en/migration85.other-changes.php) |
 
 ### Performance Tuning
 
@@ -164,6 +164,7 @@ This table summarizes how PHP configuration directives are mapped to environment
 | `opcache.file_cache`                    | `PHP_OPCACHE_FILE_CACHE`                    | `""`          | `""`          | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.file-cache)                    |
 | `opcache.file_cache_consistency_checks` | `PHP_OPCACHE_FILE_CACHE_CONSISTENCY_CHECKS` | `On`          | `On`          | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.file-cache-consistency-checks) |
 | `opcache.file_cache_only`               | `PHP_OPCACHE_FILE_CACHE_ONLY`               | `Off`         | `Off`         | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.file-cache-only)               |
+| `opcache.file_cache_read_only`          | `PHP_OPCACHE_FILE_CACHE_READ_ONLY`          | `0`           | `0`           | [Link](https://www.php.net/manual/en/migration85.other-changes.php)                                       |
 | `opcache.file_update_protection`        | `PHP_OPCACHE_FILE_UPDATE_PROTECTION`        | `2`           | `2`           | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.file_update_protection)        |
 | `opcache.force_restart_timeout`         | `PHP_OPCACHE_FORCE_RESTART_TIMEOUT`         | `180`         | `180`         | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.force-restart-timeout)         |
 | `opcache.huge_code_pages`               | `PHP_OPCACHE_HUGE_CODE_PAGES`               | `Off`         | `Off`         | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.huge_code_pages)               |
@@ -175,7 +176,7 @@ This table summarizes how PHP configuration directives are mapped to environment
 | `opcache.jit_buffer_size`               | `PHP_OPCACHE_JIT_BUFFER_SIZE`               | `64M`         | `64M`         | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-buffer-size)               |
 | `opcache.jit_debug`                     | `PHP_OPCACHE_JIT_DEBUG`                     | `0`           | `0`           | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-debug)                     |
 | `opcache.jit_hot_func`                  | `PHP_OPCACHE_JIT_HOT_FUNC`                  | `127`         | `127`         | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-hot-func)                  |
-| `opcache.jit_hot_loop`                  | `PHP_OPCACHE_JIT_HOT_LOOP`                  | `64`          | `64`          | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-hot-loop)                  |
+| `opcache.jit_hot_loop`                  | `PHP_OPCACHE_JIT_HOT_LOOP`                  | `61`          | `61`          | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-hot-loop)                  |
 | `opcache.jit_hot_return`                | `PHP_OPCACHE_JIT_HOT_RETURN`                | `8`           | `8`           | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-hot-return)                |
 | `opcache.jit_hot_side_exit`             | `PHP_OPCACHE_JIT_HOT_SIDE_EXIT`             | `8`           | `8`           | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-hot-side-exit)             |
 | `opcache.jit_max_exit_counters`         | `PHP_OPCACHE_JIT_MAX_EXIT_COUNTERS`         | `8192`        | `8192`        | [Link](https://www.php.net/manual/en/opcache.configuration.php#ini.opcache.jit-max-exit-counters)         |

@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.15
 ARG ALPINE_VERSION_ARG=3.23
-ARG PHP_VERSION_ARG=8.4.15
+ARG PHP_VERSION_ARG=8.5.0
 ARG PHP_EXT_INSTALLER_VERSION_ARG=2.9.19
 ARG NODE_VERSION_ARG=22
 ARG COMPOSER_VERSION_ARG=2.9.2
@@ -146,8 +146,7 @@ FROM fpm-prd AS fpm-dev
 ARG COMPOSER_VERSION_ARG=2.9.2
 ARG NODE_VERSION_ARG=22
 
-ENV PHP_XDEBUG_ENABLED="true" \
-    XDEBUG_MODE=develop
+ENV PHP_XDEBUG_ENABLED="true"
 
 LABEL be.smals.webtech.base.node-version="${NODE_VERSION_ARG}" \
       be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
@@ -291,8 +290,7 @@ ARG COMPOSER_VERSION_ARG=2.9.2
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 
-ENV PHP_XDEBUG_ENABLED="true" \
-    XDEBUG_MODE=develop
+ENV PHP_XDEBUG_ENABLED="true"
 
 USER root
 

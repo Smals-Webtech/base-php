@@ -4,7 +4,6 @@ short_open_tag = {{ .Env.PHP_SHORT_OPEN_TAG }}
 precision = {{ .Env.PHP_PRECISION }}
 serialize_precision = {{ .Env.PHP_SERIALIZE_PRECISION }}
 disable_functions = "{{ .Env.PHP_DISABLE_FUNCTIONS }}"
-disable_classes = "{{ .Env.PHP_DISABLE_CLASSES }}"
 exit_on_timeout = {{ .Env.PHP_EXIT_ON_TIMEOUT }}
 expose_php = {{ .Env.PHP_EXPOSE_PHP }}
 hard_timeout = {{ .Env.PHP_HARD_TIMEOUT }}
@@ -19,6 +18,7 @@ zend.exception_string_param_max_len = {{ .Env.PHP_ZEND_EXCEPTION_STRING_PARAM_MA
 ; Resource Limits
 
 memory_limit = "{{ .Env.PHP_MEMORY_LIMIT }}"
+max_memory_limit  = "{{ .Env.PHP_MAX_MEMORY_LIMIT }}"
 
 ; Performance Tuning
 
