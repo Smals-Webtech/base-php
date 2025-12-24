@@ -84,7 +84,7 @@ echo "Creating GitHub release for $VERSION..."
 
 LATEST_FLAG=""
 
-if [[ "CURRENT_BRANCH" == "main" ]]; then
+if [[ "$CURRENT_BRANCH" == "main" ]]; then
 	LATEST_FLAG="--latest"
 fi
 
