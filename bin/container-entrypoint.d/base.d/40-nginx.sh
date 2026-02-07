@@ -26,16 +26,23 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 			COOKIES+=("$cookie")
 		done
 
-		METHODS_UNIQ=($(printf '%s\n' "${METHODS[@]}" | sort -u))
-		COOKIES_UNIQ=($(printf '%s\n' "${COOKIES[@]}" | sort -u))
+		mapfile -t METHODS_UNIQ < <(
+			printf '%s\n' "${METHODS[@]}" | sort -u
+		)
 
-		export METHODS_JSON=$(printf '%s\n' "${METHODS_UNIQ[@]}" | jq -R . | jq -s -c .)
-		export COOKIES_JSON=$(printf '%s\n' "${COOKIES_UNIQ[@]}" | jq -R . | jq -s -c .)
+		mapfile -t COOKIES_UNIQ < <(
+			printf '%s\n' "${COOKIES[@]}" | sort -u
+		)
+
+		METHODS_JSON=$(printf '%s\n' "${METHODS_UNIQ[@]}" | jq -R . | jq -s -c .)
+		COOKIES_JSON=$(printf '%s\n' "${COOKIES_UNIQ[@]}" | jq -R . | jq -s -c .)
+
+		export METHODS_JSON COOKIES_JSON
 
 		gomplate -f /opt/config/nginx/conf.d/fastcgi-cache.map.tmpl \
-				-d methods=env:/METHODS_JSON?type=application/json \
-				-d cookies=env:/COOKIES_JSON?type=application/json \
-				-o /opt/etc/nginx/conf.d/fastcgi-cache.map
+			-d methods=env:/METHODS_JSON?type=application/json \
+			-d cookies=env:/COOKIES_JSON?type=application/json \
+			-o /opt/etc/nginx/conf.d/fastcgi-cache.map
 
 		unset METHODS COOKIES METHODS_UNIQ COOKIES_UNIQ METHODS_JSON COOKIES_JSON
 
