@@ -33,9 +33,9 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 		export COOKIES_JSON=$(printf '%s\n' "${COOKIES_UNIQ[@]}" | jq -R . | jq -s -c .)
 
 		gomplate -f /opt/config/nginx/conf.d/fastcgi-cache.map.tmpl \
-		         -d methods=env:/METHODS_JSON?type=application/json \
-		         -d cookies=env:/COOKIES_JSON?type=application/json \
-		         -o /opt/etc/nginx/conf.d/fastcgi-cache.map
+				-d methods=env:/METHODS_JSON?type=application/json \
+				-d cookies=env:/COOKIES_JSON?type=application/json \
+				-o /opt/etc/nginx/conf.d/fastcgi-cache.map
 
 		unset METHODS COOKIES METHODS_UNIQ COOKIES_UNIQ METHODS_JSON COOKIES_JSON
 
