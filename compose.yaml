@@ -34,11 +34,12 @@ services:
       - VARNISH_VCL_CONF=${BATS_VARNISH_VCL_CONF_CUSTOM}
     volumes:
       - php_apache_opt_bin:/opt/bin/container-entrypoint.d
-      - php_apache_opt_etc:/opt/etc
-      - php_apache_opt_sbin:/opt/sbin
-      - php_apache_app_var:/app/var
-      - php_apache_app_tmp:/app/tmp
       - ./test/etc/varnish/my-vcl-test-file.vcl:/opt/etc/varnish/bats.vcl
+    tmpfs:
+      - /opt/sbin:rw,exec,size=8m,mode=1777
+      - /opt/etc:rw,noexec,size=8m,mode=1777
+      - /app/var:rw,exec,size=1g,mode=1777
+      - /app/tmp:rw,noexec,size=64m,mode=1777
     mem_limit: 512m
     read_only: true
 
@@ -66,11 +67,12 @@ services:
     volumes:
       - php_nginx_opt_bin:/opt/bin/container-entrypoint.d
       - php_nginx_opt_cfg:/opt/config/nginx/sites-enabled
-      - php_nginx_opt_etc:/opt/etc
-      - php_nginx_opt_sbin:/opt/sbin
-      - php_nginx_app_var:/app/var
-      - php_nginx_app_tmp:/app/tmp
       - php_nginx_app_src:/app/src
+    tmpfs:
+      - /opt/sbin:rw,exec,size=8m,mode=1777
+      - /opt/etc:rw,noexec,size=8m,mode=1777
+      - /app/var:rw,exec,size=256m,mode=1777
+      - /app/tmp:rw,noexec,size=64m,mode=1777
     mem_limit: 512m
     read_only: true
 
@@ -93,11 +95,12 @@ services:
       - VARNISH_ENABLED=false
     volumes:
       - php_fpm_opt_bin:/opt/bin/container-entrypoint.d
-      - php_fpm_opt_etc:/opt/etc
-      - php_fpm_opt_sbin:/opt/sbin
-      - php_fpm_app_tmp:/app/tmp
       - php_fpm_app_var:/app/var
       - php_fpm_app_src:/var/www/html
+    tmpfs:
+      - /opt/sbin:rw,exec,size=8m,mode=1777
+      - /opt/etc:rw,noexec,size=8m,mode=1777
+      - /app/tmp:rw,noexec,size=64m,mode=1777
     mem_limit: 512m
     read_only: true
 
@@ -165,20 +168,9 @@ services:
 volumes:
   mariadb_data:
   php_fpm_opt_bin:
-  php_fpm_opt_sbin:
-  php_fpm_opt_etc:
   php_fpm_app_var:
   php_fpm_app_src:
-  php_fpm_app_tmp:
   php_nginx_opt_bin:
-  php_nginx_opt_sbin:
-  php_nginx_opt_etc:
-  php_nginx_app_var:
   php_nginx_app_src:
-  php_nginx_app_tmp:
   php_nginx_opt_cfg:
   php_apache_opt_bin:
-  php_apache_opt_sbin:
-  php_apache_opt_etc:
-  php_apache_app_var:
-  php_apache_app_tmp:
