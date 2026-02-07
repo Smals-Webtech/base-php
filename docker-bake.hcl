@@ -19,7 +19,7 @@ variable "PHP_EXT_INSTALLER_VERSION" {
 }
 
 variable "NGINX_VERSION" {
-  default = "1.28.0"
+  default = "1.28.2"
 }
 
 variable "NODE_VERSION" {

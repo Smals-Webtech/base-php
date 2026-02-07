@@ -24,9 +24,6 @@ events {
 
 http {
 
-    server_names_hash_bucket_size 128;
-    server_names_hash_max_size 512;
-
     server_tokens off;
 
     include       /etc/nginx/mime.types;
@@ -41,42 +38,50 @@ http {
                             '"$http_user_agent" "$http_x_forwarded_for" '
                             '$request_time $upstream_response_time $pipe $upstream_cache_status';
 
-    access_log  /dev/stdout  main_timed;
-    error_log  /dev/stderr  {{ .Env.NGINX_DEFAULT_ERROR_LOG_LEVEL }};
+    server_names_hash_bucket_size {{ .Env.NGINX_SERVER_NAMES_HASH_BUCKET_SIZE }};
+    server_names_hash_max_size    {{ .Env.NGINX_SERVER_NAMES_HASH_MAX_SIZE }};
 
-    proxy_connect_timeout  65s;
-    proxy_send_timeout     65s;
-    proxy_read_timeout     65s;
-    fastcgi_send_timeout   65s;
-    fastcgi_read_timeout   65s;
+    access_log                    /dev/stdout  main_timed;
+    error_log                     /dev/stderr  {{ .Env.NGINX_DEFAULT_ERROR_LOG_LEVEL }};
 
-    sendfile               on;
-    tcp_nopush             on;
-    tcp_nodelay            on;
+    proxy_connect_timeout         {{ .Env.NGINX_PROXY_CONNECT_TIMEOUT }};
+    proxy_send_timeout            {{ .Env.NGINX_PROXY_SEND_TIMEOUT }};
+    proxy_read_timeout            {{ .Env.NGINX_PROXY_READ_TIMEOUT }};
+    proxy_temp_path               {{ .Env.NGINX_PROXY_TEMP_FOLDER_PATH }} {{ .Env.NGINX_PROXY_TEMP_FOLDER_LEVEL1 }} {{ .Env.NGINX_PROXY_TEMP_FOLDER_LEVEL2 }};
 
-    keepalive_timeout      65s;
+    fastcgi_send_timeout          {{ .Env.NGINX_FASTCGI_SEND_TIMEOUT }};
+    fastcgi_read_timeout          {{ .Env.NGINX_FASTCGI_READ_TIMEOUT }};
+    fastcgi_buffer_size           {{ .Env.NGINX_FASTCGI_BUFFER_SIZE }};
+    fastcgi_buffers               {{ .Env.NGINX_FASTCGI_BUFFERS_COUNT }} {{ .Env.NGINX_FASTCGI_BUFFERS_SIZE }};
+    fastcgi_temp_path             {{ .Env.NGINX_FASTCGI_TEMP_FOLDER_PATH }} {{ .Env.NGINX_FASTCGI_TEMP_FOLDER_LEVEL1 }} {{ .Env.NGINX_FASTCGI_TEMP_FOLDER_LEVEL2 }};
+    fastcgi_cache_path            {{ .Env.NGINX_FASTCGI_CACHE_FOLDER_PATH }}
+                                  levels={{ .Env.NGINX_FASTCGI_CACHE_LEVELS }}
+                                  keys_zone={{ .Env.NGINX_FASTCGI_CACHE_NAME }}:{{ .Env.NGINX_FASTCGI_CACHE_MEM_SIZE }}
+                                  max_size={{ .Env.NGINX_FASTCGI_CACHE_DISK_SIZE }}
+                                  inactive={{ .Env.NGINX_FASTCGI_CACHE_INACTIVE }};
 
-    fastcgi_cache_path /app/var/cache/nginx/fcgi levels=1:2 keys_zone=microcache:10m max_size=1024m inactive=1h;
-    add_header X-Cache $upstream_cache_status;
+    sendfile                      {{ .Env.NGINX_SENDFILE }};
+    tcp_nopush                    {{ .Env.NGINX_TCP_NOPUSH }};
+    tcp_nodelay                   {{ .Env.NGINX_TCP_NODELAY }};
 
-    gzip on;
-    gzip_disable "msie6";
+    keepalive_timeout             {{ .Env.NGINX_KEEPALIVE_TIMEOUT }};
 
-    gzip_vary on;
-    gzip_proxied any;
-    gzip_comp_level 6;
-    gzip_buffers 16 8k;
-    gzip_http_version 1.1;
-    gzip_min_length 256;
-    gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml image/x-icon;
+    gzip                          {{ .Env.NGINX_GZIP_ENABLED }};
+    gzip_disable                  {{ .Env.NGINX_GZIP_DISABLE }};
 
-    client_body_temp_path /app/var/tmp/client 1 2;
-    client_body_in_file_only off;
+    gzip_vary                     {{ .Env.NGINX_GZIP_VARY }};
+    gzip_proxied                  {{ .Env.NGINX_GZIP_PROXIED }};
+    gzip_comp_level               {{ .Env.NGINX_GZIP_COMP_LEVEL }};
+    gzip_buffers                  {{ .Env.NGINX_GZIP_BUFFERS_COUNT }} {{ .Env.NGINX_GZIP_BUFFERS_SIZE }};
+    gzip_http_version             {{ .Env.NGINX_GZIP_HTTP_VERSION }};
+    gzip_min_length               {{ .Env.NGINX_GZIP_MIN_LENGTH }};
+    gzip_types                    {{ .Env.NGINX_GZIP_TYPES }};
 
-    proxy_temp_path /app/var/tmp/proxy 1 2;
-    fastcgi_temp_path /app/var/tmp/fastcgi 1 2;
-    uwsgi_temp_path /app/var/tmp/uwsgi 1 2;
-    scgi_temp_path /app/var/tmp/scgi 1 2;
+    client_body_in_file_only      {{ .Env.NGINX_CLIENT_BODY_IN_FILE_ONLY }};
+    client_body_temp_path         {{ .Env.NGINX_CLIENT_BODY_TEMP_PATH }} {{ .Env.NGINX_CLIENT_BODY_TEMP_FOLDER_LEVEL1 }} {{ .Env.NGINX_CLIENT_BODY_TEMP_FOLDER_LEVEL2 }};
+
+    uwsgi_temp_path               {{ .Env.NGINX_UWSGI_TEMP_PATH }} {{ .Env.NGINX_UWSGI_TEMP_FOLDER_LEVEL1 }} {{ .Env.NGINX_UWSGI_TEMP_FOLDER_LEVEL2 }};
+    scgi_temp_path                {{ .Env.NGINX_SCGI_TEMP_PATH }} {{ .Env.NGINX_SCGI_TEMP_FOLDER_LEVEL1 }} {{ .Env.NGINX_SCGI_TEMP_FOLDER_LEVEL2 }};
 
     vhost_traffic_status_zone;
 
@@ -125,6 +130,10 @@ http {
 
     }
 
+{{- if ne .Env.NGINX_FASTCGI_CACHE_ENABLED "false" }}
+    include conf.d/fastcgi-cache.map;
+{{- end }}
+
     server {
 
       listen       9000;
@@ -147,6 +156,19 @@ http {
         include        fastcgi_params;
 
         fastcgi_pass unix:/app/var/run/php-fpm/php-fpm.sock;
+
+{{- if ne .Env.NGINX_FASTCGI_CACHE_ENABLED "false" }}
+        fastcgi_cache        {{ .Env.NGINX_FASTCGI_CACHE_NAME }};
+        fastcgi_cache_key    {{ .Env.NGINX_FASTCGI_CACHE_KEY }};
+        fastcgi_cache_valid  {{ .Env.NGINX_FASTCGI_CACHE_VALID_OK_CODE }} {{ .Env.NGINX_FASTCGI_CACHE_VALID_OK_DURATION }};
+        fastcgi_cache_valid  {{ .Env.NGINX_FASTCGI_CACHE_VALID_NOK_CODE }} {{ .Env.NGINX_FASTCGI_CACHE_VALID_NOK_DURATION }};
+
+        fastcgi_cache_bypass {{ .Env.NGINX_FASTCGI_NO_CACHE_METHOD_MAP_VAR_NAME }} {{ .Env.NGINX_FASTCGI_NO_CACHE_COOKIE_MAP_VAR_NAME }};
+        fastcgi_no_cache     {{ .Env.NGINX_FASTCGI_NO_CACHE_METHOD_MAP_VAR_NAME }} {{ .Env.NGINX_FASTCGI_NO_CACHE_COOKIE_MAP_VAR_NAME }};
+
+        add_header X-Cache $upstream_cache_status always;
+{{- end }}
+
       }
 
     }
