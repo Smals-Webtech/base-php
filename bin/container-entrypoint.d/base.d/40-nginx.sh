@@ -4,7 +4,7 @@ log "INFO" "Configure Nginx ..."
 
 if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
-	OUTDIR="/opt/etc/nginx/sites-enabled /app/var/run/nginx /app/var/cache/nginx/fcgi /app/var/tmp/client /app/var/tmp/scgi /app/var/tmp/fastcgi /app/var/tmp/uwsgi /app/var/tmp/scgi /app/var/www/html"
+	OUTDIR="/opt/etc/nginx/conf.d /opt/etc/nginx/sites-enabled /app/var/run/nginx ${NGINX_FASTCGI_CACHE_FOLDER_PATH} ${NGINX_PROXY_TEMP_FOLDER_PATH} ${NGINX_CLIENT_BODY_TEMP_PATH} ${NGINX_SCGI_TEMP_PATH} ${NGINX_FASTCGI_TEMP_FOLDER_PATH} ${NGINX_UWSGI_TEMP_PATH} /app/var/www/html"
 
 	for dir in $OUTDIR; do
 		mkdir -p "$dir"
@@ -15,6 +15,31 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 	apply-template /opt/config/nginx /opt/etc/nginx
 	apply-template /opt/config/nginx/sites-enabled /opt/etc/nginx/sites-enabled
 	apply-template /opt/config/supervisor.d/nginx.ini.tmpl /opt/etc/supervisor.d/nginx.ini
+
+	if [[ "${NGINX_FASTCGI_CACHE_ENABLED}" == "true" ]]; then
+
+		for method in $NGINX_FASTCGI_NO_CACHE_METHODS; do
+			METHODS+=("$method")
+		done
+
+		for cookie in $NGINX_FASTCGI_NO_CACHE_COOKIES; do
+			COOKIES+=("$cookie")
+		done
+
+		METHODS_UNIQ=($(printf '%s\n' "${METHODS[@]}" | sort -u))
+		COOKIES_UNIQ=($(printf '%s\n' "${COOKIES[@]}" | sort -u))
+
+		export METHODS_JSON=$(printf '%s\n' "${METHODS_UNIQ[@]}" | jq -R . | jq -s -c .)
+		export COOKIES_JSON=$(printf '%s\n' "${COOKIES_UNIQ[@]}" | jq -R . | jq -s -c .)
+
+		gomplate -f /opt/config/nginx/conf.d/fastcgi-cache.map.tmpl \
+		         -d methods=env:/METHODS_JSON?type=application/json \
+		         -d cookies=env:/COOKIES_JSON?type=application/json \
+		         -o /opt/etc/nginx/conf.d/fastcgi-cache.map
+
+		unset METHODS COOKIES METHODS_UNIQ COOKIES_UNIQ METHODS_JSON COOKIES_JSON
+
+	fi
 
 	log "INFO" "- Setup Module(s) ..."
 
