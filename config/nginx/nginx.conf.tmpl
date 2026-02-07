@@ -48,23 +48,24 @@ http {
     proxy_send_timeout            {{ .Env.NGINX_PROXY_SEND_TIMEOUT }};
     proxy_read_timeout            {{ .Env.NGINX_PROXY_READ_TIMEOUT }};
     proxy_temp_path               {{ .Env.NGINX_PROXY_TEMP_FOLDER_PATH }} {{ .Env.NGINX_PROXY_TEMP_FOLDER_LEVEL1 }} {{ .Env.NGINX_PROXY_TEMP_FOLDER_LEVEL2 }};
+    proxy_request_buffering       {{ .Env.NGINX_PROXY_REQUEST_BUFFERING }};
 
     fastcgi_send_timeout          {{ .Env.NGINX_FASTCGI_SEND_TIMEOUT }};
     fastcgi_read_timeout          {{ .Env.NGINX_FASTCGI_READ_TIMEOUT }};
-    fastcgi_buffer_size           {{ .Env.NGINX_FASTCGI_BUFFER_SIZE }};
-    fastcgi_buffers               {{ .Env.NGINX_FASTCGI_BUFFERS_COUNT }} {{ .Env.NGINX_FASTCGI_BUFFERS_SIZE }};
     fastcgi_temp_path             {{ .Env.NGINX_FASTCGI_TEMP_FOLDER_PATH }} {{ .Env.NGINX_FASTCGI_TEMP_FOLDER_LEVEL1 }} {{ .Env.NGINX_FASTCGI_TEMP_FOLDER_LEVEL2 }};
     fastcgi_cache_path            {{ .Env.NGINX_FASTCGI_CACHE_FOLDER_PATH }}
                                   levels={{ .Env.NGINX_FASTCGI_CACHE_LEVELS }}
                                   keys_zone={{ .Env.NGINX_FASTCGI_CACHE_NAME }}:{{ .Env.NGINX_FASTCGI_CACHE_MEM_SIZE }}
                                   max_size={{ .Env.NGINX_FASTCGI_CACHE_DISK_SIZE }}
                                   inactive={{ .Env.NGINX_FASTCGI_CACHE_INACTIVE }};
+    fastcgi_request_buffering     {{ .Env.NGINX_FASTCGI_REQUEST_BUFFERING }};
 
     sendfile                      {{ .Env.NGINX_SENDFILE }};
     tcp_nopush                    {{ .Env.NGINX_TCP_NOPUSH }};
     tcp_nodelay                   {{ .Env.NGINX_TCP_NODELAY }};
 
     keepalive_timeout             {{ .Env.NGINX_KEEPALIVE_TIMEOUT }};
+    keepalive_requests            {{ .Env.NGINX_KEEPALIVE_REQUESTS }};
 
     gzip                          {{ .Env.NGINX_GZIP_ENABLED }};
     gzip_disable                  {{ .Env.NGINX_GZIP_DISABLE }};
@@ -77,6 +78,18 @@ http {
     gzip_min_length               {{ .Env.NGINX_GZIP_MIN_LENGTH }};
     gzip_types                    {{ .Env.NGINX_GZIP_TYPES }};
 
+    large_client_header_buffers   {{ .Env.NGINX_LARGE_CLIENT_HEADER_BUFFERS_COUNT }} {{ .Env.NGINX_LARGE_CLIENT_HEADER_BUFFERS_SIZE }};
+    ignore_invalid_headers        {{ .Env.NGINX_IGNORE_INVALID_HEADERS }};
+
+    send_timeout                  {{ .Env.NGINX_SEND_TIMEOUT }};
+
+    client_max_body_size          {{ .Env.NGINX_CLIENT_MAX_BODY_SIZE }};
+
+    client_header_timeout         {{ .Env.NGINX_CLIENT_HEADER_TIMEOUT }};
+    client_header_buffer_size     {{ .Env.NGINX_CLIENT_HEADER_BUFFER_SIZE }};
+
+    client_body_timeout           {{ .Env.NGINX_CLIENT_BODY_TIMEOUT }};
+    client_body_in_single_buffer  {{ .Env.NGINX_CLIENT_BODY_IN_SINGLE_BUFFER }};
     client_body_in_file_only      {{ .Env.NGINX_CLIENT_BODY_IN_FILE_ONLY }};
     client_body_temp_path         {{ .Env.NGINX_CLIENT_BODY_TEMP_PATH }} {{ .Env.NGINX_CLIENT_BODY_TEMP_FOLDER_LEVEL1 }} {{ .Env.NGINX_CLIENT_BODY_TEMP_FOLDER_LEVEL2 }};
 
