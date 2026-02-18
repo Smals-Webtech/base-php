@@ -16,6 +16,8 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 	apply-template /opt/config/nginx/sites-enabled /opt/etc/nginx/sites-enabled
 	apply-template /opt/config/supervisor.d/nginx.ini.tmpl /opt/etc/supervisor.d/nginx.ini
 
+	create-symlink /opt/etc/nginx/fastcgi_params /etc/nginx/fastcgi_params
+
 	if [[ "${NGINX_FASTCGI_CACHE_ENABLED}" == "true" ]]; then
 
 		for method in $NGINX_FASTCGI_NO_CACHE_METHODS; do
