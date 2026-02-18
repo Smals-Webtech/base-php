@@ -1,5 +1,11 @@
 [program:nginx]
+
+{{- if ne .Env.NGINX_DEBUG_ENABLED "false" }}
+command=nginx-debug -p /app/var/www -e /dev/stdout -c /opt/etc/nginx/nginx.conf -g 'daemon off;'
+{{- else }}
 command=nginx -p /app/var/www -e /dev/stdout -c /opt/etc/nginx/nginx.conf -g 'daemon off;'
+{{- end }}
+
 stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 stderr_logfile=/dev/stderr

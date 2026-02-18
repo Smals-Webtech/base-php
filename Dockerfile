@@ -94,6 +94,7 @@ RUN set -eux ; \
     apk add --no-cache --virtual .base-php-nginx-rundeps nginx=~${NGINX_VERSION_ARG} \
                                                          nginx-mod-http-headers-more=~${NGINX_VERSION_ARG} \
                                                          nginx-mod-http-vts=~${NGINX_VERSION_ARG} \
+                                                         nginx-debug=~${NGINX_VERSION_ARG} \
                                                          lua5.1 \
                                                          lua5.1-cjson \
                                                          lua-resty-core \
