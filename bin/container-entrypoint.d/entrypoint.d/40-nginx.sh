@@ -107,4 +107,9 @@ NGINX_GZIP_HTTP_VERSION_WCMTECH_DEFAULT="1.1"
 NGINX_GZIP_MIN_LENGTH_WCMTECH_DEFAULT="256"
 NGINX_GZIP_TYPES_WCMTECH_DEFAULT="text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml image/x-icon"
 
+NGINX_REAL_IP_ENABLED_WCMTECH_DEFAULT="false"
+NGINX_REAL_IP_TRUSTED_PROXIES_WCMTECH_DEFAULT="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+NGINX_REAL_IP_RECURSIVE_WCMTECH_DEFAULT="on"
+NGINX_REAL_IP_HEADER_NAME_WCMTECH_DEFAULT="X-Forwarded-For"
+
 true

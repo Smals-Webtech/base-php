@@ -18,6 +18,28 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
 	create-symlink /opt/etc/nginx/fastcgi_params /etc/nginx/fastcgi_params
 
+	if [[ "${NGINX_REAL_IP_ENABLED}" == "true" ]]; then
+
+		for cidr in $NGINX_REAL_IP_TRUSTED_PROXIES; do
+			CIDRS+=("$cidr")
+		done
+
+		mapfile -t CIDRS_UNIQ < <(
+			printf '%s\n' "${CIDRS[@]}" | sort -u
+		)
+
+		CIDRS_JSON=$(printf '%s\n' "${CIDRS_UNIQ[@]}" | jq -R . | jq -s -c .)
+
+		export CIDRS_JSON
+
+		gomplate -f /opt/config/nginx/conf.d/fastcgi-cache.map.tmpl \
+			-d cidrs=env:/CIDRS_JSON?type=application/json \
+			-o /opt/etc/nginx/conf.d/fastcgi-cache.map
+
+		unset CIDRS CIDRS_UNIQ CIDRS_JSON
+
+	fi
+
 	if [[ "${NGINX_FASTCGI_CACHE_ENABLED}" == "true" ]]; then
 
 		for method in $NGINX_FASTCGI_NO_CACHE_METHODS; do
