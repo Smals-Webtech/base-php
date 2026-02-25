@@ -50,6 +50,8 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
 	fi
 
+	apply-template /opt/config/nginx/conf.d/logging.conf.tmpl /opt/etc/nginx/conf.d/logging.conf
+
 	log "INFO" "- Setup Module(s) ..."
 
 	create-symlink /app/var/www/modules /usr/lib/nginx/modules
