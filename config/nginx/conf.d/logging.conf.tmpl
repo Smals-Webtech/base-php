@@ -9,10 +9,6 @@ log_format main_timed '$remote_addr - $remote_user [$time_local] "$request" '
                       '"$http_user_agent" "$http_x_forwarded_for" '
                       '$request_time $upstream_response_time $pipe $upstream_cache_status';
 
-log_format combined '$remote_addr - $remote_user [$time_local] '
-                    '"$request" $status $body_bytes_sent '
-                    '"$http_referer" "$http_user_agent"';
-
 log_format combined_extended '$remote_addr - $remote_user [$time_local] '
                              '"$request" $status $body_bytes_sent '
                              '"$http_referer" "$http_user_agent" '
