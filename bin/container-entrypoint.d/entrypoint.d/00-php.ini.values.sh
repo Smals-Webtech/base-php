@@ -66,7 +66,6 @@ PHP_CGI_NPH_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("cgi.nph");')"
 PHP_CGI_REDIRECT_STATUS_ENV_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("cgi.redirect_status_env");')"
 PHP_CGI_RFC2616_HEADERS_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("cgi.rfc2616_headers");')"
 PHP_FASTCGI_IMPERSONATE_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("fastcgi.impersonate");')"
-PHP_FASTCGI_LOGGING_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("fastcgi.logging");')"
 
 # Core File Uploads
 
