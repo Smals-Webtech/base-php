@@ -99,8 +99,7 @@ This table summarizes how PHP configuration directives are mapped to environment
 | `cgi.redirect_status_env` | `PHP_CGI_REDIRECT_STATUS_ENV` | `""`                      | `""`                      | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.redirect-status-env) |
 | `cgi.rfc2616_headers`     | `PHP_CGI_RFC2616_HEADERS`     | `0`                       | `0`                       | [Link](https://www.php.net/manual/en/ini.core.php#ini.cgi.rfc2616-headers)     |
 | `fastcgi.impersonate`     | `PHP_FASTCGI_IMPERSONATE`     | `0`                       | `0`                       | [Link](https://www.php.net/manual/en/ini.core.php#ini.fastcgi.impersonate)     |
-| `fastcgi.logging`         | `PHP_FASTCGI_LOGGING`         | `1`                       | `1`                       | [Link](https://www.php.net/manual/en/ini.core.php#ini.fastcgi.logging)         |
-
+| `fastcgi.logging`         | `PHP_FASTCGI_LOGGING`         | `0`                       | `0`                       | [Link](https://www.php.net/manual/en/ini.core.php#ini.fastcgi.logging) , [Issue](https://github.com/docker-library/php/issues/878#issuecomment-938595965) , [Fix](https://github.com/docker-library/php/pull/1360)       |
 ### File Uploads
 
 | Directive             | Environment Variable      | Default (prd) | Default (dev) | Documentation                                                              |
