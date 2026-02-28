@@ -129,10 +129,7 @@ These extensions will automatically be processed and installed along with the de
 
 ### FastCGI Process Manager (FPM)
 
-| Environment Variable                      | Default (prd) | Default (dev) | Documentation                                                       |
-|-------------------------------------------|---------------|---------------|---------------------------------------------------------------------|
-| `PHP_FPM_MAX_CHILDREN`                    | `40`          | `40`          | [Link](https://www.php.net/manual/en/install.fpm.configuration.php) |
-| `PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES` | `16`          | `16`          | [Link](https://www.php.net/manual/en/install.fpm.configuration.php) |
+[Configuration](docs/php-fpm.md)  
 
 ## 🪶 Apache Configuration
 

@@ -1,12 +1,28 @@
-[www]
-listen = /app/var/run/php-fpm/php-fpm.sock
-listen.mode = 0777
-listen.allowed_clients = 127.0.0.1
+[global]
+daemonize = no
+error_log = {{ $.Env.PHP_FPM_ERROR_LOG }}
+log_level = {{ $.Env.PHP_FPM_LOG_LEVEL }}
+log_limit = {{ $.Env.PHP_FPM_LOG_LIMIT }}
 
-pm = ondemand
-pm.max_children = {{.Env.PHP_FPM_MAX_CHILDREN}}
+[www]
+access.log = {{ $.Env.PHP_FPM_ACCESS_LOG }}
+access.format = "{{ $.Env.PHP_FPM_ACCESS_FORMAT }}"
+
+clear_env = {{ $.Env.PHP_FPM_CLEAR_ENV }}
+
+listen = /app/var/run/php-fpm/php-fpm.sock
+listen.mode = {{ $.Env.PHP_FPM_LISTEN_MODE }}
+listen.allowed_clients = {{ $.Env.PHP_FPM_LISTEN_ALLOWED_CLIENTS }}
+
+pm = {{ $.Env.PHP_FPM_PM }}
+pm.max_children = {{ $.Env.PHP_FPM_PM_MAX_CHILDREN }}
+pm.process_idle_timeout = {{ $.Env.PHP_FPM_PM_PROCESS_IDLE_TIMEOUT }}
+pm.max_requests = {{ $.Env.PHP_FPM_PM_MAX_REQUESTS }}
 
 pm.status_path = /status
 ping.path = /ping
 
-php_admin_value[memory_limit] = {{.Env.PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES}}M
+catch_workers_output = {{ $.Env.PHP_FPM_CATCH_WORKERS_OUTPUT }}
+decorate_workers_output = {{ $.Env.PHP_FPM_DECORATE_WORKERS_OUTPUT }}
+
+php_admin_value[memory_limit] = {{ $.Env.PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES }}M
