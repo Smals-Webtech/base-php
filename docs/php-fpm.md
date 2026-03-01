@@ -42,4 +42,3 @@ This table summarizes how PHP-FPM configuration directives are mapped to environ
 | `pm.max_requests`                     | `PHP_FPM_PM_MAX_REQUESTS`                 | `0`               | `0`               | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `catch_workers_output`                | `PHP_FPM_CATCH_WORKERS_OUTPUT`            | `yes`             | `yes`             | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `decorate_workers_output`             | `PHP_FPM_DECORATE_WORKERS`                | `no`              | `no`              | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
- 
