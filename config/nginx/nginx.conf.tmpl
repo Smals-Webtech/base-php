@@ -100,6 +100,12 @@ http {
 
       root /app/var/www/html;
 
+      location /healthcheck {
+        access_log off;
+        add_header Content-Type text/plain;
+        return 200 'healthcheck OK';
+      }
+
       location /metrics {
         access_log off;
         vhost_traffic_status_bypass_stats on;
