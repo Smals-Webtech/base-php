@@ -18,6 +18,51 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
 	create-symlink /opt/etc/nginx/fastcgi_params /etc/nginx/fastcgi_params
 
+	if [[ "${NGINX_SOFT_THROTTLE_ENABLED}" == "true" ]]; then
+
+		for agent in $NGINX_SOFT_THROTTLE_BOTS_USER_AGENT; do
+			AGENTS+=("$agent")
+		done
+
+		for cidr in $NGINX_SOFT_THROTTLE_WHITELIST; do
+			CIDRS+=("$cidr")
+		done
+
+		if [ ${#AGENTS[@]} -eq 0 ]; then
+			AGENTS_JSON="[]"
+		else
+
+			mapfile -t AGENTS_UNIQ < <(
+				printf '%s\n' "${AGENTS[@]}" | sort -u
+			)
+
+			AGENTS_JSON=$(printf '%s\n' "${AGENTS_UNIQ[@]}" | jq -R . | jq -s -c .)
+
+		fi
+
+		if [ ${#CIDRS[@]} -eq 0 ]; then
+			CIDRS_JSON="[]"
+		else
+
+			mapfile -t CIDRS_UNIQ < <(
+				printf '%s\n' "${CIDRS[@]}" | sort -u
+			)
+
+			CIDRS_JSON=$(printf '%s\n' "${CIDRS_UNIQ[@]}" | jq -R . | jq -s -c .)
+
+		fi
+
+		export AGENTS_JSON CIDRS_JSON
+
+		gomplate -f /opt/config/nginx/conf.d/throttling.conf.tmpl \
+			-d agents=env:/AGENTS_JSON?type=application/json \
+			-d cidrs=env:/CIDRS_JSON?type=application/json \
+			-o /opt/etc/nginx/conf.d/throttling.conf
+
+		unset AGENTS CIDRS AGENTS_UNIQ CIDRS_UNIQ AGENTS_JSON CIDRS_JSON
+
+	fi
+
 	if [[ "${NGINX_REAL_IP_ENABLED}" == "true" ]]; then
 
 		for cidr in $NGINX_REAL_IP_TRUSTED_PROXIES; do
