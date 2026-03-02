@@ -54,6 +54,7 @@ ARG NGINX_VERSION_ARG=1.28.0
 
 USER root
 
+ENV GOMAXPROCS=1
 ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli opcache opentelemetry pcntl pdo_mysql pdo_pgsql pgsql redis soap sodium tidy xdebug xsl zip"
 
 COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
@@ -232,6 +233,7 @@ ARG AWS_CLI_VERSION_ARG=2.27.25
 
 USER root
 
+ENV GOMAXPROCS=1
 ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli opcache opentelemetry pcntl pdo_mysql pdo_pgsql pgsql redis soap sodium tidy xdebug xsl zip"
 
 COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
