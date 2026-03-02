@@ -132,7 +132,7 @@ EXPOSE 9003/tcp
 EXPOSE 9090/tcp
 EXPOSE 6081/tcp 6082/tcp
 
-HEALTHCHECK --start-period=2s --interval=30s --timeout=5s --retries=3 \
+HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
   CMD supervisorctl -c /opt/etc/supervisord.conf status php-fpm | \
       grep -q 'RUNNING' || exit 1
 
@@ -180,8 +180,8 @@ ENV APACHE_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
-HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
-        CMD curl --fail --header "Host: default.localhost" http://localhost:9000/index.php || exit 1
+HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
+        CMD [ $(supervisorctl -c /opt/etc/supervisord.conf status php-fpm apache | grep -c 'RUNNING') -eq 2 ] || exit 1
 
 #
 # APACHE / DEV
@@ -193,8 +193,8 @@ ENV APACHE_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
-HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
-        CMD curl --fail --header "Host: default.localhost" http://localhost:9000/index.php || exit 1
+HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
+        CMD [ $(supervisorctl -c /opt/etc/supervisord.conf status php-fpm apache | grep -c 'RUNNING') -eq 2 ] || exit 1
 
 #
 # NGINX / PRD
@@ -206,8 +206,8 @@ ENV NGINX_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
-HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
-        CMD curl --fail --header "Host: default.localhost" http://localhost:9000/index.php || exit 1
+HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
+        CMD [ $(supervisorctl -c /opt/etc/supervisord.conf status php-fpm nginx | grep -c 'RUNNING') -eq 2 ] || exit 1
 
 #
 # NGINX / DEV
@@ -219,8 +219,8 @@ ENV NGINX_ENABLED=true
 
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
-HEALTHCHECK --start-period=2s --interval=10s --timeout=5s --retries=5 \
-        CMD curl --fail --header "Host: default.localhost" http://localhost:9000/index.php || exit 1
+HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
+        CMD [ $(supervisorctl -c /opt/etc/supervisord.conf status php-fpm nginx | grep -c 'RUNNING') -eq 2 ] || exit 1
 
 #
 # PHP-CLI / PRD
