@@ -77,9 +77,9 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
 		export CIDRS_JSON
 
-		gomplate -f /opt/config/nginx/conf.d/fastcgi-cache.map.tmpl \
+		gomplate -f /opt/config/nginx/conf.d/proxy.conf.tmpl \
 			-d cidrs=env:/CIDRS_JSON?type=application/json \
-			-o /opt/etc/nginx/conf.d/fastcgi-cache.map
+			-o /opt/etc/nginx/conf.d/proxy.conf
 
 		unset CIDRS CIDRS_UNIQ CIDRS_JSON
 
