@@ -141,10 +141,26 @@ http {
     include conf.d/fastcgi-cache.map;
 {{- end }}
 
+{{ if ne .Env.NGINX_SOFT_THROTTLE_ENABLED "false" }}
+    include conf.d/throttling.conf;
+{{- end }}
+
     server {
 
       listen       9000;
       server_name  default.localhost;
+
+{{ if ne .Env.NGINX_SOFT_THROTTLE_ENABLED "false" }}
+      # Rate limiting enforcement
+      # 'burst' allows for short-lived traffic spikes before rejection.
+      # 'nodelay' ensures immediate 503 response once the burst limit is exceeded.
+
+      # Global protection: Higher burst tolerance for static asset loading
+      limit_req zone=global_limit burst={{ $.Env.NGINX_SOFT_THROTTLE_GLOBAL_ZONE_BURST }} nodelay;
+
+      # Bot mitigation: Strict enforcement with minimal burst allowance
+      limit_req zone=bot_limit burst={{ $.Env.NGINX_SOFT_THROTTLE_BOTS_ZONE_BURST }} nodelay;
+{{- end }}
 
       index index.php;
 
