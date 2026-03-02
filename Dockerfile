@@ -49,8 +49,8 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
 
 FROM php:${PHP_VERSION_ARG}-fpm-alpine${ALPINE_VERSION_ARG} AS fpm-prd
 
-ARG AWS_CLI_VERSION_ARG=2.27.25
-ARG NGINX_VERSION_ARG=1.28.0
+ARG AWS_CLI_VERSION_ARG=2.32.7
+ARG NGINX_VERSION_ARG=1.28.2
 
 USER root
 
@@ -230,7 +230,7 @@ HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
 
 FROM php:${PHP_VERSION_ARG}-cli-alpine${ALPINE_VERSION_ARG} AS cli-prd
 
-ARG AWS_CLI_VERSION_ARG=2.27.25
+ARG AWS_CLI_VERSION_ARG=2.32.7
 
 USER root
 
