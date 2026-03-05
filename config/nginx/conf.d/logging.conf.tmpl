@@ -42,5 +42,27 @@ log_format json_extended escape=json '{'
                                      '"request_id":"$request_id"'
                                      '}';
 
+# Elastic Common Schema ( https://www.elastic.co/docs/reference/ecs )
+log_format ecs_json escape=json '{'
+                                '"@timestamp":"$time_iso8601",'
+                                '"log.level":"info",'
+                                '"message":"$remote_addr - $remote_user [$time_local] \"$request\" $status $body_bytes_sent",'
+                                '"client.ip":"$remote_addr",'
+                                '"user.name":"$remote_user",'
+                                '"url.domain":"$host",'
+                                '"http.request.method":"$request_method",'
+                                '"url.path":"$uri",'
+                                '"http.version":"$server_protocol",'
+                                '"http.response.status_code":$status,'
+                                '"http.response.body.bytes":$body_bytes_sent,'
+                                '"event.duration":$request_time,'
+                                '"temp.upstream_response_time":"$upstream_response_time",'
+                                '"temp.upstream_addr":"$upstream_addr",'
+                                '"http.request.referrer":"$http_referer",'
+                                '"user_agent.original":"$http_user_agent",'
+                                '"http.request.x_forwarded_for":"$http_x_forwarded_for",'
+                                '"trace.id":"$request_id"'
+                                '}';
+
 access_log {{ .Env.NGINX_DEFAULT_ACCESS_LOG_PATH }} {{ .Env.NGINX_DEFAULT_ACCESS_LOG_FORMAT_NAME }};
 error_log  {{ .Env.NGINX_DEFAULT_ERROR_LOG_PATH }} {{ .Env.NGINX_DEFAULT_ERROR_LOG_LEVEL }};
