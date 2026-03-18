@@ -1,0 +1,48 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'autodiscover'
+    scrape_interval: 10s
+    docker_sd_configs:
+      - host: unix:///var/run/docker.sock
+    relabel_configs:
+      - source_labels: [__meta_docker_container_label_prometheus_scrape]
+        regex: true
+        action: keep
+      - source_labels: [__meta_docker_container_label_prometheus_job]
+        target_label: job
+        action: replace
+      - target_label: namespace
+        replacement: default
+        action: replace
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(.*)'
+        target_label: container_name
+        replacement: '$1'
+        action: replace
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(.*)'
+        target_label: container
+        replacement: '$1'
+        action: replace
+      - source_labels: [__meta_docker_container_name]
+        regex: '/(.*)'
+        target_label: kubernetes_io_hostname
+        replacement: '$1'
+        action: replace
+      - source_labels: [__meta_docker_container_label_prometheus_labels_pod]
+        target_label: pod
+        action: replace
+      - source_labels: [__meta_docker_container_label_prometheus_labels_pod]
+        target_label: kubernetes_pod_name
+        action: replace
+      - source_labels: [__meta_docker_container_label_prometheus_labels_pod]
+        target_label: pod_name
+        action: replace
+      - source_labels: [__address__, __meta_docker_container_label_prometheus_port]
+        separator: ';'
+        regex: '([^:]+)(?::\d+)?;(\d+)'
+        target_label: __address__
+        replacement: '$1:$2'
+        action: replace

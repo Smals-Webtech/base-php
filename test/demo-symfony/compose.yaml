@@ -1,0 +1,94 @@
+---
+services:
+  symfony:
+    profiles: [ "symfony" ]
+    image: smalswebtech/base-php:nginx
+    env_file:
+      - ../.env
+    depends_on:
+      init-shared-var-permissions:
+        condition: service_completed_successfully
+    environment:
+      - PHP_FPM_MAX_CHILDREN=${BATS_PHP_FPM_MAX_CHILDREN}
+      - PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES=${BATS_PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES}
+      - CONTAINER_HEAP_PERCENT=${BATS_CONTAINER_HEAP_PERCENT}
+      - VARNISH_ENABLED=false
+      - APP_ENV=dev
+      - APP_SECRET=cREiW500NNpj9c6BzzD4KjqaVjEndpyJ
+      - APP_LOG_DIR=/app/var/log
+      - APP_CACHE_DIR=/app/var/cache
+      - NGINX_REAL_IP_ENABLED=true
+      - NGINX_SOFT_THROTTLE_ENABLED=true
+      - NGINX_SOFT_THROTTLE_WHITELIST=172.16.0.0/12
+      - NGINX_SOFT_THROTTLE_DRY_RUN_ENABLED=off
+      - NGINX_DEFAULT_ACCESS_LOG_PATH=/var/log/shared/symfony.nginx-access.log
+      - NGINX_DEFAULT_ACCESS_LOG_FORMAT_NAME=ecs_json
+    volumes:
+      - ./src/demo:/app:rw
+      - ./config/nginx/sites-enabled/zz_web.conf.tmpl:/opt/config/nginx/sites-enabled/zz_web.conf.tmpl:ro
+      - shared-log:/var/log/shared:rw
+      - shared-var-symfony:/app/var:rw
+    tmpfs:
+      - /opt/sbin:rw,exec,size=8m,mode=1777
+      - /opt/etc:rw,noexec,size=8m,mode=1777
+      - /app/tmp:rw,noexec,size=64m,mode=1777
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.php-nginx.rule=HostRegexp(`^((default|demo)\.localhost)$$`)
+      - traefik.http.routers.php-nginx.entrypoints=web
+      - traefik.http.services.php-nginx.loadbalancer.server.port=9000
+      - prometheus-scrape=false
+      - prometheus.labels.pod=symfony
+    mem_limit: 512m
+    read_only: true
+
+  symfony-php-exporter:
+    profiles: [ "symfony" ]
+    image: docker.io/hipages/php-fpm_exporter:2.2.0
+    env_file:
+      - ../.env
+    depends_on:
+      symfony:
+        condition: service_healthy
+    environment:
+      - PHP_FPM_SCRAPE_URI=unix:///app/var/run/php-fpm/php-fpm.sock;/status
+      - PHP_FPM_FIX_PROCESS_COUNT=1
+      - GOMAXPROCS=1
+    volumes:
+      - shared-var-symfony:/app/var:rw
+    labels:
+      - prometheus-scrape=true
+      - prometheus-job=php-fpm
+      - prometheus.labels.pod=symfony
+    mem_limit: 64m
+    read_only: true
+
+  symfony-nginx-exporter:
+    profiles: [ "symfony" ]
+    image: docker.io/nginx/nginx-prometheus-exporter:1.5.1
+    env_file:
+      - ../.env
+    depends_on:
+      symfony:
+        condition: service_healthy
+    environment:
+      - SCRAPE_URI=unix:/app/var/run/nginx/default.localhost.sock:/stub-status
+      - NGINX_RETRIES=10
+      - GOMAXPROCS=1
+    volumes:
+      - shared-var-symfony:/app/var:rw
+    labels:
+      - prometheus-scrape=true
+      - prometheus-job=nginx
+      - prometheus-port=9113
+      - prometheus.labels.pod=symfony
+    mem_limit: 64m
+    read_only: true
+
+volumes:
+  shared-log:
+  shared-var-symfony:
+
+networks:
+    default:
+        name: ${CONTAINER_NETWORK_NAME}

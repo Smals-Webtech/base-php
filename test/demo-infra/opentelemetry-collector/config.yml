@@ -1,0 +1,59 @@
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+  filelog:
+    include: [ "/var/log/shared/*.nginx-access.log" ]
+    start_at: end
+    include_file_name: true
+    operators:
+      - type: json_parser
+        timestamp:
+          parse_from: attributes.@timestamp
+          layout_type: gotime
+          layout: "2006-01-02T15:04:05Z07:00"
+
+processors:
+  batch:
+    send_batch_size: 1000
+    timeout: 10s
+  resourcedetection:
+    detectors: [env]
+  transform:
+    log_statements:
+      - context: log
+        statements:
+          - merge_maps(cache, attributes, "insert")
+
+exporters:
+  elasticsearch:
+    endpoints: ["https://es01:9200","https://es02:9200","https://es03:9200"]
+    user: "${ELASTICSEARCH_USERNAME}"
+    password: "${ELASTICSEARCH_PASSWORD}"
+    tls:
+      ca_file: /usr/share/elasticsearch/config/certs/elastic.cert.pem
+      insecure_skip_verify: false
+    logs_index: "logs-accesslogs-default"
+
+  debug:
+    verbosity: basic
+    sampling_initial: 5
+    sampling_thereafter: 20
+
+service:
+  telemetry:
+    logs:
+      level: "debug"
+  pipelines:
+    logs:
+      receivers: [otlp, filelog]
+      processors: [batch, resourcedetection,transform]
+      exporters: [debug,elasticsearch]
+    traces:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [debug,elasticsearch]

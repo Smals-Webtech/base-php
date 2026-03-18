@@ -1,7 +1,6 @@
 # Test if requirements are met
 (
 	type ${BATS_CONTAINER_ENGINE} &>/dev/null || ( echo "${BATS_CONTAINER_ENGINE} is not available"; exit 1 )
-    type ${BATS_CONTAINER_COMPOSE_ENGINE} &>/dev/null || ( echo "${BATS_CONTAINER_COMPOSE_ENGINE} is not available"; exit 1 )
 )>&2
 
 TEST_FILE=$(basename $BATS_TEST_FILENAME .bats)
