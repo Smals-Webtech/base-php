@@ -35,7 +35,7 @@ variable "AWS_CLI_VERSION" {
 }
 
 variable "GOMPLATE_VERSION" {
-  default = "4.3.3"
+  default = "5.0.0"
 }
 
 variable "WAIT4X_VERSION" {
