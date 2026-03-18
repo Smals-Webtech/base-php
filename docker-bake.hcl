@@ -15,7 +15,7 @@ variable "PHP_VERSION" {
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
-  default = "2.10.0"
+  default = "2.10.6"
 }
 
 variable "NGINX_VERSION" {
