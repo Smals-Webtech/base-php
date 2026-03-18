@@ -1,15 +1,13 @@
 server {
 
   listen       9000;
-  server_name  localhost;
+  server_name  origin.localhost;
 
   index index.php;
 
   root /app/src ;
 
   location ~ \.php$ {
-    access_log off;
-
     try_files $fastcgi_script_name =404;
 
     fastcgi_split_path_info ^(.+\.php)(/.+)$;

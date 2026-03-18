@@ -1,0 +1,87 @@
+---
+services:
+  prime:
+    profiles: [ "prime" ]
+    image: smalswebtech/base-php:apache
+    env_file:
+      - ../.env
+    depends_on:
+      init-shared-var-permissions:
+        condition: service_completed_successfully
+    environment:
+      - PHP_FPM_MAX_CHILDREN=${BATS_PHP_FPM_MAX_CHILDREN}
+      - PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES=${BATS_PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES}
+      - CONTAINER_HEAP_PERCENT=${BATS_CONTAINER_HEAP_PERCENT}
+      - VARNISH_ENABLED=true
+      - VARNISH_STORAGE_FILE_SIZE=500M
+      - VARNISH_VCL_CONF=${BATS_VARNISH_VCL_CONF_CUSTOM}
+    volumes:
+      - ./bin/container-entrypoint.d:/opt/bin/container-entrypoint.d:ro
+      - ./etc/varnish/my-vcl-test-file.vcl:/opt/etc/varnish/bats.vcl:ro
+      - shared-log:/var/log/shared:rw
+      - shared-var-prime:/app/var:rw
+    tmpfs:
+      - /opt/sbin:rw,exec,size=8m,mode=1777
+      - /opt/etc:rw,noexec,size=8m,mode=1777
+      - /app/tmp:rw,noexec,size=64m,mode=1777
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.varnish.rule=HostRegexp(`^(prime\.localhost)$$`)
+      - traefik.http.routers.varnish.entrypoints=web,websecure
+      - traefik.http.routers.varnish.service=varnish
+      - traefik.http.services.varnish.loadbalancer.server.port=6081
+      - traefik.http.routers.apache.rule=HostRegexp(`^(prime\-nocache\.localhost)$$`)
+      - traefik.http.routers.apache.entrypoints=web
+      - traefik.http.routers.apache.service=apache
+      - traefik.http.services.apache.loadbalancer.server.port=9000
+      - prometheus-scrape=false
+      - prometheus.labels.pod=prime
+    mem_limit: 512m
+    read_only: true
+
+  prime-php-exporter:
+    profiles: [ "prime" ]
+    image: docker.io/hipages/php-fpm_exporter:2.2.0
+    env_file:
+      - ../.env
+    depends_on:
+      prime:
+        condition: service_healthy
+    environment:
+      - PHP_FPM_SCRAPE_URI=unix:///app/var/run/php-fpm/php-fpm.sock;/status
+      - PHP_FPM_FIX_PROCESS_COUNT=1
+      - GOMAXPROCS=1
+    volumes:
+      - shared-var-prime:/app/var:rw
+    labels:
+      - prometheus-scrape=true
+      - prometheus-job=php-fpm
+      - prometheus.labels.pod=prime
+    mem_limit: 64m
+    read_only: true
+
+  prime-apache-exporter:
+    profiles: [ "prime" ]
+    image: docker.io/lusotycoon/apache-exporter:v0.10.0
+    env_file:
+      - ../.env
+    command:
+      - "--scrape_uri=http://prime-apache:9000/server-status/?auto"
+      - "--host_override=default.localhost"     
+    depends_on:
+      prime:
+        condition: service_healthy
+    labels:
+      - prometheus-scrape=true
+      - prometheus-job=apache
+      - prometheus.labels.pod=prime
+    mem_limit: 64m
+    read_only: true
+
+volumes:
+  shared-log:
+  shared-var-prime:
+
+networks:
+    default:
+        name: ${CONTAINER_NETWORK_NAME}

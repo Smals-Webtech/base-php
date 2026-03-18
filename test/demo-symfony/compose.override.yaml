@@ -1,0 +1,8 @@
+---
+services:
+  init-shared-var-permissions:
+    profiles: [ "symfony" ]
+    image: busybox
+    volumes:
+      - shared-var-symfony:/app/var
+    command: chmod 777 /app/var

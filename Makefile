@@ -1,9 +1,27 @@
 #!/usr/bin/make -f
 
 .DEFAULT_GOAL := help
-.PHONY: help
+.PHONY: help build test
 
-help: ## Show help for each of the Makefile recipes.
+help: # Show help for each of the Makefile recipes.
+	@echo "Base PHP Build / Test"
+	@echo "---------------------------"
+	@echo "CURRENT_USERNAME: ${CURRENT_USERNAME}"
+	@echo "CURRENT_HOMEDIR: ${CURRENT_HOMEDIR}"
+	@echo "CURRENT_DIR: ${CURRENT_DIR}"
+	@echo ""
+	@echo "Image name: ${DOCKER_IMAGE_NAME}"
+	@echo "Image platform: ${DOCKER_PLATFORM}"
+	@echo "Image builder: ${DOCKER_BUILDER}"
+	@echo "Image output: ${DOCKER_OUTPUT}"
+	@echo ""
+	@echo "KIBANA:        http://kibana.localhost"
+	@echo "---------------------------"
+	@echo ""
+	@echo "Usage: make [target]"
+	@echo ""
+	@echo "Targets:"
+	@echo ""
 	@grep -E '(^\S*:.*?##.*$$)|(^##)' Makefile | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 
 # —— Environment ——————————————————————————————————————————————————————————————————————————————————————————————————————
@@ -20,6 +38,14 @@ DOCKER_IMAGE_NAME           ?= docker.io/smalswebtech/base-php
 DOCKER_PLATFORM             ?= linux/amd64
 DOCKER_BUILDER              ?= default
 DOCKER_OUTPUT               ?= type=image
+
+# —— Docker Compose Stack —————————————————————————————————————————————————————————————————————————————————————————————
+
+build:
+	@$(MAKE) bake-all
+
+test:
+	@$(MAKE) -C test demo-test
 
 # —— Docker build —————————————————————————————————————————————————————————————————————————————————————————————————————
 

@@ -1,0 +1,101 @@
+---
+services:
+  init-certificates:
+    profiles: [ "all","elasticsearch" ]
+    image: docker.io/alpine/openssl:3.5.1
+    volumes:
+      - es-certs:/usr/share/elasticsearch/config/certs
+    entrypoint: >
+      /bin/sh -c "
+        set -e; set -x;
+        openssl genpkey -algorithm RSA \\\
+          -out /usr/share/elasticsearch/config/certs/elastic.key.pem;
+
+        openssl req -new -x509 \\\
+          -key /usr/share/elasticsearch/config/certs/elastic.key.pem \\\
+          -out /usr/share/elasticsearch/config/certs/elastic.cert.pem \\\
+          -days 365 \\\
+          -subj \"/CN=localhost\" \\\
+          -addext \"subjectAltName=DNS:es01,DNS:es02,DNS:es03\";
+
+        chmod 777 /usr/share/elasticsearch/config/certs/elastic.key.pem;
+        chmod 777 /usr/share/elasticsearch/config/certs/elastic.cert.pem;
+
+        exit 0;
+      "
+
+  init-users:
+    profiles: [ "all","elasticsearch" ]
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.2
+    command: >
+      /bin/bash -c "
+
+        until curl -u elastic:p455w0rd -ks https://es01:9200/_cluster/health; do echo 'Waiting for es01'; sleep 5; done;
+
+        echo 'Elasticsearch is up, adding users...';
+        curl -u elastic:p455w0rd -ks -X POST -H 'Content-Type: application/json' -d '{
+          \"username\": \"${ES_CLT_USERNAME}\",
+          \"password\": \"${ES_CLT_PASSWORD}\",
+          \"roles\": [\"viewer\"]
+        }' https://es01:9200/_security/user/${ES_CLT_USERNAME};
+
+        curl -u elastic:p455w0rd -ks -X POST -H 'Content-Type: application/json' -d '{
+          \"username\": \"${ES_PRD_USERNAME}\",
+          \"password\": \"${ES_PRD_PASSWORD}\",
+          \"roles\": [\"superuser\"]
+        }' https//es01:9200/_security/user/${ES_PRD_USERNAME};
+
+        curl -u elastic:p455w0rd -ks -X POST -H 'Content-Type: application/json' -d '{
+          \"password\": \"${ES_KIBANA_PASSWORD}\"
+         }' https://es01:9200/_security/user/kibana_system/_password
+
+        until curl -u elastic:p455w0rd -ks https://es02:9200/_cluster/health; do echo 'Waiting for es02'; sleep 5; done;
+
+        curl -u elastic:p455w0rd -ks -X POST -H 'Content-Type: application/json' -d '{
+          \"username\": \"${ES_CLT_USERNAME}\",
+          \"password\": \"${ES_CLT_PASSWORD}\",
+          \"roles\": [\"viewer\"]
+        }' https://es02:9200/_security/user/${ES_CLT_USERNAME};
+
+        curl -u elastic:p455w0rd -ks -X POST -H 'Content-Type: application/json' -d '{
+          \"username\": \"${ES_PRD_USERNAME}\",
+          \"password\": \"${ES_PRD_PASSWORD}\",
+          \"roles\": [\"superuser\"]
+        }' https://es02:9200/_security/user/${ES_PRD_USERNAME};
+
+        curl -u elastic:p455w0rd -ks -X POST -H 'Content-Type: application/json' -d '{
+          \"password\": \"${ES_KIBANA_PASSWORD}\"
+         }' https://es02:9200/_security/user/kibana_system/_password
+
+        until curl -u elastic:p455w0rd -ks https://es03:9200/_cluster/health; do echo 'Waiting for es03'; sleep 5; done;
+
+        curl -u elastic:p455w0rd -ks -X POST -H 'Content-Type: application/json' -d '{
+          \"username\": \"${ES_CLT_USERNAME}\",
+          \"password\": \"${ES_CLT_PASSWORD}\",
+          \"roles\": [\"viewer\"]
+        }' https://es03:9200/_security/user/${ES_CLT_USERNAME};
+
+        curl -u elastic:p455w0rd -ks -X POST -H 'Content-Type: application/json' -d '{
+          \"username\": \"${ES_PRD_USERNAME}\",
+          \"password\": \"${ES_PRD_PASSWORD}\",
+          \"roles\": [\"superuser\"]
+        }' https://es03:9200/_security/user/${ES_PRD_USERNAME};
+
+        curl -u elastic:p455w0rd -ks -X POST -H 'Content-Type: application/json' -d '{
+          \"password\": \"${ES_KIBANA_PASSWORD}\"
+         }' https://es03:9200/_security/user/kibana_system/_password
+
+        echo 'User created successfully.';
+        exit 0;
+      "
+    depends_on:
+      - es01
+      - es02
+      - es03
+
+  init-shared-log-permissions:
+    profiles: [ "all","elasticsearch" ]
+    image: busybox
+    volumes:
+      - shared-log:/var/log/shared
+    command: chmod 777 /var/log/shared

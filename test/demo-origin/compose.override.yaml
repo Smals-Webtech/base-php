@@ -1,0 +1,8 @@
+---
+services:
+  init-shared-var-permissions:
+    profiles: [ "origin" ]
+    image: busybox
+    volumes:
+      - shared-var-origin:/app/var
+    command: chmod 777 /app/var

@@ -1,0 +1,323 @@
+---
+services:
+  traefik:
+    profiles: [ "all" ]
+    image: "traefik:v3.6"
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    command:
+      - "--log.level=WARNING"
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+    ports:
+      - "80:80"
+      - "443:443"
+      - "8888:8080"
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+
+  mariadb:
+    profiles: [ "all","mariadb" ]
+    image: docker.io/mariadb:11.2.2
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - MARIADB_ROOT_PASSWORD=${MARIADB_ROOT_DB_PASSWORD}
+      - MARIADB_USER=${MARIADB_DB_USER}
+      - MARIADB_PASSWORD=${MARIADB_DB_PASSWORD}
+      - MARIADB_DATABASE=${MARIADB_DB_NAME}
+      - DEBUG=false
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      test: mariadb-admin ping -h 127.0.0.1 -u $$MARIADB_USER --password=$$MARIADB_PASSWORD
+    mem_limit: 512m
+
+  kibana:
+    profiles: [ "all","elasticsearch" ]
+    image: docker.elastic.co/kibana/kibana:8.18.2
+    restart: unless-stopped
+    depends_on:
+      init-users:
+        condition: service_completed_successfully
+    env_file:
+      - ../.env
+    environment:
+      - SERVER_NAME=kibana
+      - ELASTICSEARCH_HOSTS=["https://es01:9200","https://es02:9200","https://es03:9200"]
+      - ELASTICSEARCH_USERNAME=${ES_KIBANA_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ES_KIBANA_PASSWORD}
+      - ELASTICSEARCH_SSL_CERTIFICATEAUTHORITIES=/usr/share/elasticsearch/config/certs/elastic.cert.pem
+      - ELASTICSEARCH_SSL_VERIFICATIONMODE=none
+      - XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY=${XPACK_ENCRYPTEDSAVEDOBJECTS_ENCRYPTIONKEY}
+      - XPACK_REPORTING_ENCRYPTIONKEY=${XPACK_REPORTING_ENCRYPTIONKEY}
+      - XPACK_SECURITY_ENCRYPTIONKEY=${XPACK_SECURITY_ENCRYPTIONKEY}
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.kibana.rule=HostRegexp(`^kibana\.localhost$$`)
+      - traefik.http.routers.kibana.entrypoints=web
+      - traefik.http.services.kibana.loadbalancer.server.port=5601
+    mem_limit: 1024m
+    volumes:
+      - es-certs:/usr/share/elasticsearch/config/certs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -s -I http://localhost:5601/api/status | grep -q 'HTTP/1.1 200 OK'"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  es01:
+    profiles: [ "all","elasticsearch" ]
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.2
+    restart: unless-stopped
+    depends_on:
+      init-certificates:
+        condition: service_completed_successfully
+    env_file:
+      - ../.env
+    environment:
+      - "cluster.name=docker-cluster"
+      - "node.name=es01"
+      - "discovery.seed_hosts=es02,es03"
+      - "cluster.initial_master_nodes=es01,es02,es03"
+      - "bootstrap.memory_lock=false"
+      - "node.store.allow_mmap=false"
+      - "index.store.type=niofs"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ELASTIC_PASSWORD=p455w0rd"
+      - "xpack.security.enabled=true"
+      - "xpack.security.transport.ssl.enabled=true"
+      - "xpack.security.transport.ssl.key=/usr/share/elasticsearch/config/certs/elastic.key.pem"
+      - "xpack.security.transport.ssl.certificate=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+      - "xpack.security.transport.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+      - "xpack.security.transport.ssl.verification_mode=none"
+      - "xpack.security.http.ssl.enabled=true"
+      - "xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/elastic.key.pem"
+      - "xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+      - "xpack.security.http.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 1024m
+    volumes:
+      - es-certs:/usr/share/elasticsearch/config/certs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -u ${ES_PRD_USERNAME}:${ES_PRD_PASSWORD} -f https://es01:9200/_cluster/health --cacert /usr/share/elasticsearch/config/certs/elastic.cert.pem --cert /usr/share/elasticsearch/config/certs/elastic.cert.pem --key /usr/share/elasticsearch/config/certs/elastic.key.pem || exit 1",
+        ]
+      interval: 30s
+      retries: 3
+      start_period: 60s
+
+  es02:
+    profiles: [ "all","elasticsearch" ]
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.2
+    restart: unless-stopped
+    depends_on:
+      init-certificates:
+        condition: service_completed_successfully
+    env_file:
+      - ../.env
+    environment:
+      - "cluster.name=docker-cluster"
+      - "node.name=es02"
+      - "discovery.seed_hosts=es01,es03"
+      - "cluster.initial_master_nodes=es01,es02,es03"
+      - "bootstrap.memory_lock=false"
+      - "node.store.allow_mmap=false"
+      - "index.store.type=niofs"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ELASTIC_PASSWORD=p455w0rd"
+      - "xpack.security.enabled=true"
+      - "xpack.security.transport.ssl.enabled=true"
+      - "xpack.security.transport.ssl.key=/usr/share/elasticsearch/config/certs/elastic.key.pem"
+      - "xpack.security.transport.ssl.certificate=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+      - "xpack.security.transport.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+      - "xpack.security.transport.ssl.verification_mode=none"
+      - "xpack.security.http.ssl.enabled=true"
+      - "xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/elastic.key.pem"
+      - "xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+      - "xpack.security.http.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 1024m
+    volumes:
+      - es-certs:/usr/share/elasticsearch/config/certs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -u ${ES_PRD_USERNAME}:${ES_PRD_PASSWORD} -f https://es02:9200/_cluster/health --cacert /usr/share/elasticsearch/config/certs/elastic.cert.pem --cert /usr/share/elasticsearch/config/certs/elastic.cert.pem --key /usr/share/elasticsearch/config/certs/elastic.key.pem || exit 1",
+        ]
+      interval: 30s
+      retries: 3
+      start_period: 60s
+
+  es03:
+    profiles: [ "all","elasticsearch" ]
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.18.2
+    restart: unless-stopped
+    depends_on:
+      init-certificates:
+        condition: service_completed_successfully
+    env_file:
+      - ../.env
+    environment:
+      - "cluster.name=docker-cluster"
+      - "node.name=es03"
+      - "discovery.seed_hosts=es01,es02"
+      - "cluster.initial_master_nodes=es01,es02,es03"
+      - "bootstrap.memory_lock=false"
+      - "node.store.allow_mmap=false"
+      - "index.store.type=niofs"
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "ELASTIC_PASSWORD=p455w0rd"
+      - "xpack.security.enabled=true"
+      - "xpack.security.transport.ssl.enabled=true"
+      - "xpack.security.transport.ssl.key=/usr/share/elasticsearch/config/certs/elastic.key.pem"
+      - "xpack.security.transport.ssl.certificate=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+      - "xpack.security.transport.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+      - "xpack.security.transport.ssl.verification_mode=none"
+      - "xpack.security.http.ssl.enabled=true"
+      - "xpack.security.http.ssl.key=/usr/share/elasticsearch/config/certs/elastic.key.pem"
+      - "xpack.security.http.ssl.certificate=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+      - "xpack.security.http.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/elastic.cert.pem"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    mem_limit: 1024m
+    volumes:
+      - es-certs:/usr/share/elasticsearch/config/certs
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl -u ${ES_PRD_USERNAME}:${ES_PRD_PASSWORD} -f https://es03:9200/_cluster/health --cacert /usr/share/elasticsearch/config/certs/elastic.cert.pem --cert /usr/share/elasticsearch/config/certs/elastic.cert.pem --key /usr/share/elasticsearch/config/certs/elastic.key.pem || exit 1",
+        ]
+      interval: 30s
+      retries: 3
+      start_period: 60s
+
+  otel-collector:
+    profiles: [ "all","elasticsearch" ]
+    image: docker.io/otel/opentelemetry-collector-contrib:0.147.0
+    restart: unless-stopped
+    depends_on:
+      init-shared-log-permissions:
+        condition: service_completed_successfully
+    command: ["--config=/etc/config.yml"]
+    env_file:
+      - ../.env
+    environment:
+      - ELASTICSEARCH_USERNAME=${ES_PRD_USERNAME}
+      - ELASTICSEARCH_PASSWORD=${ES_PRD_PASSWORD}
+      - GOMAXPROCS=1
+    volumes:
+      - ./opentelemetry-collector/config.yml:/etc/config.yml:ro
+      - es-certs:/usr/share/elasticsearch/config/certs
+      - shared-log:/var/log/shared:rw
+    mem_limit: 512m
+    read_only: true
+
+  prometheus:
+    profiles: [ "all","grafana" ]
+    image: docker.io/prom/prometheus:v2.53.5
+    user: "65534:1001"
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - GOMAXPROCS=1
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.prom.rule=Host(`prometheus.localhost`)"
+      - "traefik.http.routers.prom.entrypoints=web"
+      - "traefik.http.routers.prom.service=prom"
+      - "traefik.http.services.prom.loadbalancer.server.port=9090"
+    mem_limit: 512m
+    read_only: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    healthcheck:
+      test: 
+        [
+          "CMD", 
+          "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  grafana:
+    profiles: [ "all","grafana" ]
+    image: docker.io/grafana/grafana-oss:12.4.1
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_INSTALL_PLUGINS=
+      - GF_UPDATE_CHECKS_ENABLED=false
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
+      - "traefik.http.routers.grafana.entrypoints=web"
+      - "traefik.http.routers.grafana.service=grafana"
+      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    mem_limit: 512m
+    read_only: true
+    tmpfs:
+      - /tmp:rw,exec,size=128m,mode=1777
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    healthcheck:
+      test: 
+        [
+          "CMD-SHELL", 
+          "curl -s -I http://localhost:3000/api/health | grep -q 'HTTP/1.1 200 OK'"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  es-certs:
+  mariadb_data:
+  prometheus_data:
+  grafana_data:
+  shared-log:
+
+networks:
+    default:
+        name: ${CONTAINER_NETWORK_NAME}
