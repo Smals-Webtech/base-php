@@ -5,7 +5,7 @@ load "helpers/containers"
 load "lib/batslib"
 load "lib/output"
 
-source ${BATS_TEST_DIRNAME%/}/../.env
+source ${BATS_TEST_DIRNAME%/}/.env
 
 export BATS_CONTAINER_ENGINE="${CONTAINER_ENGINE:-docker}"
 export BATS_CONTAINER_COMPOSE_ENGINE="${BATS_CONTAINER_ENGINE} compose"
