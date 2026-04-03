@@ -50,7 +50,7 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
 FROM php:${PHP_VERSION_ARG}-fpm-alpine${ALPINE_VERSION_ARG} AS fpm-prd
 
 ARG AWS_CLI_VERSION_ARG=2.32.7
-ARG NGINX_VERSION_ARG=1.28.2
+ARG NGINX_VERSION_ARG=1.28.3
 
 USER root
 
