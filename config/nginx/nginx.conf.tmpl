@@ -129,6 +129,14 @@ http {
         stub_status;
       }
 
+      location /real-time-status {
+        access_log off;
+        add_header Content-Type text/html;
+
+        alias /usr/local/php/php/fpm/status.html;
+
+      }
+
       location ~ ^/(status|ping)$ {
         access_log off;
         allow 127.0.0.1;
