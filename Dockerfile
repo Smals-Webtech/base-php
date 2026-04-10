@@ -164,7 +164,7 @@ COPY --from=node /usr/local/bin /usr/local/bin
 RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps git patch ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
-    mkdir /home/default/.composer ; \
+    mkdir -p /home/default/.composer ; \
     chown 1001:0 /home/default/.composer ; \
     chmod -R ugo+rw /home/default/.composer ; \
     rm -rf /var/cache/apk/* ;
@@ -300,7 +300,7 @@ USER root
 RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps git patch make g++ ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
-    mkdir /home/default/.composer ; \
+    mkdir -p /home/default/.composer ; \
     chown 1001:0 /home/default/.composer ; \
     chmod -R ugo+rw /home/default/.composer ; \
     rm -rf /var/cache/apk/*
