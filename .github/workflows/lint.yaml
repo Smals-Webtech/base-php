@@ -20,10 +20,10 @@ permissions:
 jobs:
   build:
     name: Lint Code Base
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Code
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
