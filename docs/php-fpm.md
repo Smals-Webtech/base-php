@@ -41,9 +41,19 @@ This table summarizes how PHP-FPM configuration directives are mapped to environ
 | `pm.process_idle_timeout`                  | `PHP_FPM_PM_PROCESS_IDLE_TIMEOUT`                  | `10s`             | `10s`             | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `pm.max_requests`                          | `PHP_FPM_PM_MAX_REQUESTS`                          | `0`               | `0`               | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `catch_workers_output`                     | `PHP_FPM_CATCH_WORKERS_OUTPUT`                     | `yes`             | `yes`             | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
-| `decorate_workers_output`                  | `PHP_FPM_DECORATE_WORKERS`                         | `no`              | `no`              | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
+| `decorate_workers_output`                  | `PHP_FPM_DECORATE_WORKERS_OUTPUT`                  | `no`              | `no`              | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `request_terminate_timeout`                | `PHP_FPM_REQUEST_TERMINATE_TIMEOUT`                | `0`               | `0`               | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `request_terminate_timeout_track_finished` | `PHP_FPM_REQUEST_TERMINATE_TIMEOUT_TRACK_FINISHED` | `no`              | `no`              | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `request_slowlog_timeout`                  | `PHP_FPM_REQUEST_SLOWLOG_TIMEOUT`                  | `0`               | `0`               | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `request_slowlog_trace_depth`              | `PHP_FPM_REQUEST_SLOWLOG_TRACE_DEPTH`              | `20`              | `20`              | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `slowlog`                                  | `PHP_FPM_SLOWLOG`                                  | `/app/var/log/php-fpm.log.slow` | `/app/var/log/php-fpm.log.slow` | [Link](https://www.php.net/manual/en/install.fpm.configuration.php) |
+
+### Deprecated variables
+
+These variables are still accepted for backward compatibility but will be removed in a future version. Replace them with their documented successors.
+
+| Deprecated Variable | Replacement | Notes |
+|---------------------|-------------|-------|
+| `PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES` | `PHP_MEMORY_LIMIT` | Value is converted automatically (`16` → `16M`). A warning is emitted at startup. |
+| `PHP_FPM_MAX_CHILDREN` | `PHP_FPM_PM_MAX_CHILDREN` | Direct alias. A warning is emitted at startup. |
+| `CONTAINER_HEAP_PERCENT` | `PHP_MEMORY_LIMIT` | Fraction of container memory used to auto-size PHP memory pools (default `0.80`). Set `PHP_MEMORY_LIMIT` explicitly instead. A warning is emitted at startup. |
