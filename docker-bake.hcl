@@ -15,7 +15,7 @@ variable "PHP_VERSION" {
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
-  default = "2.10.6"
+  default = "2.10.18"
 }
 
 variable "NGINX_VERSION" {
@@ -27,7 +27,7 @@ variable "NODE_VERSION" {
 }
 
 variable "COMPOSER_VERSION" {
-  default = "2.9.5"
+  default = "2.9.7"
 }
 
 variable "AWS_CLI_VERSION" {
