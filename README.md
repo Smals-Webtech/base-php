@@ -284,7 +284,7 @@ Two-zone rate limiting: a global limit for all traffic, and a stricter bot-speci
 | `NGINX_SOFT_THROTTLE_BOTS_ZONE_SIZE` | `20m` | Shared memory for the bot limit zone. |
 | `NGINX_SOFT_THROTTLE_BOTS_ZONE_RATE` | `1r/m` | Rate limit applied to detected bots. |
 | `NGINX_SOFT_THROTTLE_BOTS_ZONE_BURST` | `5` | Burst allowance for the bot limit. |
-| `NGINX_SOFT_THROTTLE_BOTS_USER_AGENT` | _(see below)_ | Space-separated list of User-Agent regex patterns identifying bots. |
+| `NGINX_SOFT_THROTTLE_BOTS_USER_AGENT` | _(see below)_ | Space-separated list of User-Agent regular expression patterns identifying bots. |
 
 Default bot patterns: `googlebot`, `bingbot`, `baiduspider`, `yandexbot`, `duckduckbot`, `semrushbot`, `ahrefsbot`, `python-requests`, `curl`, `wget`, `adsbot-google`, and others.
 
@@ -335,7 +335,7 @@ Varnish acts as an HTTP cache in front of Nginx or Apache. It is available in al
 
 The VCL configuration file (`VARNISH_VCL_CONF`) must be provided by the child image or mounted as a volume. The default path is pre-configured but the file is not shipped — it must be created for Varnish to start correctly.
 
-### Activation
+### Varnish Activation
 
 | Environment Variable | Default | Description |
 |----------------------|---------|-------------|
@@ -362,7 +362,7 @@ Varnish supports two storage backends. File storage is enabled by default; mallo
 | `VARNISH_STORAGE_MALLOC_ENABLED` | `false` | Use in-memory (malloc) storage instead of file storage. |
 | `VARNISH_STORAGE_MALLOC_SIZE` | `200M` | Size of the malloc storage pool. |
 
-### Logging
+### Varnish Logging
 
 | Environment Variable | Default | Description |
 |----------------------|---------|-------------|
