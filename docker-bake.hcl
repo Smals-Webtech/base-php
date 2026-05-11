@@ -15,7 +15,7 @@ variable "PHP_VERSION" {
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
-  default = "2.10.18"
+  default = "2.11.1"
 }
 
 variable "NGINX_VERSION" {
@@ -35,7 +35,7 @@ variable "AWS_CLI_VERSION" {
 }
 
 variable "GOMPLATE_VERSION" {
-  default = "5.0.0"
+  default = "5.1.0"
 }
 
 variable "WAIT4X_VERSION" {
