@@ -440,7 +440,7 @@ These are generated dynamically based on Git metadata and bake target.
 - `smalswebtech/base-php:${PHP_VERSION}$-apache`
 - `smalswebtech/base-php:${PHP_VERSION}$-nginx`
 
-> Optionally with `-dev` suffix (e.g. `:8.5.5-cli-dev`)
+> Optionally with `-dev` suffix (e.g. `:8.5.6-cli-dev`)
 
 ## 📬 Contact
 
