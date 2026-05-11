@@ -22,7 +22,7 @@ DEMO_REPO                      = git@github.com:symfony/demo.git
 DEMO_REF                       = v3.0.1
 
 BUILDER_WORKING_DIR            = /app
-BUILDER_DOCKER_IMAGE_NAME     ?= docker.io/smalswebtech/base-php:8.5-cli-dev
+BUILDER_DOCKER_IMAGE_NAME     ?= docker.io/smalswebtech/base-php:cli-dev
 
 COMPOSER_INSTALL_CMDLINE       = "composer -vvv install --no-interaction --no-suggest --no-scripts -o"
 COMPOSER_UPDATE_CMDLINE        = "composer -vvv update --no-interaction --no-suggest --no-scripts -o"
@@ -36,7 +36,7 @@ NPM_RUN_BUILD_CMDLINE          = "npm --prefix /app/src/elasticms/vendor/elastic
 DEMO_SASS_BUILD_CMDLINE        = "php bin/console sass:build"
 DEMO_IMPORTMAP_INSTALL_CMDLINE = "php bin/console importmap:install"
 
-EXEC_DEMO		               = docker compose --env-file=../.env exec symfony
+EXEC_DEMO		               = docker compose --env-file=../.env exec --user $(CURRENT_UID) symfony
 
 BATS                           = bats -t -j 1
 
