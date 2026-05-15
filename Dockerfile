@@ -300,7 +300,7 @@ ENV PHP_XDEBUG_ENABLED="true" \
 USER root
 
 RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
-    apk add --no-cache --virtual .base-php-dev-rundeps zsh ripgrep git patch make g++ ; \
+    apk add --no-cache --virtual .base-php-dev-rundeps zsh ripgrep git patch make g++ github-cli ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir -p /home/default/.composer ; \
     chown 1001:0 /home/default/.composer ; \
