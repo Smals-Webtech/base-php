@@ -39,6 +39,14 @@ export BATS_CONTAINER_COMPOSE_ENGINE="${BATS_CONTAINER_ENGINE} compose"
   assert_output -l -r "^aws-cli/${BATS_AWS_CLI_VERSION} Python/.* .*$"
 }
 
+@test "[$TEST_FILE] Test GH cli version (dev only)" {
+  run ${BATS_CONTAINER_ENGINE} run --read-only --rm \
+  -v php_cli_app_tmp:/app/tmp \
+  -v php_cli_opt_etc:/opt/etc \
+  smalswebtech/base-php:cli-dev gh --version
+  assert_output -l -r "^gh version [0-9]+\.[0-9]+\.[0-9]+ \([^)]+\)$"
+}
+
 @test "[$TEST_FILE] Remove Docker Volumes" {
   command docker volume rm php_cli_app_tmp
   command docker volume rm php_cli_opt_etc
