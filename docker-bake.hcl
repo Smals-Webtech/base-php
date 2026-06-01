@@ -27,7 +27,7 @@ variable "NODE_VERSION" {
 }
 
 variable "COMPOSER_VERSION" {
-  default = "2.9.8"
+  default = "2.10.0"
 }
 
 variable "AWS_CLI_VERSION" {
