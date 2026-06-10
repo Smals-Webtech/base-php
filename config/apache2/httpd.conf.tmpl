@@ -33,6 +33,10 @@ User apache
 Group apache
 </IfModule>
 
+<IfModule status_module>
+ExtendedStatus {{.Env.APACHE_DEFAULT_VHOST_EXTENDED_STATUS}}
+</IfModule>
+
 # 'Main' server configuration
 
 ServerAdmin {{.Env.APACHE_SERVER_ADMIN}}
