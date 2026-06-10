@@ -62,11 +62,11 @@ services:
 
   prime-apache-exporter:
     profiles: [ "prime" ]
-    image: docker.io/lusotycoon/apache-exporter:v0.10.0
+    image: docker.io/lusotycoon/apache-exporter:v1.0.12
     env_file:
       - ../.env
     command:
-      - "--scrape_uri=http://prime-apache:9000/server-status/?auto"
+      - "--scrape_uri=http://prime:9000/server-status/?auto"
       - "--host_override=default.localhost"     
     depends_on:
       prime:
@@ -74,6 +74,7 @@ services:
     labels:
       - prometheus-scrape=true
       - prometheus-job=apache
+      - prometheus-port=9117
       - prometheus.labels.pod=prime
     mem_limit: 64m
     read_only: true
