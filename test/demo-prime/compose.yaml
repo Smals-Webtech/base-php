@@ -12,12 +12,8 @@ services:
       - PHP_FPM_MAX_CHILDREN=${BATS_PHP_FPM_MAX_CHILDREN}
       - PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES=${BATS_PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES}
       - CONTAINER_HEAP_PERCENT=${BATS_CONTAINER_HEAP_PERCENT}
-      - VARNISH_ENABLED=true
-      - VARNISH_STORAGE_FILE_SIZE=500M
-      - VARNISH_VCL_CONF=${BATS_VARNISH_VCL_CONF_CUSTOM}
     volumes:
       - ./bin/container-entrypoint.d:/opt/bin/container-entrypoint.d:ro
-      - ./etc/varnish/my-vcl-test-file.vcl:/opt/etc/varnish/bats.vcl:ro
       - shared-log:/var/log/shared:rw
       - shared-var-prime:/app/var:rw
     tmpfs:
@@ -26,10 +22,6 @@ services:
       - /app/tmp:rw,noexec,size=64m,mode=1777
     labels:
       - traefik.enable=true
-      - traefik.http.routers.varnish.rule=HostRegexp(`^(prime\.localhost)$$`)
-      - traefik.http.routers.varnish.entrypoints=web,websecure
-      - traefik.http.routers.varnish.service=varnish
-      - traefik.http.services.varnish.loadbalancer.server.port=6081
       - traefik.http.routers.apache.rule=HostRegexp(`^(prime\-nocache\.localhost)$$`)
       - traefik.http.routers.apache.entrypoints=web
       - traefik.http.routers.apache.service=apache
@@ -80,9 +72,97 @@ services:
     mem_limit: 64m
     read_only: true
 
+  prime-varnish:
+    profiles: [ "prime" ]
+    image: docker.io/varnish:8.0.1-alpine
+    env_file:
+      - ../.env
+    command:
+      - "varnishd"
+      - "-F"
+      - "-a"
+      - "0.0.0.0:6081"
+      - "-t"
+      - "120"
+      - "-f"
+      - "/etc/varnish/default.vcl"
+      - "-n"
+      - "/var/lib/varnish/varnishd"
+      - "-P"
+      - "/var/lib/varnish/varnishd.pid"
+      - "-s"
+      - "file,/var/lib/varnish/storage.bin,400m"
+    volumes:
+      - shared-var-varnish:/var/lib/varnish:rw
+      - ./etc/varnish/my-vcl-test-file.vcl:/etc/varnish/default.vcl:ro
+    depends_on:
+      prime:
+        condition: service_healthy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.varnish.rule=HostRegexp(`^(prime\.localhost)$$`)
+      - traefik.http.routers.varnish.entrypoints=web,websecure
+      - traefik.http.routers.varnish.service=varnish
+      - traefik.http.services.varnish.loadbalancer.server.port=6081
+      - prometheus-scrape=false
+      - prometheus.labels.pod=prime-varnish
+    mem_limit: 512m
+    read_only: true
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -S -q -O /dev/null http://127.0.0.1:6081/varnish-health 2>&1 | grep -q \"HTTP/1.1 200\""
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  prime-varnish-logs:
+    profiles: [ "prime" ]
+    image: docker.io/varnish:8.0.1-alpine
+    env_file:
+      - ../.env
+    command:
+      - varnishncsa
+      - -n
+      - /var/lib/varnish/varnishd
+      - '-F %h %l %u %t \"%r\" %s %b \"%{X-Forwarded-For}i\" \"%{X-Forwarded-Proto}i\" \"%{X-Forwarded-Port}i\" \"%{User-agent}i\"'
+    volumes:
+      - shared-var-varnish:/var/lib/varnish:rw
+    depends_on:
+      prime-varnish:
+        condition: service_healthy
+    labels:
+      - prometheus-scrape=false
+      - prometheus.labels.pod=prime
+    mem_limit: 32m
+    read_only: true
+
+  prime-varnish-exporter:
+    profiles: [ "prime" ]
+    image: ghcr.io/otto-de/prometheus-varnish-exporter:1.8.1-varnish-8.0.0
+    env_file:
+      - ../.env
+    environment:
+      - GOMAXPROCS=1
+    volumes:
+      - shared-var-varnish:/var/lib/varnish:rw
+    depends_on:
+      prime-varnish:
+        condition: service_healthy
+    labels:
+      - prometheus-scrape=true
+      - prometheus-job=varnish
+      - prometheus-port=9131
+      - prometheus.labels.pod=prime
+    mem_limit: 32m
+    read_only: true
+
 volumes:
   shared-log:
   shared-var-prime:
+  shared-var-varnish:
 
 networks:
     default:
