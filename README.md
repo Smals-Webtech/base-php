@@ -329,45 +329,6 @@ Caches PHP-FPM responses on disk. Cache bypass is automatically configured for m
 | `NGINX_FASTCGI_BUFFERS_SIZE` | `32k` | Size of each FastCGI response buffer. |
 | `NGINX_FASTCGI_REQUEST_BUFFERING` | `on` | Buffer the full client request body before forwarding to FastCGI. |
 
-## 💨 Varnish Configuration
-
-Varnish acts as an HTTP cache in front of Nginx or Apache. It is available in all variants but disabled by default. When enabled, it listens on port `6081` (HTTP) with port `6082` reserved for the Varnish CLI/admin interface.
-
-The VCL configuration file (`VARNISH_VCL_CONF`) must be provided by the child image or mounted as a volume. The default path is pre-configured but the file is not shipped — it must be created for Varnish to start correctly.
-
-### Varnish Activation
-
-| Environment Variable | Default | Description |
-|----------------------|---------|-------------|
-| `VARNISH_ENABLED` | `false` | Enable Varnish. When `true`, the entrypoint renders the Varnish startup scripts and registers Varnish as a supervised process. |
-
-### Daemon
-
-| Environment Variable | Default | Description |
-|----------------------|---------|-------------|
-| `VARNISH_VCL_CONF` | `/opt/etc/varnish/default.vcl` | Path to the VCL configuration file. Mount or copy your VCL to this path. |
-| `VARNISH_TTL` | `120` | Default TTL (seconds) for cached objects when the backend does not set an explicit `Cache-Control` or `Expires` header. |
-| `VARNISH_MIN_THREADS` | `5` | Minimum number of worker threads per pool. |
-| `VARNISH_MAX_THREADS` | `1000` | Maximum number of worker threads per pool. |
-| `VARNISH_THREAD_TIMEOUT` | `120` | Idle timeout (seconds) before a worker thread is destroyed. |
-
-### Storage
-
-Varnish supports two storage backends. File storage is enabled by default; malloc (in-memory) storage can be enabled instead.
-
-| Environment Variable | Default | Description |
-|----------------------|---------|-------------|
-| `VARNISH_STORAGE_FILE_ENABLED` | `true` | Use file-backed storage. |
-| `VARNISH_STORAGE_FILE_SIZE` | `1G` | Maximum size of the file storage. |
-| `VARNISH_STORAGE_MALLOC_ENABLED` | `false` | Use in-memory (malloc) storage instead of file storage. |
-| `VARNISH_STORAGE_MALLOC_SIZE` | `200M` | Size of the malloc storage pool. |
-
-### Varnish Logging
-
-| Environment Variable | Default | Description |
-|----------------------|---------|-------------|
-| `VARNISH_NCSA_LOG_FORMAT` | _(NCSA extended)_ | Log format for `varnishncsa`. Default includes hit/miss status and User-Agent: `%h %l %u %t %D \"%r\" %s %b %{Varnish:hitmiss}x \"%{User-agent}i\"`. |
-
 ## ☁️ AWS CLI Configuration
 
 AWS CLI v2 is pre-installed in all variants. The entrypoint generates `~/.aws/config` and `~/.aws/credentials` from the variables below, making the CLI immediately usable inside the container without mounting external credential files.

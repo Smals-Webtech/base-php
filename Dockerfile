@@ -25,12 +25,10 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
              /rootfs/app/var/lock \
              /rootfs/app/var/log \
              /rootfs/app/var/www \
-             /rootfs/app/var/run/varnish \
              /rootfs/app/var/run/php-fpm \
              /rootfs/app/var/run/apache2 \
              /rootfs/app/var/run/nginx \
              /rootfs/app/var/cache/apache2/mod_ssl \
-             /rootfs/app/var/cache/varnish/varnishd \
              /rootfs/app/var/cache/nginx/fcgi \
              /rootfs/app/src \
              /rootfs/app/tmp \
@@ -40,8 +38,7 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
              /rootfs/app/var/tmp/uwsgi \
              /rootfs/app/var/tmp/scgi  ; \
     touch /rootfs/app/var/log/supervisord.log \
-          /rootfs/app/var/run/supervisord.pid \
-          /rootfs/app/var/cache/varnish/secret ;
+          /rootfs/app/var/run/supervisord.pid ;
 
 #
 # PHP-FPM / PRD
@@ -77,8 +74,7 @@ RUN set -eux ; \
                                                    postgresql-libs \
                                                    ssmtp \
                                                    supervisor \
-                                                   tzdata \
-                                                   varnish ; \
+                                                   tzdata ; \
     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
