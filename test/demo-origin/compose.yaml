@@ -62,6 +62,7 @@ services:
     labels:
       - prometheus-scrape=true
       - prometheus-job=php-fpm
+      - prometheus-port=9253
       - prometheus.labels.pod=origin
     mem_limit: 64m
     read_only: true
