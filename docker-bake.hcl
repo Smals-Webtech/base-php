@@ -11,11 +11,11 @@ variable "ALPINE_VERSION" {
 }
 
 variable "PHP_VERSION" {
-  default = "8.5.6"
+  default = "8.5.7"
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
-  default = "2.11.1"
+  default = "2.11.3"
 }
 
 variable "NGINX_VERSION" {
@@ -27,7 +27,7 @@ variable "NODE_VERSION" {
 }
 
 variable "COMPOSER_VERSION" {
-  default = "2.10.0"
+  default = "2.10.1"
 }
 
 variable "AWS_CLI_VERSION" {
