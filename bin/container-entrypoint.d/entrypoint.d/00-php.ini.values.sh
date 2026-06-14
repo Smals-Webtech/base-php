@@ -193,7 +193,7 @@ PHP_INTL_USE_EXCEPTIONS_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("intl.use_exce
 
 # LDAP
 
-PHP_LDAP_MAX_LINKS_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("intl.use_exceptions");')"
+PHP_LDAP_MAX_LINKS_INI_DEFAULT_VALUE="$(php -r 'echo ini_get("ldap.max_links");')"
 
 # SOAP
 
