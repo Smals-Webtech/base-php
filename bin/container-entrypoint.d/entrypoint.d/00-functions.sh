@@ -50,9 +50,11 @@ function apply-template {
 				gomplate -f "$SRC" -o "$DEST"
 			else
 				log "ERROR" "! Write permission is NOT granted on $(dirname "$DEST") ."
+				return 1
 			fi
 		else
 			log "ERROR" "! File $SRC is not a .tmpl file."
+			return 1
 		fi
 
 	# dir
