@@ -6,3 +6,11 @@ stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 autorestart=false
 startretries=0
+
+; Graceful shutdown: SIGQUIT asks php-fpm for a graceful stop; signal the whole
+; process group (master + workers) so the listen socket is released cleanly when
+; the container stops, and SIGKILL the group if it overruns stopwaitsecs.
+stopsignal=QUIT
+stopwaitsecs=20
+stopasgroup=true
+killasgroup=true
