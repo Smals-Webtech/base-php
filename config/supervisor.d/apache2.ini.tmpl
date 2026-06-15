@@ -6,3 +6,10 @@ stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
 autorestart=false
 startretries=0
+
+; Graceful shutdown: signal the whole process group so httpd children stop and
+; the listen port / pid file are released cleanly (SIGTERM = clean immediate
+; shutdown for httpd), and SIGKILL the group if it overruns stopwaitsecs.
+stopwaitsecs=15
+stopasgroup=true
+killasgroup=true
