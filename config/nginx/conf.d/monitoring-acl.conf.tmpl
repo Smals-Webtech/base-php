@@ -1,0 +1,26 @@
+# Access control for the monitoring/status endpoints (rendered at startup).
+#
+# $monitoring_forbidden == 1  -> the monitoring locations return 403
+#                         == 0 -> access is granted
+#
+# Granted when EITHER the client IP is in MONITORING_ALLOW, OR the request comes
+# in over a unix socket — reaching the socket already implies a host-local /
+# same-pod peer, so it stays trusted. nginx sets $remote_addr to the literal
+# "unix:" for unix-socket connections (not an empty string).
+
+geo $monitoring_ip_allowed {
+	default 0;
+{{- range (datasource "cidrs") }}
+	{{ . }} 1;
+{{- end }}
+}
+
+map $remote_addr $monitoring_is_local_socket {
+	default 0;
+	"unix:" 1;
+}
+
+map "$monitoring_ip_allowed$monitoring_is_local_socket" $monitoring_forbidden {
+	default 1;
+	"~1"    0;
+}

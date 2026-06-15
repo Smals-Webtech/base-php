@@ -368,6 +368,18 @@ Varnish supports two storage backends. File storage is enabled by default; mallo
 |----------------------|---------|-------------|
 | `VARNISH_NCSA_LOG_FORMAT` | _(NCSA extended)_ | Log format for `varnishncsa`. Default includes hit/miss status and User-Agent: `%h %l %u %t %D \"%r\" %s %b %{Varnish:hitmiss}x \"%{User-agent}i\"`. |
 
+## 🔒 Monitoring Access Control
+
+The web server exposes monitoring/status endpoints over HTTP — php-fpm `/status` & `/ping`, the Nginx VTS `/metrics`, `/stub-status`, `/vts-status`, `/real-time-status`, and the Apache `/server-status` / `/server-info` / `/status`. Access to these is restricted to an allow-list of client CIDRs (applies to both the Nginx and Apache variants).
+
+Requests arriving over a **Unix socket** are always allowed — reaching the socket already implies a host-local / same-pod peer (e.g. a Prometheus exporter sidecar reading the socket from a shared OpenShift `emptyDir`). The CIDR allow-list only gates **TCP** access (e.g. an exporter running as a separate service over a Swarm overlay).
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `MONITORING_ALLOW` | `127.0.0.1/32 ::1/128 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 fc00::/7` | Space-separated list of CIDRs allowed to reach the monitoring/status endpoints over TCP. Defaults to loopback + private (RFC1918 / IPv6 ULA) ranges. Set to `0.0.0.0/0 ::/0` to expose them to everyone, or to a narrower list to lock them down. Unix-socket access is unaffected. |
+
+> **Security note**: php-fpm `/status` and the Apache/Nginx status pages disclose internal runtime details. Do **not** widen this list to public ranges, and never publish the monitoring port (Nginx `9090`, Apache shares the app port) on an untrusted network.
+
 ## ☁️ AWS CLI Configuration
 
 AWS CLI v2 is pre-installed in all variants. The entrypoint generates `~/.aws/config` and `~/.aws/credentials` from the variables below, making the CLI immediately usable inside the container without mounting external credential files.

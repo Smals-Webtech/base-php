@@ -20,25 +20,37 @@
 
     Alias /real-time-status "/usr/local/php/php/fpm/status.html"
     <Directory /usr/local/php/php/fpm >
-        Require all granted
+        Require local
+{{- if .Env.MONITORING_ALLOW }}
+        Require ip {{ .Env.MONITORING_ALLOW }}
+{{- end }}
     </Directory>
 
     <Location /status >
         SetHandler "proxy:unix:/app/var/run/php-fpm/php-fpm.sock|fcgi://localhost/"
-        Require all granted
+        Require local
+{{- if .Env.MONITORING_ALLOW }}
+        Require ip {{ .Env.MONITORING_ALLOW }}
+{{- end }}
     </Location>
 
     <IfModule status_module>
     <Location /server-status >
         SetHandler server-status
-        Require all granted
+        Require local
+{{- if .Env.MONITORING_ALLOW }}
+        Require ip {{ .Env.MONITORING_ALLOW }}
+{{- end }}
     </Location>
     </IfModule>
 
     <IfModule info_module>
     <Location /server-info>
         SetHandler server-info
-        Require all granted
+        Require local
+{{- if .Env.MONITORING_ALLOW }}
+        Require ip {{ .Env.MONITORING_ALLOW }}
+{{- end }}
     </Location>
     </IfModule>
 
