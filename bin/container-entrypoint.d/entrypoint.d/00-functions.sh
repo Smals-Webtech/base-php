@@ -50,9 +50,11 @@ function apply-template {
 				gomplate -f "$SRC" -o "$DEST"
 			else
 				log "ERROR" "! Write permission is NOT granted on $(dirname "$DEST") ."
+				return 1
 			fi
 		else
 			log "ERROR" "! File $SRC is not a .tmpl file."
+			return 1
 		fi
 
 	# dir
@@ -85,7 +87,15 @@ function create-symlink {
 	DEST=$2
 
 	if [ -L "$SRC" ]; then
-		log "INFO" "  Symbolic link already exists: $SRC"
+		CURRENT_TARGET="$(readlink "$SRC")"
+		if [ "$CURRENT_TARGET" = "$DEST" ]; then
+			log "INFO" "  Symbolic link already exists: $SRC → $DEST"
+		else
+			log "WARN" "  Symbolic link $SRC points to $CURRENT_TARGET; expected $DEST. Recreating ..."
+			rm -f "$SRC"
+			ln -s "$DEST" "$SRC"
+			log "INFO" "  Symbolic link recreated: $SRC → $DEST"
+		fi
 	elif [ -e "$SRC" ]; then
 		log "INFO" "  A file or directory already exists at this location: $SRC"
 		log "INFO" "  Removing the existing file/directory..."
