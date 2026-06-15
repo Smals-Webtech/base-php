@@ -18,6 +18,26 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
 	create-symlink /opt/etc/nginx/fastcgi_params /etc/nginx/fastcgi_params
 
+	# Monitoring ACL: always rendered (the monitoring locations include it).
+	for cidr in $MONITORING_ALLOW; do
+		MON_CIDRS+=("$cidr")
+	done
+
+	if [ ${#MON_CIDRS[@]} -eq 0 ]; then
+		MON_CIDRS_JSON="[]"
+	else
+		mapfile -t MON_CIDRS_UNIQ < <(printf '%s\n' "${MON_CIDRS[@]}" | sort -u)
+		MON_CIDRS_JSON=$(printf '%s\n' "${MON_CIDRS_UNIQ[@]}" | jq -R . | jq -s -c .)
+	fi
+
+	export MON_CIDRS_JSON
+
+	gomplate -f /opt/config/nginx/conf.d/monitoring-acl.conf.tmpl \
+		-d cidrs=env:/MON_CIDRS_JSON?type=application/json \
+		-o /opt/etc/nginx/conf.d/monitoring-acl.conf
+
+	unset MON_CIDRS MON_CIDRS_UNIQ MON_CIDRS_JSON
+
 	if [[ "${NGINX_SOFT_THROTTLE_ENABLED}" == "true" ]]; then
 
 		for agent in $NGINX_SOFT_THROTTLE_BOTS_USER_AGENT; do
