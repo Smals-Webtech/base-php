@@ -454,6 +454,21 @@ These are generated dynamically based on Git metadata and bake target.
 
 > Optionally with `-dev` suffix (e.g. `:8.4.10-cli-dev`)
 
+## 🚀 Releasing
+
+Releases are semver and tied to **signed git tags**. Pushing a tag triggers `.github/workflows/docker.yml`, which bakes and pushes the multi-arch images (with SBOM + provenance attestation). All release/tag operations are driven from the `Makefile` and must be run from `main` or an `x.y` branch. The canonical remote is auto-detected (`origin`, or `upstream` when working from a fork), so the same commands work everywhere — run `make release-info` to see what was detected.
+
+| Command | Purpose |
+| --- | --- |
+| `make release VERSION=x.y.z` | New version: signed `chore: prepare release` commit + signed tag + push + GitHub release with generated notes. |
+| `make retag VERSION=x.y.z [REF=HEAD]` | Move an existing tag to a new commit (re-point a patch version), fire a fresh tag build, and refresh the release notes. |
+| `make sync` | Fast-forward `main` + `8.4` from the canonical remote. |
+| `make tag-restore VERSION=x.y.z` | Force-push the local tag to fix one that was moved to the wrong commit remotely. |
+| `make notes VERSION=x.y.z [SINCE=x.y.z]` | Regenerate a release's notes from the previous tag. |
+| `make build-version VERSION=x.y.z` | Trigger a build via `workflow_dispatch` without moving a tag. |
+
+Destructive targets prompt for confirmation; pass `YES=1` to skip. Requires `git` and `gh`.
+
 ## 📬 Contact
 
 Questions or improvements? [Open an issue](https://github.com/Smals-Webtech/base-php/issues) or reach out directly.
