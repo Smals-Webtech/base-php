@@ -21,7 +21,7 @@ FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS gomplate
 ARG TARGETOS TARGETARCH GOMPLATE_VERSION_ARG
 RUN apk add --no-cache git
-ADD https://github.com/hairyhenderson/gomplate.git#v${GOMPLATE_VERSION_ARG} /src
+RUN git clone --depth 1 --branch "v${GOMPLATE_VERSION_ARG}" https://github.com/hairyhenderson/gomplate.git /src
 WORKDIR /src
 RUN go get \
       golang.org/x/crypto@v0.53.0 \
