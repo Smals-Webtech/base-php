@@ -23,7 +23,7 @@ variable "NGINX_VERSION" {
 }
 
 variable "NODE_VERSION" {
-  default = "22"
+  default = "24"
 }
 
 variable "COMPOSER_VERSION" {
