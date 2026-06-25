@@ -38,10 +38,6 @@ variable "GOMPLATE_VERSION" {
   default = "5.1.0"
 }
 
-variable "WAIT4X_VERSION" {
-  default = "3.6.0"
-}
-
 variable "DOCKER_IMAGE_NAME" {
   default = "smalswebtech/base-php"
 }
@@ -114,7 +110,6 @@ target "default" {
     AWS_CLI_VERSION_ARG = AWS_CLI_VERSION
     NGINX_VERSION_ARG = NGINX_VERSION
     GOMPLATE_VERSION_ARG = GOMPLATE_VERSION
-    WAIT4X_VERSION_ARG = WAIT4X_VERSION
   }
 
   labels = {
