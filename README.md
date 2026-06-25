@@ -417,7 +417,13 @@ These are generated dynamically based on Git metadata and bake target.
 
 ## 🚀 Releasing
 
-Releases are semver and tied to **signed git tags**. Pushing a tag triggers `.github/workflows/docker.yml`, which bakes and pushes the multi-arch images (with SBOM + provenance attestation). All release/tag operations are driven from the `Makefile` and must be run from `main` or an `x.y` branch. The canonical remote is auto-detected (`origin`, or `upstream` when working from a fork), so the same commands work everywhere — run `make release-info` to see what was detected.
+Releases are SemVer and tied to **signed Git tags**. Pushing a tag triggers
+`.github/workflows/docker.yml`, which bakes and pushes the multi-arch images
+(with SBOM + provenance attestation). All release/tag operations are driven
+from the `Makefile` and must be run from `main` or an `x.y` branch. The
+canonical remote is auto-detected (`origin`, or `upstream` when working from a
+fork), so the same commands work everywhere — run `make release-info` to see
+what was detected.
 
 | Command | Purpose |
 | --- | --- |
