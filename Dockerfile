@@ -4,32 +4,31 @@ ARG PHP_VERSION_ARG=8.4.23
 ARG PHP_EXT_INSTALLER_VERSION_ARG=2.11.12
 ARG NODE_VERSION_ARG=22
 ARG COMPOSER_VERSION_ARG=2.10.2
-ARG GOMPLATE_VERSION_ARG=5.1.0
+ARG GOMPLATE_VERSION_ARG=5.2.0
 
 FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext-installer
 
 # Build gomplate from source instead of copying the upstream prebuilt binary.
 # Same version, same recipe as upstream (their Dockerfile also uses
 # golang:1.26-alpine, plain `go build ./cmd/gomplate`, CGO disabled, no build
-# tags). Two reasons it kills the CVEs the stale prebuilt binary drags in:
-#   1. recompiling with the current Go 1.26 patch clears the Go stdlib CVEs;
-#   2. the pinned `go get` below bumps the vulnerable transitive deps (the
-#      SSH/git-datasource modules this image never exercises) to patched
-#      versions — clearing the module-level CVEs a toolchain bump can't.
-# Net result: 0 CVE on the gomplate binary, with byte-identical template
-# rendering (verified). Bump the pins when new advisories land.
+# tags), so behaviour is identical — but recompiling here picks up the current
+# Go 1.26 patch release, which clears the Go stdlib CVEs. The upstream prebuilt
+# binary is frozen at whatever Go patch was current when it was released, so it
+# accumulates stdlib CVEs between gomplate releases; building from source is
+# self-healing on every rolling rebuild.
+#
+# Dependency CVEs are upstream's job: gomplate's own go.mod is the source of
+# truth, so do NOT pin dependency versions here — a stale pin silently
+# *downgrades* what upstream ships and can undo a security fix. To upgrade:
+# bump GOMPLATE_VERSION (here + docker-bake.hcl), rebuild, then scan the
+# resulting /usr/bin/gomplate (e.g. `trivy rootfs`). Only if that scan shows
+# dependency CVEs that upstream has not yet fixed should a targeted bump be
+# added back.
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS gomplate
 ARG TARGETOS TARGETARCH GOMPLATE_VERSION_ARG
 RUN apk add --no-cache git
 RUN git clone --depth 1 --branch "v${GOMPLATE_VERSION_ARG}" https://github.com/hairyhenderson/gomplate.git /src
 WORKDIR /src
-RUN go get \
-      golang.org/x/crypto@v0.53.0 \
-      golang.org/x/net@v0.56.0 \
-      golang.org/x/sys@v0.46.0 \
-      github.com/go-git/go-git/v5@v5.19.1 \
-      github.com/go-git/go-billy/v5@v5.9.0 \
- && go mod tidy
 RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
     go build -trimpath \
       -ldflags "-w -s -X github.com/hairyhenderson/gomplate/v5/version.Version=v${GOMPLATE_VERSION_ARG}" \
