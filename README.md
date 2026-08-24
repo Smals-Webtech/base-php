@@ -71,6 +71,25 @@ This approach ensures idempotent initialization, predictable config state, and n
 | `SUPERVISOR_XMLRPC_INET_USERNAME`            | "admin"                        | "admin"                        | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
 | `SUPERVISOR_XMLRPC_INET_PASSWORD`            | "pa55w0rd"                     | "pa55w0rd"                     | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
 
+## ♻️ Logrotate Configuration
+
+On read-only deployments (OpenShift, Kubernetes) logs are typically written to a shared writable volume — an `emptyDir` mounted at `/app/var/log` — and forwarded by a sidecar collector (Fluentd, Alloy). Without rotation those files grow until they exhaust the volume and the pod is evicted.
+
+The image rotates them with `logrotate`, triggered every 60 seconds by a Supervisor `TICK_60` event listener (no cron daemon is required).
+The state file lives on the writable `/app/var/run` volume and the default policy uses `copytruncate`, so no service has to be signalled to reopen its log file — which keeps the whole mechanism compatible with the read-only root filesystem and the non-root runtime user.
+
+This is a **single, global policy**: the four variables below render one `logrotate` stanza that applies to every file matched by `LOGROTATE_DEFAULT_PATH`.
+To change the behaviour, override those variables — the change applies to all matched files at once.
+Do **not** add a second stanza that also matches a file already covered by the glob: `logrotate` registers each file to the first stanza that matches it (configuration files are read in alphabetical order) and rejects any later match with a `duplicate log entry` error, so per-file overrides that overlap the glob are ignored and make the run exit non-zero.
+If you need genuinely different policies per file, keep their paths disjoint from `LOGROTATE_DEFAULT_PATH`.
+
+| Environment Variable          | Default                            | Description                                                                                             |
+|-------------------------------|------------------------------------|---------------------------------------------------------------------------------------------------------|
+| `LOGROTATE_DEFAULT_PATH`      | "/app/var/log/*.log"               | Glob of log files to rotate. Point it at whatever the application writes on the shared volume.           |
+| `LOGROTATE_DEFAULT_SIZE_LIMIT`| "50M"                              | Rotate a file once it grows past this size (`logrotate` `size` directive).                               |
+| `LOGROTATE_DEFAULT_RETENTION` | "5"                                | Number of rotated files to keep (`logrotate` `rotate` directive).                                       |
+| `LOGROTATE_DEFAULT_OPTIONS`   | "compress copytruncate missingok notifempty" | Space-separated `logrotate` directives applied to the stanza. Keep `copytruncate` on a read-only root filesystem. |
+
 ## 🐘 PHP Configuration
 
 The PHP image ships with all required extensions pre-installed, but it’s designed to run in read-only mode at runtime.  

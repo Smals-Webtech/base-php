@@ -1,0 +1,9 @@
+{{ $.Env.LOGROTATE_DEFAULT_PATH }} {
+    size {{ $.Env.LOGROTATE_DEFAULT_SIZE_LIMIT }}
+    rotate {{ $.Env.LOGROTATE_DEFAULT_RETENTION }}
+
+{{- range (datasource "options") }}
+    {{ . }}
+{{- end }}
+
+}
