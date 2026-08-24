@@ -36,6 +36,10 @@ jobs:
           LINTER_RULES_PATH: /
           VALIDATE_JSCPD: false
           VALIDATE_DOCKERFILE_HADOLINT: false
+          # supervisord-event-listener.py is a vendored supervisord protocol
+          # helper (shared verbatim with base-nginx); pylint style rules do not
+          # apply to it.
+          VALIDATE_PYTHON_PYLINT: false
           # Conflicts with MARKDOWN
           VALIDATE_MARKDOWN_PRETTIER: false
           FILTER_REGEX_EXCLUDE: .*test.*

@@ -94,6 +94,7 @@ RUN set -eux ; \
                                                    gettext \
                                                    groff \
                                                    jq \
+                                                   logrotate \
                                                    mailx \
                                                    mysql-client \
                                                    postgresql-client \
