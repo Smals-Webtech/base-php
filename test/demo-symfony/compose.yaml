@@ -23,9 +23,16 @@ services:
       - NGINX_SOFT_THROTTLE_DRY_RUN_ENABLED=off
       - NGINX_DEFAULT_ACCESS_LOG_PATH=/var/log/shared/symfony.nginx-access.log
       - NGINX_DEFAULT_ACCESS_LOG_FORMAT_NAME=ecs_json
+      # logfmt logs for Alloy (files on the shared volume). nginx access logfmt is added by the
+      # 00_logfmt.conf overlay; here we redirect the nginx error log and both php-fpm logs to files.
+      - NGINX_DEFAULT_ERROR_LOG_PATH=/var/log/shared/symfony.nginx-error.log
+      - PHP_FPM_ACCESS_LOG=/var/log/shared/symfony.php-fpm-access.logfmt.log
+      - "PHP_FPM_ACCESS_FORMAT=rid=%{UNIQUE_ID}e class=%{traffic_class}e src=php-fpm status=%s method=%m uri=%r%Q%q dur_ms=%{milli}d mem_kb=%{kilo}M cpu=%C"
+      - PHP_FPM_ERROR_LOG=/var/log/shared/symfony.php-fpm-error.log
     volumes:
       - ./src/demo:/app:rw
       - ./config/nginx/sites-enabled/zz_web.conf.tmpl:/opt/config/nginx/sites-enabled/zz_web.conf.tmpl:ro
+      - ./config/nginx/sites-enabled/00_logfmt.conf.tmpl:/opt/config/nginx/sites-enabled/00_logfmt.conf.tmpl:ro
       - shared-log:/var/log/shared:rw
       - shared-var-symfony:/app/var:rw
     tmpfs:
@@ -86,9 +93,39 @@ services:
     mem_limit: 64m
     read_only: true
 
+  alloy:
+    profiles: [ "symfony" ]
+    image: docker.io/grafana/alloy:latest
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    depends_on:
+      symfony:
+        condition: service_healthy
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.alloy.rule=Host(`alloy.localhost`)
+      - traefik.http.routers.alloy.entrypoints=web
+      - traefik.http.services.alloy.loadbalancer.server.port=12345
+      - prometheus-scrape=false
+    volumes:
+      - ./config/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - shared-log:/var/log/shared:ro
+      - alloy-data:/var/lib/alloy/data:rw
+    mem_limit: 128m
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=16m
+
 volumes:
   shared-log:
   shared-var-symfony:
+  alloy-data:
 
 networks:
     default:

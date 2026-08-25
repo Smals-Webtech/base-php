@@ -1,0 +1,71 @@
+// Grafana Alloy — file-tailing log shipper for the demo-symfony stack. Runs as a SIDECAR:
+// it tails the logfmt access logs (nginx + php-fpm) and the raw error logs written to the
+// shared-log volume, and pushes them to Loki (demo-infra, reachable as loki:3100 on the
+// shared `demo` network).
+//
+// Mirrors the loki.process pipeline of the cluster config
+// (zebbox.net/cluster/observability/alloy.alloy), but SOURCES FILES instead of the Docker
+// daemon's container stdout — matching the emptyDir + sidecar model used in production
+// (base-php runs read-only and ships logs as files on a shared volume).
+
+// ── logfmt access logs (nginx + php-fpm) ─────────────────────────────────────────────────
+// The *.logfmt.log suffix excludes the ecs_json file (symfony.nginx-access.log) that
+// otel-collector already ships to Elasticsearch — no double shipping.
+local.file_match "logfmt" {
+  path_targets = [{
+    __path__ = "/var/log/shared/*.logfmt.log",
+    job      = "symfony",
+    pod      = "symfony",
+  }]
+  sync_period = "10s"
+}
+
+loki.source.file "logfmt" {
+  targets    = local.file_match.logfmt.targets
+  forward_to = [loki.process.parse.receiver]
+}
+
+loki.process "parse" {
+  forward_to = [loki.write.default.receiver]
+
+  // nginx (log_format logfmt) + php-fpm (PHP_FPM_ACCESS_FORMAT) both emit logfmt with rid/class/src.
+  stage.logfmt {
+    mapping = { rid = "", class = "", src = "", status = "" }
+  }
+  // Drop health/monitoring probes (classified by nginx via the traffic-class maps).
+  stage.drop {
+    source              = "class"
+    expression          = "^(probe|metrics)$"
+    drop_counter_reason = "probe_metrics"
+  }
+  // rid is unique per request → structured metadata, NEVER an indexed label. src = nginx|php-fpm.
+  stage.structured_metadata {
+    values = { rid = "", src = "" }
+  }
+  // class has a handful of low-cardinality values → a label is fine for `sum by (class)`.
+  stage.labels {
+    values = { class = "" }
+  }
+}
+
+// ── raw error logs (nginx / php-fpm error logs are not logfmt-able → shipped as-is) ───────
+local.file_match "errors" {
+  path_targets = [{
+    __path__ = "/var/log/shared/*-error.log",
+    job      = "symfony",
+    pod      = "symfony",
+    src      = "error",
+  }]
+  sync_period = "10s"
+}
+
+loki.source.file "errors" {
+  targets    = local.file_match.errors.targets
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}
