@@ -122,6 +122,49 @@ services:
     tmpfs:
       - /tmp:rw,size=16m
 
+  # —— Load generation (profile "load"; needs demo-infra traefik + symfony up) ——
+  # Crawls the site THROUGH Traefik (Host: demo.localhost) and writes the discovered
+  # GET URLs to config/locust/urls.json, consumed by the locust service below.
+  scraper:
+    profiles: [ "load" ]
+    image: docker.io/python:3.12-slim
+    env_file:
+      - ../.env
+    environment:
+      - TARGET_HOST=http://traefik
+      - SITE_HOST=demo.localhost
+      - OUT=/data/urls.json
+    user: "${LOCUST_UID:-0}"
+    working_dir: /mnt/locust
+    entrypoint: ["python", "/mnt/locust/scrape.py"]
+    volumes:
+      - ./config/locust:/mnt/locust:ro
+      - ./config/locust:/data:rw
+    mem_limit: 256m
+
+  # Replays urls.json under load. Headless is driven by LOCUST_* env injected by the
+  # Makefile (make load / test-load); `make load-ui` runs it as a web UI on :8089.
+  locust:
+    profiles: [ "load" ]
+    image: docker.io/locustio/locust:2.42.0
+    env_file:
+      - ../.env
+    environment:
+      - LOCUST_LOCUSTFILE=/mnt/locust/locustfile.py
+      - LOCUST_HOST=http://traefik
+      - SITE_HOST=demo.localhost
+      - URLS_FILE=/mnt/locust/urls.json
+    volumes:
+      - ./config/locust:/mnt/locust:ro
+    ports:
+      - "8089:8089"
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.locust.rule=Host(`locust.localhost`)
+      - traefik.http.routers.locust.entrypoints=web
+      - traefik.http.services.locust.loadbalancer.server.port=8089
+    mem_limit: 512m
+
 volumes:
   shared-log:
   shared-var-symfony:
