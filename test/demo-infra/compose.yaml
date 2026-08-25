@@ -286,6 +286,8 @@ services:
     depends_on:
       prometheus:
         condition: service_healthy
+      loki:
+        condition: service_started
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.grafana.rule=Host(`grafana.localhost`)"
@@ -311,12 +313,77 @@ services:
       retries: 3
       start_period: 20s
 
+  minio:
+    # Also in the grafana profile: Loki (grafana) depends_on minio, and Compose
+    # requires a depends_on target to share a profile with the dependent, so
+    # `make start/grafana` brings MinIO up alongside Loki.
+    profiles: [ "all","grafana" ]
+    image: docker.io/minio/minio:latest
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.minio.rule=Host(`minio.localhost`)"
+      - "traefik.http.routers.minio.entrypoints=web"
+      - "traefik.http.routers.minio.service=minio"
+      - "traefik.http.services.minio.loadbalancer.server.port=9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    mem_limit: 512m
+
+  loki:
+    profiles: [ "all","grafana" ]
+    image: docker.io/grafana/loki:3.7.6
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      - LOKI_S3_BUCKET_NAME=${LOKI_S3_BUCKET_NAME}
+      - LOKI_S3_ACCESS_KEY_ID=${LOKI_S3_ACCESS_KEY_ID}
+      - LOKI_S3_SECRET_ACCESS_KEY=${LOKI_S3_SECRET_ACCESS_KEY}
+    command: -config.file=/etc/loki/loki-config.yaml -config.expand-env=true
+    depends_on:
+      minio:
+        condition: service_healthy
+      minio-init:
+        condition: service_completed_successfully
+      loki-init-bucket:
+        condition: service_completed_successfully
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.loki.rule=Host(`loki.localhost`)"
+      - "traefik.http.routers.loki.entrypoints=web"
+      - "traefik.http.routers.loki.service=loki"
+      - "traefik.http.services.loki.loadbalancer.server.port=3100"
+    mem_limit: 512m
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=64m
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/loki-config.yaml:ro
+      - loki-data:/loki
+    # No container healthcheck: the grafana/loki image is distroless (no shell,
+    # wget or curl to probe /ready with). Nothing depends on Loki being healthy —
+    # grafana depends_on it as service_started — so this is intentional.
+
 volumes:
   es-certs:
   mariadb_data:
   prometheus_data:
   grafana_data:
   shared-log:
+  minio-data:
+  loki-data:
 
 networks:
     default:
