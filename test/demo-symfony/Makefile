@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 .DEFAULT_GOAL := help
-.PHONY: help build configure start stop test
+.PHONY: help build configure start stop test scrape load load-ui test-load
 
 help: ## Show help for each of the Makefile recipes.
 	@grep -E '(^\S*:.*?##.*$$)|(^##)' Makefile | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
@@ -39,6 +39,13 @@ DEMO_IMPORTMAP_INSTALL_CMDLINE = "php bin/console importmap:install"
 EXEC_DEMO		               = docker compose --env-file=../.env exec --user $(CURRENT_UID) symfony
 
 BATS                           = bats -t -j 1
+
+# —— Load generation ——————————————————————————————————————————————————————————————————————————————————————————————————
+
+LOCUST_USERS                  ?= 10
+LOCUST_SPAWN_RATE             ?= 2
+LOCUST_RUN_TIME               ?= 30s
+export LOCUST_UID             := $(CURRENT_UID):$(CURRENT_GID)
 
 # —— Demo —————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
@@ -237,7 +244,29 @@ npm-build:
 		${BUILDER_DOCKER_IMAGE_NAME} \
 		bash -c ${NPM_RUN_BUILD_CMDLINE}
 
+# —— Load —————————————————————————————————————————————————————————————————————————————————————————————————————————————
+# These need the demo stack up: demo-infra (traefik, profile all) + symfony started.
+
+scrape: ## Discover site URLs → config/locust/urls.json (via Traefik)
+	@$(DOCKER_COMPOSE) --profile load run --rm scraper
+
+load: ## Headless load run; vars: LOCUST_USERS / LOCUST_SPAWN_RATE / LOCUST_RUN_TIME
+	@$(MAKE) scrape
+	@$(DOCKER_COMPOSE) --profile load run --rm \
+		-e LOCUST_HEADLESS=true \
+		-e LOCUST_USERS=$(LOCUST_USERS) \
+		-e LOCUST_SPAWN_RATE=$(LOCUST_SPAWN_RATE) \
+		-e LOCUST_RUN_TIME=$(LOCUST_RUN_TIME) \
+		-e LOCUST_EXIT_CODE_ON_ERROR=1 \
+		locust --only-summary
+
+load-ui: ## Interactive Locust web UI on http://localhost:8089
+	@$(DOCKER_COMPOSE) --profile load up locust
+
 # —— Bats —————————————————————————————————————————————————————————————————————————————————————————————————————————————
 
 test:
 	@$(BATS) tests.bats
+
+test-load: ## Opt-in load test (bats): short headless run, asserts 0 failures
+	@$(BATS) load.bats
