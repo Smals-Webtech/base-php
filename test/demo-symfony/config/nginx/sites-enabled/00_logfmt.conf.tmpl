@@ -1,0 +1,62 @@
+# Demo overlay — ADDS a logfmt access log for Alloy, ALONGSIDE base-php's ecs_json
+# access log (conf.d/logging.conf → symfony.nginx-access.log, consumed by otel-collector).
+# Both access_log directives live at http context, so nginx writes every request to both.
+#
+# Placed in sites-enabled/ (not conf.d/) on purpose: base-php renders conf.d templates by
+# explicit filename (see base.d/40-nginx.sh), so a new conf.d/*.tmpl overlay would never be
+# rendered — whereas sites-enabled/ is rendered as a whole directory. This file carries only
+# http-level directives (maps, log_format, access_log) and NO server{} block; the sites-enabled
+# include point is inside http{}, which is exactly where these belong.
+#
+# Adapted from stickers-manager's conf.d/logging.conf.tmpl, but: writes to a FILE on the shared
+# volume (a sidecar Alloy tails it — not stdout), and reads client/proto from the Traefik
+# forwarded headers (no Cloudflare CF-* headers here). $remote_addr is already the real client
+# IP because the demo sets NGINX_REAL_IP_ENABLED=true.
+
+# ── Traffic classification (referenced by $traffic_class in the log_format below and dropped as
+#    probe/metrics in the Alloy pipeline). map order is irrelevant (resolved per request).
+map $http_user_agent $tc_ua {
+    default                                              "";
+    "~*^kube-probe/"                                     "probe";
+    "~*^Prometheus/"                                     "metrics";
+    "~*(UptimeRobot|Pingdom|StatusCake|Better\ Uptime)"  "monitor";
+}
+map $request_uri $tc_uri {
+    default       "";
+    "~^/ping"     "probe";
+    "~^/status"   "metrics";
+    "~^/metrics"  "metrics";
+}
+# fallback cascade: UA wins, then URI, then default "client".
+map $tc_uri $tc_fallback {
+    ""       "client";
+    default  $tc_uri;
+}
+map $tc_ua $traffic_class {
+    ""       $tc_fallback;
+    default  $tc_ua;
+}
+
+# ── logfmt access log (escape=default → any " becomes \x22, so logfmt never breaks). dur_s and
+#    up_dur_s are both nginx-side seconds (total vs upstream/php-fpm) → uniform unit for latency.
+log_format logfmt escape=default
+    'ts=$time_iso8601 '
+    'rid=$request_id '
+    'class=$traffic_class '
+    'src=nginx '
+    'status=$status '
+    'dur_s=$request_time '
+    'up_dur_s=$upstream_response_time '
+    'method=$request_method '
+    'uri="$request_uri" '
+    'target="$uri" '
+    'bytes=$body_bytes_sent '
+    'host=$host '
+    'client=$remote_addr '
+    'proto=$http_x_forwarded_proto '
+    'ua="$http_user_agent"';
+
+# Second access_log (the base ecs_json one still fires). File on the shared volume; the *.logfmt.log
+# suffix is what the Alloy file_match globs. error_log is not logfmt-able (nginx limitation) → it is
+# redirected to a file via NGINX_DEFAULT_ERROR_LOG_PATH and shipped raw by Alloy.
+access_log /var/log/shared/symfony.nginx-access.logfmt.log logfmt;

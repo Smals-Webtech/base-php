@@ -20,6 +20,12 @@ server {
     fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
     fastcgi_param DOCUMENT_ROOT $realpath_root;
 
+    # Propagate the request id + traffic class to php-fpm so its access.format
+    # (PHP_FPM_ACCESS_FORMAT) emits the SAME rid → nginx and php-fpm logfmt lines
+    # correlate in Loki. $traffic_class map lives in the 00_logfmt.conf overlay.
+    fastcgi_param UNIQUE_ID     $request_id;
+    fastcgi_param traffic_class $traffic_class;
+
     internal;
 
   }
