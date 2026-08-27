@@ -47,7 +47,11 @@ services:
       - traefik.http.routers.php-nginx.rule=HostRegexp(`^((default|demo)\.localhost)$$`)
       - traefik.http.routers.php-nginx.entrypoints=web
       - traefik.http.services.php-nginx.loadbalancer.server.port=9000
-      - prometheus-scrape=false
+      # Scrape nginx's VTS metrics (Prometheus format) from the monitoring server on
+      # :9090/metrics — richer than stub-status (per-status-code, bytes, latency, upstream).
+      - prometheus-scrape=true
+      - prometheus-job=nginx-vts
+      - prometheus-port=9090
       - prometheus.labels.pod=symfony
     mem_limit: 512m
     read_only: true
