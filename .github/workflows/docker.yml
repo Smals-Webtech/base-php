@@ -28,15 +28,17 @@ on:
         type: string
 
 env:
-  DOCKER_IMAGE_NAME: ${{ ((github.event_name == 'workflow_dispatch' && inputs.version) || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')) && 'smalswebtech/base-php' || 'smalswebtech/base-php-dev' }}
+  DOCKER_IMAGE_NAME: ${{ github.repository == 'Smals-Webtech/base-php' && ((github.event_name == 'workflow_dispatch' && inputs.version) || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')) && 'smalswebtech/base-php' || 'smalswebtech/base-php-dev' }}
 
 jobs:
   prepare:
     runs-on: ubuntu-24.04
 
     outputs:
-      # Push if it's a tag, a workflow_dispatch with version, or a commit to the main branch
-      push: ${{ ((github.event_name == 'workflow_dispatch' && inputs.version) || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')) && true || false }}
+      # Push if it's a tag, a workflow_dispatch with version, or a commit to the main branch --
+      # and only from the canonical repository. A fork that has Actions enabled would otherwise
+      # publish under the upstream production image name.
+      push: ${{ github.repository == 'Smals-Webtech/base-php' && ((github.event_name == 'workflow_dispatch' && inputs.version) || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')) && true || false }}
       sbom: ${{ github.event_name != 'pull_request' }}
       provenance: ${{ github.event_name != 'pull_request' }}
       ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.version) || '' }}
