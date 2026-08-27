@@ -17,6 +17,9 @@ services:
       - APP_SECRET=cREiW500NNpj9c6BzzD4KjqaVjEndpyJ
       - APP_LOG_DIR=/app/var/log
       - APP_CACHE_DIR=/app/var/cache
+      - LOGROTATE_DEFAULT_PATH=/var/log/shared/*.log
+      - LOGROTATE_DEFAULT_SIZE_LIMIT=1M
+      - LOGROTATE_DEFAULT_RETENTION=1
       - NGINX_REAL_IP_ENABLED=true
       - NGINX_SOFT_THROTTLE_ENABLED=true
       - NGINX_SOFT_THROTTLE_WHITELIST=172.16.0.0/12
