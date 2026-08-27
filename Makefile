@@ -26,14 +26,18 @@ help: # Show help for each of the Makefile recipes.
 
 # —— Environment ——————————————————————————————————————————————————————————————————————————————————————————————————————
 
-CURRENT_UID                 := $(shell id -u)
-CURRENT_GID                 := $(shell id -g)
-
 CURRENT_USERNAME            := $(shell id -u -n)
 CURRENT_HOMEDIR             := $${HOME}
 CURRENT_DIR                 := $(shell pwd)
 
-DOCKER_IMAGE_NAME           ?= docker.io/smalswebtech/base-php
+# bake reads DOCKER_IMAGE_NAME from the environment, and make does not export a variable it
+# assigned itself, so without this the value below would only ever reach the help text while bake
+# fell back to its own default. Exported, this file is the single source of truth. The value has to
+# stay in the registry-less form bake uses, so local tags match the ones CI publishes.
+DOCKER_IMAGE_NAME           ?= smalswebtech/base-php
+# The export has to come after the assignment: `export VAR` on its own defines VAR as empty, which
+# would make the `?=` above a no-op.
+export DOCKER_IMAGE_NAME
 
 DOCKER_PLATFORM             ?= linux/amd64
 DOCKER_BUILDER              ?= default
