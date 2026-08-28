@@ -113,7 +113,7 @@ NGINX_REAL_IP_RECURSIVE_WCMTECH_DEFAULT="on"
 NGINX_REAL_IP_HEADER_NAME_WCMTECH_DEFAULT="X-Forwarded-For"
 
 NGINX_SOFT_THROTTLE_ENABLED_WCMTECH_DEFAULT="false"
-NGINX_SOFT_THROTTLE_BOTS_USER_AGENT_WCMTECH_DEFAULT="~*\\b(googlebot|bingbot|baiduspider|yandexbot|yandeximages)\\b ~*\\b(duckduckbot|slurp|ia_archiver)\\b ~*\\b(semrushbot|dotbot|rogerbot|ahrefsbot|mj12bot|dotbot|exabot)\\b ~*\\b(python-requests|go-http-client|php|curl|wget|httpie)\\b ~*\\b(adsbot-google|mediapartners-google|adsbot-google-mobile)\\b"
+NGINX_SOFT_THROTTLE_BOTS_USER_AGENT_WCMTECH_DEFAULT="~*\\b(googlebot|bingbot|baiduspider|yandexbot|yandeximages)\\b ~*\\b(duckduckbot|slurp|ia_archiver)\\b ~*\\b(semrushbot|dotbot|rogerbot|ahrefsbot|mj12bot|exabot)\\b ~*\\b(python-requests|go-http-client|php|curl|wget|httpie)\\b ~*\\b(adsbot-google|mediapartners-google|adsbot-google-mobile)\\b"
 NGINX_SOFT_THROTTLE_BOTS_ZONE_SIZE_WCMTECH_DEFAULT="20m"
 NGINX_SOFT_THROTTLE_BOTS_ZONE_RATE_WCMTECH_DEFAULT="1r/m"
 NGINX_SOFT_THROTTLE_BOTS_ZONE_BURST_WCMTECH_DEFAULT="5"
