@@ -70,6 +70,22 @@ This approach ensures idempotent initialization, predictable config state, and n
 | `SUPERVISOR_XMLRPC_INET_PORT`                | "9744"                         | "9744"                         | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
 | `SUPERVISOR_XMLRPC_INET_USERNAME`            | "admin"                        | "admin"                        | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
 | `SUPERVISOR_XMLRPC_INET_PASSWORD`            | "pa55w0rd"                     | "pa55w0rd"                     | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
+| `SUPERVISOR_FAIL_FAST_ENABLED`               | "true"                         | "true"                         | see below                                                                            |
+| `SUPERVISOR_FAIL_FAST_PROGRAMS`              | "nginx php-fpm apache"         | "nginx php-fpm apache"         | see below                                                                            |
+
+### Fail-fast
+
+The web server and PHP-FPM run with `autorestart=false`: Supervisor is not meant to bring them back, the
+orchestrator is meant to replace the container. On its own Supervisor would only mark the program `EXITED`
+and keep running, leaving the container up — and a master killed outside its own signal handling (SIGKILL,
+OOM) leaves its workers reparented to PID 1, still holding the listen sockets and still answering requests
+with nothing supervising them.
+
+An event listener watches for that and stops Supervisor, so the container exits and the orphaned workers go with it. A stop Supervisor asked for is reported differently and is ignored, so ordinary shutdowns are unaffected. `varnish` is deliberately not watched: it runs with `autorestart=true` and recovers on its own.
+
+The container exits with status `0`, so use a restart policy that does not look at the exit code (`always`, `unless-stopped`, or any orchestrator acting on a failed liveness probe) rather than `on-failure`.
+
+`SUPERVISOR_FAIL_FAST_PROGRAMS` holds Supervisor _program_ names, which are not always the filename — `apache2.ini` declares `[program:apache]`. A program a given variant never starts is simply never seen, so one list covers them all. The CLI variant does not run Supervisor at all and is unaffected.
 
 ## ♻️ Logrotate Configuration
 
