@@ -3,7 +3,7 @@ ARG ALPINE_VERSION_ARG=3.24
 ARG PHP_VERSION_ARG=8.4.24
 ARG PHP_EXT_INSTALLER_VERSION_ARG=2.11.12
 ARG NODE_VERSION_ARG=22
-ARG COMPOSER_VERSION_ARG=2.10.2
+ARG COMPOSER_VERSION_ARG=2.10.3
 ARG GOMPLATE_VERSION_ARG=5.2.0
 
 FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext-installer
@@ -169,7 +169,7 @@ CMD ["/usr/bin/supervisord", "-c", "/opt/etc/supervisord.conf"]
 
 FROM fpm-prd AS fpm-dev
 
-ARG COMPOSER_VERSION_ARG=2.10.2
+ARG COMPOSER_VERSION_ARG=2.10.3
 ARG NODE_VERSION_ARG=22
 
 ENV PHP_XDEBUG_ENABLED="true" \
@@ -313,7 +313,7 @@ ENTRYPOINT ["dumb-init","--","container-entrypoint-cli"]
 
 FROM cli-prd AS cli-dev
 
-ARG COMPOSER_VERSION_ARG=2.10.2
+ARG COMPOSER_VERSION_ARG=2.10.3
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 
