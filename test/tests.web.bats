@@ -235,3 +235,16 @@ teardown_file() {
   run cat "${BATS_TEST_TMPDIR}/drain"
   assert_output "completed"
 }
+
+# nginx sizes the buffer that has to hold the whole response header at one page
+# by default, so a framework putting a session cookie and a few Link headers on
+# the response overran it and the request failed as a 502.
+@test "[$TEST_FILE] A large response header does not fail the request" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "mod_proxy_fcgi caps a header line at 8k and offers no knob"
+
+  web_put "${BATS_WEB_CONTAINER}" big-header.php \
+    <<<'<?php header("X-Big: " . str_repeat("a", 9 * 1024)); echo "ok";'
+
+  run web_status "${BATS_WEB_PORT}" /big-header.php
+  assert_output "200"
+}

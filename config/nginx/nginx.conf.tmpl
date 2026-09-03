@@ -48,6 +48,13 @@ http {
 
     fastcgi_send_timeout          {{ .Env.NGINX_FASTCGI_SEND_TIMEOUT }};
     fastcgi_read_timeout          {{ .Env.NGINX_FASTCGI_READ_TIMEOUT }};
+
+    # The response header has to fit in the first of these buffers. nginx
+    # defaults to one page -- 4k or 8k -- which a framework putting a session
+    # cookie, a Set-Cookie pair and a few Link headers on the response overruns,
+    # and the request then fails with "upstream sent too big header" as a 502.
+    fastcgi_buffer_size           {{ .Env.NGINX_FASTCGI_BUFFER_SIZE }};
+    fastcgi_buffers               {{ .Env.NGINX_FASTCGI_BUFFERS_COUNT }} {{ .Env.NGINX_FASTCGI_BUFFERS_SIZE }};
     fastcgi_temp_path             {{ .Env.NGINX_FASTCGI_TEMP_FOLDER_PATH }} {{ .Env.NGINX_FASTCGI_TEMP_FOLDER_LEVEL1 }} {{ .Env.NGINX_FASTCGI_TEMP_FOLDER_LEVEL2 }};
     fastcgi_cache_path            {{ .Env.NGINX_FASTCGI_CACHE_FOLDER_PATH }}
                                   levels={{ .Env.NGINX_FASTCGI_CACHE_LEVELS }}
