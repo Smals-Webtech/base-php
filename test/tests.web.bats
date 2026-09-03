@@ -268,3 +268,28 @@ teardown_file() {
   run ${BATS_CONTAINER_ENGINE} exec "${container}" test -f /app/var/log/rotate-me.log.1.gz
   assert_success
 }
+
+# The fail-fast listener keyed on the event payload's `expected` field, which
+# reports whether the exit code was in the program's `exitcodes` list -- not
+# whether supervisor asked for the exit. A SIGTERM reaching the php-fpm master
+# from outside supervisor makes it exit 0, so the listener stayed silent and the
+# container kept running with no php-fpm behind the web server.
+@test "[$TEST_FILE] An exit of php-fpm stops the container" {
+  local -r container="${BATS_WEB_CONTAINER}-failfast"
+
+  web_container_start "${container}" >/dev/null
+
+  ${BATS_CONTAINER_ENGINE} exec "${container}" sh -c \
+    'kill -TERM $(supervisorctl -c /opt/etc/supervisord.conf pid php-fpm)'
+
+  # A bounded wait on the state, not `retry`: retry stops as soon as the command
+  # succeeds, and container_running_state succeeds while printing "true".
+  local i
+  for ((i = 0; i < 40; i++)); do
+    [ "$(container_running_state "${container}")" = "false" ] && break
+    sleep .5
+  done
+
+  run container_running_state "${container}"
+  assert_output "false"
+}
