@@ -14,9 +14,14 @@ clean replacement.
 
 Usage: supervisord-fail-fast.py <program> [<program> ...]
 
-Only the named programs are acted on, and only when they leave in a way
-supervisor did not ask for -- a deliberate stop carries expected:1 and is
-ignored, otherwise every container shutdown would look like a crash.
+Only the named programs are acted on. For those, any exit is fatal: they are
+servers that are supposed to run until the container stops, so there is no exit
+code that means "this was fine".
+
+A deliberate stop does not reach here. Supervisor moves a program it stops
+itself through STOPPING to STOPPED and emits no PROCESS_STATE_EXITED at all, so
+a container shutdown and a `supervisorctl stop` are both invisible to this
+listener without needing to be filtered out.
 """
 import os
 import sys
@@ -52,12 +57,12 @@ def is_fatal(headers, payload, programs):
     if payload.get("processname") not in programs:
         return False
 
-    event = headers.get("eventname")
-    if event in FATAL_EVENTS:
-        return True
-    # A stop asked for by supervisor is reported as expected:1; only an exit it
-    # did not ask for means the program died on its own.
-    return event in EXIT_EVENTS and payload.get("expected") == "0"
+    # Any exit counts. `expected` is not the right discriminator: it says the
+    # exit code was in the program's `exitcodes` list, not that supervisor asked
+    # for the exit. A SIGTERM sent to the php-fpm master from outside supervisor
+    # makes it exit 0, which is `expected:1`, and the container was then left
+    # running without php-fpm -- exactly the state this listener exists to end.
+    return headers.get("eventname") in FATAL_EVENTS + EXIT_EVENTS
 
 
 def main(programs):
@@ -82,7 +87,7 @@ def main(programs):
         fatal = is_fatal(headers, payload, programs)
         if fatal:
             write_stderr(
-                "supervisord-fail-fast: %s left unexpectedly (%s), stopping supervisord\n"
+                "supervisord-fail-fast: %s exited (%s), stopping supervisord\n"
                 % (payload.get("processname"), headers.get("eventname"))
             )
 
