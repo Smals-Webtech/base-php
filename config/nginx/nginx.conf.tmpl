@@ -102,13 +102,13 @@ http {
 
       root /app/var/www/html;
 
-      location /healthcheck {
+      location = /healthcheck {
         access_log off;
         add_header Content-Type text/plain;
         return 200 'healthcheck OK';
       }
 
-      location /metrics {
+      location = /metrics {
         access_log off;
         if ($monitoring_forbidden) { return 403; }
         vhost_traffic_status_bypass_stats on;
@@ -116,7 +116,7 @@ http {
         vhost_traffic_status_display_format prometheus;
       }
 
-      location /vts-status {
+      location = /vts-status {
         access_log off;
         if ($monitoring_forbidden) { return 403; }
         vhost_traffic_status_bypass_stats on;
@@ -131,7 +131,7 @@ http {
         stub_status;
       }
 
-      location /real-time-status {
+      location = /real-time-status {
         access_log off;
         if ($monitoring_forbidden) { return 403; }
         add_header Content-Type text/html;
@@ -148,6 +148,17 @@ http {
         fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
 
         fastcgi_pass unix:/app/var/run/php-fpm/php-fpm.sock;
+      }
+
+      # This server exposes monitoring endpoints and nothing else. Without this
+      # catch-all every other path fell through to the static handler on the
+      # application root, so the whole codebase was downloadable from here --
+      # as source, since there is no PHP handler outside /status and /ping, and
+      # without passing the MONITORING_ALLOW check, which only guards the
+      # locations above.
+      location / {
+        access_log off;
+        return 404;
       }
 
     }
@@ -180,6 +191,17 @@ http {
       index index.php;
 
       root /app/var/www/html;
+
+      # Dotfiles in the docroot are configuration, not content: .env, .git,
+      # editor backups. /.well-known is a published location by design and keeps
+      # its normal handling.
+      location ~ ^/\.well-known/ {
+      }
+
+      location ~ /\. {
+        access_log off;
+        return 404;
+      }
 
       location ~ \.php$ {
         access_log off;
