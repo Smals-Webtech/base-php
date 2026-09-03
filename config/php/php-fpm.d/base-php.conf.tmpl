@@ -4,6 +4,13 @@ error_log = {{ $.Env.PHP_FPM_ERROR_LOG }}
 log_level = {{ $.Env.PHP_FPM_LOG_LEVEL }}
 log_limit = {{ $.Env.PHP_FPM_LOG_LIMIT }}
 
+; How long the master waits for its children to finish the request they are
+; serving before killing them. The php-fpm default is 0, which means it does not
+; wait at all: a graceful stop signal reaches the master and the workers are
+; terminated mid-request. Keep this below the supervisor program's stopwaitsecs,
+; and make sure the platform's own grace period exceeds it.
+process_control_timeout = {{ $.Env.PHP_FPM_PROCESS_CONTROL_TIMEOUT }}
+
 [www]
 access.log = {{ $.Env.PHP_FPM_ACCESS_LOG }}
 access.format = "{{ $.Env.PHP_FPM_ACCESS_FORMAT }}"

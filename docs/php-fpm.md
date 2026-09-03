@@ -26,6 +26,29 @@ This table summarizes how PHP-FPM configuration directives are mapped to environ
 | `error_log`                           | `PHP_FPM_ERROR_LOG`                       | `/proc/self/fd/2` | `/proc/self/fd/2` | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `log_level`                           | `PHP_FPM_LOG_LEVEL`                       | `notice`          | `notice`          | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
 | `log_limit`                           | `PHP_FPM_LOG_LIMIT`                       | `8192`            | `8192`            | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
+| `process_control_timeout`             | `PHP_FPM_PROCESS_CONTROL_TIMEOUT`         | `15s`             | `15s`             | [Link](https://www.php.net/manual/en/install.fpm.configuration.php)                        |
+
+#### Draining requests on shutdown
+
+`process_control_timeout` is how long the php-fpm master waits for its children to finish the request they are serving before killing them. The php-fpm default is `0`, which means it does not wait at all — a graceful stop terminates workers mid-request, and clients see a 502.
+
+Three timeouts have to line up, from shortest to longest:
+
+| | value | set where |
+|---|---|---|
+| `process_control_timeout` | `15s` | this variable |
+| supervisor `stopwaitsecs` | `20s` | `config/supervisor.d/php-fpm.ini.tmpl` |
+| the platform's grace period | **must exceed 15s** | see below |
+
+If the platform's grace period is shorter, the container is killed before the master has finished draining and the exit code is `137` instead of `0`:
+
+| in flight | grace period | result |
+|---|---|---|
+| a 3s request | 10s (plain `docker stop`) | request completes, container stops in ~1.5s, exit `0` |
+| a 15s request | 30s (OpenShift/Kubernetes default) | request completes, container stops in ~13s, exit `0` |
+| a 15s request | 10s (plain `docker stop`) | container killed at 10s, exit `137` |
+
+Kubernetes and OpenShift default `terminationGracePeriodSeconds` to 30 and need no change. For compose, set `stop_grace_period: 30s`; for a bare `docker stop`, pass `-t 30`. Lower this variable instead if you would rather cap the wait — the container then always stops cleanly, at the cost of cutting requests that run longer.
 
 ### Pool directives
 
