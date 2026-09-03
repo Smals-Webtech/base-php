@@ -140,9 +140,11 @@ jobs:
             ${{ matrix.variant }}-${{ matrix.target }}
           files: |
             docker-bake.hcl
-          # Remove tags to prevent "can't push tagged ref [...] by digest" error
+          # Tags are removed on the push path to prevent a "can't push tagged ref
+          # [...] by digest" error. On the load path they are what gives the test
+          # step an image to run, so they are kept.
           set: |
-            *.tags=
+            ${{ fromJson(needs.prepare.outputs.push) && '*.tags=' || '' }}
             *.platform=${{ matrix.platform }}
             ${{ matrix.variant }}-${{ matrix.target }}.cache-from=type=gha,scope=${{ matrix.variant }}-${{ matrix.target }}-${{ needs.prepare.outputs.ref || github.ref }}-${{ matrix.platform }}
             ${{ matrix.variant }}-${{ matrix.target }}.cache-from=type=gha,scope=refs/heads/main-${{ matrix.variant }}-${{ matrix.target }}-${{ matrix.platform }}
@@ -151,6 +153,29 @@ jobs:
         env:
           GIT_HASH: ${{ github.sha }}
           DOCKER_IMAGE_VERSION: ${{ (github.ref_type == 'tag' && github.ref_name) || needs.prepare.outputs.ref || 'snapshot' }}
+
+      # Only the load path has an image to run, and one architecture is enough to
+      # exercise the configuration the suites assert on. A published build is
+      # made of the same commits, each of which came through a pull request that
+      # ran this step.
+      - name: Set up bats
+        if: matrix.platform == 'linux/amd64' && !fromJson(needs.prepare.outputs.push)
+        uses: zebby76/setup-bats@v2
+
+      - name: Test image
+        if: matrix.platform == 'linux/amd64' && !fromJson(needs.prepare.outputs.push)
+        working-directory: test
+        env:
+          DOCKER_IMAGE_VERSION: snapshot
+          BATS_VARIANT: ${{ matrix.variant }}
+          BATS_TARGET: ${{ matrix.target }}
+        run: |
+          case "${BATS_VARIANT}" in
+            cli)          suite=tests.cli.bats ;;
+            nginx|apache) suite=tests.web.bats ;;
+            *)            echo "no image suite for the ${BATS_VARIANT} variant yet"; exit 0 ;;
+          esac
+          bats --print-output-on-failure "${suite}"
 
       - # Workaround for https://github.com/actions/runner/pull/2477#issuecomment-1501003600
         name: Export metadata

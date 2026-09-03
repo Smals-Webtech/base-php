@@ -9,9 +9,8 @@ services:
       init-shared-var-permissions:
         condition: service_completed_successfully
     environment:
-      - PHP_FPM_MAX_CHILDREN=${BATS_PHP_FPM_MAX_CHILDREN}
-      - PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES=${BATS_PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES}
-      - CONTAINER_HEAP_PERCENT=${BATS_CONTAINER_HEAP_PERCENT}
+      - PHP_FPM_PM_MAX_CHILDREN=${BATS_PHP_FPM_PM_MAX_CHILDREN}
+      - PHP_MEMORY_LIMIT=${BATS_PHP_MEMORY_LIMIT}
     volumes:
       - ./bin/container-entrypoint.d:/opt/bin/container-entrypoint.d:ro
       - shared-log:/var/log/shared:rw
