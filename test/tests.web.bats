@@ -90,6 +90,7 @@ setup_file() {
 teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}"
   container_clean "${BATS_WEB_CONTAINER}-memory"
+  container_clean "${BATS_WEB_CONTAINER}-drain"
 }
 
 @test "[$TEST_FILE] The container reports healthy" {
@@ -211,4 +212,26 @@ teardown_file() {
 @test "[$TEST_FILE] Error pages carry no server signature" {
   run curl --silent --max-time 20 "http://127.0.0.1:${BATS_WEB_PORT}/no-such-path"
   refute_output --partial "<address>"
+}
+
+# php-fpm's process_control_timeout defaults to 0, which makes the master kill
+# its children on a graceful stop instead of waiting: every rollout, scale-down
+# and eviction cut the requests in flight, and the client saw a 502.
+@test "[$TEST_FILE] A request in flight survives a graceful stop" {
+  local -r container="${BATS_WEB_CONTAINER}-drain"
+  local port
+
+  port="$(web_container_start "${container}")"
+  # A clock loop, not sleep(): sleep is interrupted by the stop signal and
+  # returns early, which reports a pass on an image that drains nothing.
+  web_put "${container}" slow.php <<<'<?php $end = microtime(true) + 8; while (microtime(true) < $end) { usleep(100000); } echo "completed";'
+
+  curl --silent --max-time 60 "http://127.0.0.1:${port}/slow.php" > "${BATS_TEST_TMPDIR}/drain" &
+  local -r client=$!
+  sleep 2
+  ${BATS_CONTAINER_ENGINE} stop --time 30 "${container}" >/dev/null
+  wait "${client}"
+
+  run cat "${BATS_TEST_TMPDIR}/drain"
+  assert_output "completed"
 }

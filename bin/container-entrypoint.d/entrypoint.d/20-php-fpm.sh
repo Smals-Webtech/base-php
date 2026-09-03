@@ -12,6 +12,10 @@ CONTAINER_HEAP_PERCENT_WCMTECH_DEFAULT="0.80"
 
 # Global Configuration
 
+# Below the supervisor program's stopwaitsecs of 20s, so the master has finished
+# draining before supervisor gives up and signals the process group.
+PHP_FPM_PROCESS_CONTROL_TIMEOUT_WCMTECH_DEFAULT="15s"
+
 PHP_FPM_ERROR_LOG_WCMTECH_DEFAULT="/proc/self/fd/2"
 PHP_FPM_LOG_LIMIT_WCMTECH_DEFAULT="8192" # https://github.com/docker-library/php/pull/725#issuecomment-443540114
 PHP_FPM_LOG_LEVEL_WCMTECH_DEFAULT="notice"
