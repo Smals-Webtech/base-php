@@ -54,6 +54,11 @@ limit_req_zone $remote_addr zone=global_limit:{{ $.Env.NGINX_SOFT_THROTTLE_GLOBA
 # Use this to calibrate 'rate' and 'burst' values without impacting real users.
 limit_req_dry_run {{ $.Env.NGINX_SOFT_THROTTLE_DRY_RUN_ENABLED }};
 
+# A throttled request is a normal outcome of a policy working, not an error.
+# nginx logs one at error level by default, dry-run rejections included, which
+# fills the error log with lines that need no action.
+limit_req_log_level {{ $.Env.NGINX_SOFT_THROTTLE_LOG_LEVEL }};
+
 # Custom HTTP status code for requests exceeding the rate limit.
 # Typically set to 429 (Too Many Requests) or 503 (Service Unavailable).
 limit_req_status {{ $.Env.NGINX_SOFT_THROTTLE_STATUS_CODE }};

@@ -33,7 +33,51 @@ NGINX_SCGI_TEMP_FOLDER_LEVEL2_WCMTECH_DEFAULT="2"
 NGINX_LARGE_CLIENT_HEADER_BUFFERS_COUNT_WCMTECH_DEFAULT="4"
 NGINX_LARGE_CLIENT_HEADER_BUFFERS_SIZE_WCMTECH_DEFAULT="8k"
 
-NGINX_CLIENT_MAX_BODY_SIZE_WCMTECH_DEFAULT="1m"
+# Derive the worker count from the container's CPU allowance rather than from the
+# host. nginx's "auto" counts the cores it can see, and a cgroup quota is not one
+# of them -- only a cpuset is -- so a 500m limit on a large node still spawned one
+# worker per host core, each carrying its own worker_connections.
+#
+# With no quota set the answer stays "auto", which is what a machine without
+# limits wants.
+_nginx_worker_processes() {
+
+	local quota period
+
+	if [ -r /sys/fs/cgroup/cpu.max ]; then
+		# cgroup v2: "<quota> <period>", or "max <period>" when unlimited
+		read -r quota period </sys/fs/cgroup/cpu.max
+	elif [ -r /sys/fs/cgroup/cpu/cpu.cfs_quota_us ]; then
+		# cgroup v1: -1 when unlimited
+		read -r quota </sys/fs/cgroup/cpu/cpu.cfs_quota_us
+		read -r period </sys/fs/cgroup/cpu/cpu.cfs_period_us
+	fi
+
+	case "${quota:-max}" in
+	max | -1 | "" | *[!0-9]*)
+		echo "auto"
+		return
+		;;
+	esac
+
+	[ "${period:-0}" -gt 0 ] || {
+		echo "auto"
+		return
+	}
+
+	# Round up, so half a CPU still gets a worker.
+	echo $((quota / period + (quota % period > 0)))
+
+}
+
+NGINX_WORKER_PROCESSES_WCMTECH_DEFAULT="$(_nginx_worker_processes)"
+
+unset -f _nginx_worker_processes
+
+# Aligned with the PHP upload_max_filesize default of 2M: below it nginx refused
+# the upload with a 413 before PHP had a say, and the two limits disagreed about
+# the same request.
+NGINX_CLIENT_MAX_BODY_SIZE_WCMTECH_DEFAULT="2m"
 
 NGINX_CLIENT_BODY_IN_FILE_ONLY_WCMTECH_DEFAULT="off"
 NGINX_CLIENT_BODY_TEMP_PATH_WCMTECH_DEFAULT="/app/var/tmp/client"
@@ -105,7 +149,10 @@ NGINX_GZIP_BUFFERS_COUNT_WCMTECH_DEFAULT="16"
 NGINX_GZIP_BUFFERS_SIZE_WCMTECH_DEFAULT="8k"
 NGINX_GZIP_HTTP_VERSION_WCMTECH_DEFAULT="1.1"
 NGINX_GZIP_MIN_LENGTH_WCMTECH_DEFAULT="256"
-NGINX_GZIP_TYPES_WCMTECH_DEFAULT="text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml image/x-icon"
+# application/javascript is what /etc/nginx/mime.types maps .js to; without it no
+# script was ever compressed, the two javascript entries below matching nothing
+# this image serves.
+NGINX_GZIP_TYPES_WCMTECH_DEFAULT="text/plain text/css application/json application/javascript application/x-javascript text/xml application/xml application/xml+rss text/javascript application/vnd.ms-fontobject application/x-font-ttf font/opentype image/svg+xml image/x-icon"
 
 NGINX_REAL_IP_ENABLED_WCMTECH_DEFAULT="false"
 NGINX_REAL_IP_TRUSTED_PROXIES_WCMTECH_DEFAULT="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
@@ -121,6 +168,7 @@ NGINX_SOFT_THROTTLE_GLOBAL_ZONE_SIZE_WCMTECH_DEFAULT="20m"
 NGINX_SOFT_THROTTLE_GLOBAL_ZONE_RATE_WCMTECH_DEFAULT="20r/s"
 NGINX_SOFT_THROTTLE_GLOBAL_ZONE_BURST_WCMTECH_DEFAULT="30"
 NGINX_SOFT_THROTTLE_STATUS_CODE_WCMTECH_DEFAULT="429"
+NGINX_SOFT_THROTTLE_LOG_LEVEL_WCMTECH_DEFAULT="warn"
 NGINX_SOFT_THROTTLE_WHITELIST_WCMTECH_DEFAULT="" # Trusted bypass (VPN, Proxies) for infrastructure monitoring and secure administrative gateways.
 NGINX_SOFT_THROTTLE_DRY_RUN_ENABLED_WCMTECH_DEFAULT="on"
 
