@@ -40,7 +40,11 @@ ExtendedStatus {{.Env.APACHE_DEFAULT_VHOST_EXTENDED_STATUS}}
 # 'Main' server configuration
 
 ServerAdmin {{.Env.APACHE_SERVER_ADMIN}}
+ServerName {{.Env.APACHE_SERVER_NAME}}
 ServerSignature {{.Env.APACHE_SERVER_SIGNATURE}}
+
+# TRACE echoes the request back and has no use here.
+TraceEnable off
 
 <Directory />
     AllowOverride none
@@ -49,18 +53,28 @@ ServerSignature {{.Env.APACHE_SERVER_SIGNATURE}}
 
 DocumentRoot "/app/var/www/html"
 <Directory "/app/var/www/html">
-    Options Indexes FollowSymLinks
+    Options -Indexes +FollowSymLinks
     AllowOverride None
     Require all granted
 </Directory>
 
 <IfModule dir_module>
-    DirectoryIndex index.html
+    DirectoryIndex index.php index.html
 </IfModule>
 
-<Files ".ht*">
+# Dotfiles in the docroot are configuration, not content: .env, .git, editor
+# backups. RedirectMatch answers before the filesystem is consulted and matches
+# any path component, so a file inside a dot directory is covered too -- .git/config
+# would otherwise slip through, its own name being an ordinary one. 404 rather
+# than 403 keeps the answer identical to the nginx variant and does not confirm
+# what exists. /.well-known is a published location by design.
+RedirectMatch 404 "/\.(?!well-known)"
+
+# Backstop at the authorisation layer, and the broader form of the .ht* rule it
+# replaces.
+<FilesMatch "^\.">
     Require all denied
-</Files>
+</FilesMatch>
 
 ErrorLog /dev/stderr
 
