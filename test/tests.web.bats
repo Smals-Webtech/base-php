@@ -336,3 +336,45 @@ teardown_file() {
   refute_line --regexp "eventname:TICK_60"
   refute_line --regexp "^RESULT [0-9]"
 }
+
+# .js is served as application/javascript, which the gzip_types list omitted --
+# it carried application/x-javascript and text/javascript, neither of which this
+# image ever emits, so no script was ever compressed.
+@test "[$TEST_FILE] Javascript is compressed" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "apache compresses application/javascript already"
+
+  web_put "${BATS_WEB_CONTAINER}" app.js <<<"$(head -c 3000 /dev/zero | tr '\0' 'x')"
+
+  run curl --silent --head --header 'Accept-Encoding: gzip' --max-time 20 \
+    "http://127.0.0.1:${BATS_WEB_PORT}/app.js"
+  assert_line --regexp '^[Cc]ontent-[Ee]ncoding: gzip'
+}
+
+# add_header appends, so these locations answered with the Content-Type nginx had
+# already set plus the one they added.
+@test "[$TEST_FILE] Responses carry a single Content-Type" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
+
+  run bash -c "curl --silent --head --max-time 20 http://127.0.0.1:${BATS_MONITORING_PORT}/healthcheck | grep -ci '^content-type'"
+  assert_output "1"
+}
+
+# location ~ \.php$ could not match /index.php/fr/blog, so a front controller
+# never received PATH_INFO and the parameters set for it were dead code. apache
+# has always handled this, which left the two variants routing differently.
+@test "[$TEST_FILE] A front controller receives PATH_INFO" {
+  web_put "${BATS_WEB_CONTAINER}" front.php \
+    <<<'<?php echo "path_info=[", $_SERVER["PATH_INFO"] ?? "", "]";'
+
+  run curl --silent --max-time 20 "http://127.0.0.1:${BATS_WEB_PORT}/front.php/fr/blog"
+  assert_output "path_info=[/fr/blog]"
+}
+
+# The other half of accepting path info: a request whose .php does not exist must
+# not fall back to executing the file before it.
+@test "[$TEST_FILE] A path-info request cannot execute a non-PHP file" {
+  web_put "${BATS_WEB_CONTAINER}" uploads/photo.jpg <<<'<?php echo "EXECUTED"; ?>'
+
+  run web_status "${BATS_WEB_PORT}" /uploads/photo.jpg/shell.php
+  assert_output "404"
+}

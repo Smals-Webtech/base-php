@@ -257,7 +257,8 @@ Nginx is only active in the `nginx-prd` and `nginx-dev` variants. It acts as a r
 | `NGINX_TCP_NOPUSH` | `on` | Send response headers in one packet. |
 | `NGINX_TCP_NODELAY` | `on` | Disable Nagle's algorithm for keepalive connections. |
 | `NGINX_IGNORE_INVALID_HEADERS` | `on` | Ignore headers with invalid names. |
-| `NGINX_CLIENT_MAX_BODY_SIZE` | `1m` | Maximum allowed request body size. |
+| `NGINX_WORKER_PROCESSES` | derived from the CPU limit | Worker count. Defaults to the container's CPU allowance rounded up, or `auto` when no limit is set — nginx's own `auto` counts the _host's_ cores, since a cgroup quota is invisible to it. |
+| `NGINX_CLIENT_MAX_BODY_SIZE` | `2m` | Maximum allowed request body size. Kept in step with PHP's `upload_max_filesize`: set below it and nginx answers 413 before PHP sees the upload. |
 | `NGINX_CLIENT_HEADER_BUFFER_SIZE` | `1k` | Buffer size for reading client request headers. |
 | `NGINX_CLIENT_HEADER_TIMEOUT` | `60s` | Timeout for reading client request headers. |
 | `NGINX_CLIENT_BODY_TIMEOUT` | `60s` | Timeout for reading client request body. |
@@ -309,9 +310,10 @@ Two-zone rate limiting: a global limit for all traffic, and a stricter bot-speci
 
 | Environment Variable | Default | Description |
 |----------------------|---------|-------------|
-| `NGINX_SOFT_THROTTLE_ENABLED` | `false` | Enable rate limiting. |
+| `NGINX_SOFT_THROTTLE_ENABLED` | `false` | Enable rate limiting. Read the note below before turning it on behind a proxy. |
 | `NGINX_SOFT_THROTTLE_DRY_RUN_ENABLED` | `on` | Log rate-limit events without rejecting requests (calibration mode). Disable once limits are tuned. |
 | `NGINX_SOFT_THROTTLE_STATUS_CODE` | `429` | HTTP status code returned when the rate limit is exceeded. |
+| `NGINX_SOFT_THROTTLE_LOG_LEVEL` | `warn` | Level a throttled request is logged at. nginx uses `error` by default, dry-run rejections included. |
 | `NGINX_SOFT_THROTTLE_WHITELIST` | _(empty)_ | Space-separated CIDR ranges that bypass all rate limits (e.g. VPN, monitoring). |
 | `NGINX_SOFT_THROTTLE_GLOBAL_ZONE_SIZE` | `20m` | Shared memory for the global limit zone (~320k IPs per 20m). |
 | `NGINX_SOFT_THROTTLE_GLOBAL_ZONE_RATE` | `20r/s` | Global request rate limit. |
@@ -320,6 +322,13 @@ Two-zone rate limiting: a global limit for all traffic, and a stricter bot-speci
 | `NGINX_SOFT_THROTTLE_BOTS_ZONE_RATE` | `1r/m` | Rate limit applied to detected bots. |
 | `NGINX_SOFT_THROTTLE_BOTS_ZONE_BURST` | `5` | Burst allowance for the bot limit. |
 | `NGINX_SOFT_THROTTLE_BOTS_USER_AGENT` | _(see below)_ | Space-separated list of User-Agent regular expression patterns identifying bots. |
+
+> **Behind a proxy, tune the real IP first.** Both zones key on `$remote_addr`. With
+> `NGINX_REAL_IP_ENABLED=false` — the default — that is the address of whatever connects, which
+> behind an OpenShift router or any ingress is the router itself. Every visitor then shares one
+> bucket, and the global limit of `20r/s` applies to the whole site rather than per client. Enable
+> `NGINX_REAL_IP_ENABLED` and set `NGINX_REAL_IP_TRUSTED_PROXIES` before relying on these limits.
+
 
 Default bot patterns: `googlebot`, `bingbot`, `baiduspider`, `yandexbot`, `duckduckbot`, `semrushbot`, `ahrefsbot`, `python-requests`, `curl`, `wget`, `adsbot-google`, and others.
 
