@@ -93,6 +93,9 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-drain"
   container_clean "${BATS_WEB_CONTAINER}-logrotate"
   container_clean "${BATS_WEB_CONTAINER}-failfast"
+  container_clean "${BATS_WEB_CONTAINER}-init1"
+  container_clean "${BATS_WEB_CONTAINER}-init2"
+  ${BATS_CONTAINER_ENGINE} volume rm -f "${BATS_WEB_CONTAINER}-lock" "${BATS_WEB_CONTAINER}-log" >/dev/null 2>&1 || true
 }
 
 @test "[$TEST_FILE] The container reports healthy" {
@@ -377,4 +380,38 @@ teardown_file() {
 
   run web_status "${BATS_WEB_PORT}" /uploads/photo.jpg/shell.php
   assert_output "404"
+}
+
+# The marker said whether the hooks had run, not whether they were running, so
+# replicas sharing the volume it lives on all read it at once, all decided the
+# hooks were pending, and all ran them. A migration hook ran once per replica.
+#
+# Only /app/var/lock and /app/var/log are shared here, which is the realistic
+# scope: sharing /app/var whole makes the two supervisords fight over one RPC
+# socket and the second container never reaches its init scripts.
+@test "[$TEST_FILE] Replicas sharing the init marker run the hooks once" {
+  local -r hook="${BATS_TEST_TMPDIR}/10-slow.sh"
+  local -r lock="${BATS_WEB_CONTAINER}-lock"
+  local -r logs="${BATS_WEB_CONTAINER}-log"
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  local n
+
+  printf '#!/bin/bash\necho "ran" >> /app/var/log/hook-runs.txt\nsleep 3\n' >"${hook}"
+  chmod +x "${hook}"
+
+  for n in 1 2; do
+    ${BATS_CONTAINER_ENGINE} volume create "${lock}" >/dev/null
+    ${BATS_CONTAINER_ENGINE} volume create "${logs}" >/dev/null
+    ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${BATS_WEB_CONTAINER}-init${n}" \
+      --volume "${lock}:/app/var/lock" --volume "${logs}:/app/var/log" \
+      --volume "${hook}:/opt/bin/container-entrypoint.d/10-slow.sh:ro" "${image}" >/dev/null &
+  done
+  wait
+
+  container_wait_for_healthy "${BATS_WEB_CONTAINER}-init1" 60 >/dev/null
+  container_wait_for_healthy "${BATS_WEB_CONTAINER}-init2" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${BATS_WEB_CONTAINER}-init1" \
+    sh -c 'grep -c ran /app/var/log/hook-runs.txt'
+  assert_output "1"
 }

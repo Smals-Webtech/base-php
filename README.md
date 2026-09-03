@@ -54,6 +54,52 @@ This approach ensures idempotent initialization, predictable config state, and n
 |----------------------|---------|-------------|
 | `DEBUG` | `false` | Set to `true` to enable `set -x` shell tracing throughout the entire startup sequence. Useful for diagnosing template rendering failures or unexpected variable values. |
 
+### Application startup hooks
+
+A child image can run its own code during startup by dropping files into
+`/opt/bin/container-entrypoint.d`. There are two places to do it, and they run at different moments.
+
+**Late hooks** — `/opt/bin/container-entrypoint.d/*.sh` and `*.php`
+
+They run after every configuration file has been rendered and **before Supervisor starts**, so no
+web server or php-fpm is listening yet. This is where migrations, cache warm-ups and asset builds
+belong. They run as uid `1001`, with `/app` as the working directory, and `.php` files are executed
+with `php -f`.
+
+**Early hooks** — `/opt/bin/container-entrypoint.d/entrypoint.d/*.sh`
+
+They are sourced before the environment is resolved, which makes them the place to set
+`<VARIABLE>_WCMTECH_DEFAULT` values — a default of your own that a runtime environment variable can
+still override. They cannot start services: nothing is rendered yet.
+
+```dockerfile
+COPY --chown=1001:0 migrate.sh /opt/bin/container-entrypoint.d/10-migrate.sh
+```
+
+Three things are worth knowing before writing one.
+
+**They run once per `/app/var` volume, not once per image.** A fingerprint of the hook file names
+and their contents is written to `/app/var/lock/appinit`; the hooks re-run when that fingerprint
+changes, and are skipped otherwise. On an ephemeral volume — a `tmpfs`, or an `emptyDir` recreated
+with the pod — that means they run at every start. Helper files a hook sources are not part of the
+fingerprint.
+
+**Replicas sharing that volume are serialised.** With `/app/var/lock` on a shared claim, one replica
+runs the hooks while the others wait, then find the marker written and skip. `APP_INIT_LOCK_TIMEOUT`
+bounds the wait; a container that gives up fails its boot rather than run someone else's migration
+alongside them.
+
+**They see the full environment, secrets included.** Hooks run before the entrypoint sanitizes the
+environment, so `SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD`, `AWS_SECRET_ACCESS_KEY` and anything else
+passed to the container are readable. A hook that dumps `env` to a log publishes them.
+
+The `cli` variant does not run late hooks: it has no Supervisor and a shorter entrypoint. A worker
+or cron image built from it has to invoke its initialization itself.
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `APP_INIT_LOCK_TIMEOUT` | `300` | Seconds a replica waits for another one sharing `/app/var/lock` to finish running the hooks before failing its own boot. |
+
 ## 👷 Supervisor Configuration
 
 | Environment Variable                         | Default (prd)                  | Default (dev)                  | Documentation                                                                        |
