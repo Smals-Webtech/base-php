@@ -257,7 +257,7 @@ Nginx is only active in the `nginx-prd` and `nginx-dev` variants. It acts as a r
 | `NGINX_TCP_NOPUSH` | `on` | Send response headers in one packet. |
 | `NGINX_TCP_NODELAY` | `on` | Disable Nagle's algorithm for keepalive connections. |
 | `NGINX_IGNORE_INVALID_HEADERS` | `on` | Ignore headers with invalid names. |
-| `NGINX_WORKER_PROCESSES` | derived from the CPU limit | Worker count. Defaults to the container's CPU allowance rounded up, or `auto` when no limit is set — nginx's own `auto` counts the *host's* cores, since a cgroup quota is invisible to it. |
+| `NGINX_WORKER_PROCESSES` | derived from the CPU limit | Worker count. Defaults to the container's CPU allowance rounded up, or `auto` when no limit is set — nginx's own `auto` counts the _host's_ cores, since a cgroup quota is invisible to it. |
 | `NGINX_CLIENT_MAX_BODY_SIZE` | `2m` | Maximum allowed request body size. Kept in step with PHP's `upload_max_filesize`: set below it and nginx answers 413 before PHP sees the upload. |
 | `NGINX_CLIENT_HEADER_BUFFER_SIZE` | `1k` | Buffer size for reading client request headers. |
 | `NGINX_CLIENT_HEADER_TIMEOUT` | `60s` | Timeout for reading client request headers. |
