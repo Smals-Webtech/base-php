@@ -11,6 +11,10 @@ on:
   pull_request:
     branches:
       - main
+      # Version branches (8.4, 8.5, ...). Without them a backport pull request
+      # runs the linter only, so the change reaches its release tag having never
+      # been built -- which is how the php-fpm memory cap shipped on 8.4.
+      - "[0-9]+.[0-9]+"
     paths-ignore:
       - "docs/**"
 
