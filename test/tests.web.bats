@@ -92,6 +92,7 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-memory"
   container_clean "${BATS_WEB_CONTAINER}-drain"
   container_clean "${BATS_WEB_CONTAINER}-logrotate"
+  container_clean "${BATS_WEB_CONTAINER}-failfast"
 }
 
 @test "[$TEST_FILE] The container reports healthy" {
@@ -292,4 +293,28 @@ teardown_file() {
 
   run container_running_state "${container}"
   assert_output "false"
+}
+
+# nginx set access_log off inside the PHP location and apache pointed the default
+# vhost logs at /dev/null, so the only trace of a PHP request was php-fpm's own
+# line -- which began "- -", %R being the peer address of a unix socket.
+@test "[$TEST_FILE] A PHP request is logged with the client address" {
+  local -r marker="logged-${RANDOM}"
+
+  web_put "${BATS_WEB_CONTAINER}" "${marker}.php" <<<'<?php echo "ok";'
+  curl --silent --output /dev/null --max-time 20 "http://127.0.0.1:${BATS_WEB_PORT}/${marker}.php"
+
+  run ${BATS_CONTAINER_ENGINE} logs "${BATS_WEB_CONTAINER}"
+  assert_line --regexp "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3} .*${marker}"
+}
+
+# The apache default vhost discarded everything, so a 404 -- and any 5xx, and the
+# PHP errors mod_proxy_fcgi relays -- left no trace at all.
+@test "[$TEST_FILE] A request that reaches no handler is still logged" {
+  local -r marker="missing-${RANDOM}"
+
+  curl --silent --output /dev/null --max-time 20 "http://127.0.0.1:${BATS_WEB_PORT}/${marker}"
+
+  run ${BATS_CONTAINER_ENGINE} logs "${BATS_WEB_CONTAINER}"
+  assert_line --regexp "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3} .*${marker}"
 }

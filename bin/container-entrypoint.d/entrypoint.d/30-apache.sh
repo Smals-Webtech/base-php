@@ -29,13 +29,15 @@ APACHE_MPM_WORKER_MAX_REQUEST_WORKERS_WCMTECH_DEFAULT="400"
 APACHE_MPM_WORKER_MAX_CONNECTIONS_PER_CHILD_WCMTECH_DEFAULT="0"
 APACHE_MPM_WORKER_MAX_MEM_FREE_WCMTECH_DEFAULT="2048"
 
-APACHE_DEFAULT_VHOST_ERROR_LOG_TARGET_WCMTECH_DEFAULT="/dev/null"
-APACHE_DEFAULT_VHOST_CUSTOM_LOG_TARGET_WCMTECH_DEFAULT="/dev/null"
+# A vhost-level ErrorLog or CustomLog replaces the server-level one rather than
+# adding to it, so pointing these at /dev/null discarded the traffic of the only
+# vhost the image ships -- including its 4xx and 5xx, and the PHP errors
+# mod_proxy_fcgi relays. DEBUG changes the level and the daemon log below, not
+# whether anything is logged at all.
+APACHE_DEFAULT_VHOST_ERROR_LOG_TARGET_WCMTECH_DEFAULT="/dev/stderr"
+APACHE_DEFAULT_VHOST_CUSTOM_LOG_TARGET_WCMTECH_DEFAULT="/dev/stdout"
 
 APACHE_DEFAULT_VHOST_EXTENDED_STATUS_WCMTECH_DEFAULT="On"
-
-[[ "${DEBUG}" == "true" ]] && APACHE_DEFAULT_VHOST_ERROR_LOG_TARGET_WCMTECH_DEFAULT="/dev/stderr"
-[[ "${DEBUG}" == "true" ]] && APACHE_DEFAULT_VHOST_CUSTOM_LOG_TARGET_WCMTECH_DEFAULT="/dev/stdout"
 
 APACHE_DAEMON_LOG_WCMTECH_DEFAULT="info"
 

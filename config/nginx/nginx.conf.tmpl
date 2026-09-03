@@ -211,8 +211,6 @@ http {
       }
 
       location ~ \.php$ {
-        access_log off;
-
         try_files $fastcgi_script_name =404;
 
         fastcgi_split_path_info ^(.+\.php)(/.+)$;

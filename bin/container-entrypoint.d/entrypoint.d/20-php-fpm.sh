@@ -23,7 +23,10 @@ PHP_FPM_LOG_LEVEL_WCMTECH_DEFAULT="notice"
 # Pool Configuration
 
 PHP_FPM_ACCESS_LOG_WCMTECH_DEFAULT="/proc/self/fd/2" # php-fpm closes STDOUT on startup, so sending logs to /proc/self/fd/1 does not work. (https://bugs.php.net/bug.php?id=73886)
-PHP_FPM_ACCESS_FORMAT_WCMTECH_DEFAULT="%R - %u %t \\\"%m %r%Q%q\\\" %s %f %{milli}d %{kilo}M %C%%"
+# %R is the peer address of the connection, which is empty over a unix socket --
+# every line began with "- -". The client address arrives as a FastCGI parameter
+# instead, which %{REMOTE_ADDR}e reads.
+PHP_FPM_ACCESS_FORMAT_WCMTECH_DEFAULT="%{REMOTE_ADDR}e - %u %t \\\"%m %r%Q%q\\\" %s %f %{milli}d %{kilo}M %C%%"
 
 PHP_FPM_CLEAR_ENV_WCMTECH_DEFAULT="no"
 PHP_FPM_LISTEN_MODE_WCMTECH_DEFAULT="0777"
