@@ -1,5 +1,28 @@
 ## functions to help deal with containers (podman or docker)
 
+# Resolve the image tag bake produces for a variant/target pair.
+#
+# The suite must exercise the image the current build produced, not whatever
+# floating tag happens to sit in the local daemon: `base-php:cli` is the bake
+# "latest" tag, so a build of another branch leaves it pointing at a different
+# PHP version, and an absent tag makes `docker run` pull the published image
+# instead -- the suite then passes against something that was never built here.
+#
+# DOCKER_IMAGE_NAME and DOCKER_IMAGE_VERSION default to bake's own defaults, so
+# a plain `make bake-cli/prd` followed by `bats test/tests.cli.bats` works.
+#
+# $1 variant (cli, fpm, nginx, apache)
+# $2 target  (prd, dev) -- defaults to prd
+function image_tag {
+  local -r variant=$1
+  local -r target=${2:-prd}
+  local suffix=""
+
+  [ "${target}" = "dev" ] && suffix="-dev"
+
+  echo "${DOCKER_IMAGE_NAME:-smalswebtech/base-php}:${DOCKER_IMAGE_VERSION:-snapshot}-${variant}${suffix}"
+}
+
 # Removes container $1
 function container_clean {
   run ${BATS_CONTAINER_ENGINE} kill $1 &>/dev/null ||:
