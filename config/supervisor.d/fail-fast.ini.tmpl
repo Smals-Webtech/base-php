@@ -14,7 +14,8 @@ environment=SUPERVISOR_USERNAME="{{ .Env.SUPERVISOR_XMLRPC_UNIX_SOCKET_USERNAME 
 ; workers still serving. Keep it running.
 autorestart=true
 
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
+; stdout is how an event listener talks to supervisor -- READY, RESULT -- so it
+; is not a log stream. Capturing it put a RESULT line in the container log on
+; every event. stderr is the listener's own output and stays.
 stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0

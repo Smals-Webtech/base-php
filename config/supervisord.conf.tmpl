@@ -1,11 +1,12 @@
 [supervisord]
 nodaemon = true
-logfile = /app/var/log/supervisord.log
 pidfile = /app/var/run/supervisord.pid
-stdout_logfile = /dev/stdout
-stdout_logfile_maxbytes = 0
-stderr_logfile = /dev/stderr
-stderr_logfile_maxbytes = 0
+
+; With nodaemon the log already goes to the container's output. Writing it to a
+; file as well duplicated every line and put it under two rotators at once --
+; supervisor's own 50 MB x 10, and logrotate, which matches /app/var/log/*.log.
+logfile = /dev/null
+logfile_maxbytes = 0
 
 [rpcinterface:supervisor]
 supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface

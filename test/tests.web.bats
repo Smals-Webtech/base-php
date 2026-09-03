@@ -318,3 +318,21 @@ teardown_file() {
   run ${BATS_CONTAINER_ENGINE} logs "${BATS_WEB_CONTAINER}"
   assert_line --regexp "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3} .*${marker}"
 }
+
+# The TICK_60 subscriber echoed the event header and the payload on every tick,
+# and the listener's stdout -- which is the protocol channel, not a log stream --
+# was captured too, so a RESULT line joined them. Two lines a minute, forever,
+# burying whatever else the container had to say.
+@test "[$TEST_FILE] The tick listener is quiet" {
+  # The assertion only means something once a TICK_60 has fired. The shared
+  # container has been up since setup_file, so by this point that has usually
+  # happened already; wait out whatever is left rather than a flat 60 seconds.
+  local -r started="$(${BATS_CONTAINER_ENGINE} inspect -f '{{.State.StartedAt}}' "${BATS_WEB_CONTAINER}")"
+  local -r uptime=$(( $(date +%s) - $(date -d "${started}" +%s) ))
+
+  [ "${uptime}" -gt 65 ] || sleep $(( 65 - uptime ))
+
+  run ${BATS_CONTAINER_ENGINE} logs "${BATS_WEB_CONTAINER}"
+  refute_line --regexp "eventname:TICK_60"
+  refute_line --regexp "^RESULT [0-9]"
+}
