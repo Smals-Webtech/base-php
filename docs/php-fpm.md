@@ -79,4 +79,4 @@ These variables are still accepted for backward compatibility but will be remove
 |---------------------|-------------|-------|
 | `PHP_FPM_REQUEST_MAX_MEMORY_IN_MEGABYTES` | `PHP_MEMORY_LIMIT` | Value is converted automatically (`16` → `16M`). A warning is emitted at startup. |
 | `PHP_FPM_MAX_CHILDREN` | `PHP_FPM_PM_MAX_CHILDREN` | Direct alias. A warning is emitted at startup. |
-| `CONTAINER_HEAP_PERCENT` | `PHP_MEMORY_LIMIT` | Fraction of container memory used to auto-size PHP memory pools (default `0.80`). Set `PHP_MEMORY_LIMIT` explicitly instead. A warning is emitted at startup. |
+| `CONTAINER_HEAP_PERCENT` | `PHP_MEMORY_LIMIT` | Accepted and ignored: nothing reads it and no warning is emitted, so a value set here has never had any effect. Set `PHP_MEMORY_LIMIT` instead. |
