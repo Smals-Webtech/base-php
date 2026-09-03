@@ -91,6 +91,7 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}"
   container_clean "${BATS_WEB_CONTAINER}-memory"
   container_clean "${BATS_WEB_CONTAINER}-drain"
+  container_clean "${BATS_WEB_CONTAINER}-logrotate"
 }
 
 @test "[$TEST_FILE] The container reports healthy" {
@@ -247,4 +248,23 @@ teardown_file() {
 
   run web_status "${BATS_WEB_PORT}" /big-header.php
   assert_output "200"
+}
+
+# The option list used to be split on whitespace and sorted, so a directive
+# carrying an argument -- "maxage 7" -- reached the stanza as two lines in
+# alphabetical order. logrotate rejects that and skips the whole stanza, which
+# stops every file from being rotated, silently, for the life of the container.
+@test "[$TEST_FILE] A logrotate directive with an argument still rotates" {
+  local -r container="${BATS_WEB_CONTAINER}-logrotate"
+  local port
+
+  port="$(web_container_start "${container}" \
+    --env "LOGROTATE_DEFAULT_OPTIONS=compress;copytruncate;missingok;notifempty;maxage 7" \
+    --env "LOGROTATE_DEFAULT_SIZE_LIMIT=1k")"
+
+  ${BATS_CONTAINER_ENGINE} exec "${container}" sh -c \
+    'head -c 4096 /dev/zero | tr "\0" "x" > /app/var/log/rotate-me.log; /opt/config/sbin/logrotate.sh'
+
+  run ${BATS_CONTAINER_ENGINE} exec "${container}" test -f /app/var/log/rotate-me.log.1.gz
+  assert_success
 }
