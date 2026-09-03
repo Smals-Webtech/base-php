@@ -31,7 +31,8 @@ web_container_start() {
   shift
 
   ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${container}" \
-    --publish 127.0.0.1::9000 "$@" "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
+    --publish 127.0.0.1::9000 --publish 127.0.0.1::9090 \
+    "$@" "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
 
   # container_wait_for_healthy echoes the matched health state through retry,
   # which would otherwise end up in the port this function returns.
@@ -57,10 +58,28 @@ web_php() {
   curl --silent --fail --max-time 20 "http://127.0.0.1:${port}/${script}"
 }
 
+# Write a file into the docroot of container $1 under name $2.
+web_put() {
+  ${BATS_CONTAINER_ENGINE} exec -i "$1" \
+    sh -c "mkdir -p \$(dirname /app/var/www/html/$2); cat > /app/var/www/html/$2"
+}
+
+# Status code for path $2 on port $1 of the container under test.
+web_status() {
+  curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 "http://127.0.0.1:$1$2"
+}
+
 setup_file() {
   export BATS_WEB_CONTAINER="bats-web-${BATS_VARIANT}-${BATS_TARGET}-$$"
   container_clean "${BATS_WEB_CONTAINER}"
   export BATS_WEB_PORT="$(web_container_start "${BATS_WEB_CONTAINER}")"
+  export BATS_MONITORING_PORT="$(${BATS_CONTAINER_ENGINE} port "${BATS_WEB_CONTAINER}" 9090/tcp | head -1 | sed 's/.*://')"
+
+  # Fixtures an application would hold and a base image must never hand out.
+  web_put "${BATS_WEB_CONTAINER}" secret.php <<<'<?php $credential = "s3cr3t"; echo "executed";'
+  web_put "${BATS_WEB_CONTAINER}" .env <<<'APP_SECRET=very-secret'
+  web_put "${BATS_WEB_CONTAINER}" .git/config <<<'[remote "origin"] url = git@internal:app.git'
+  web_put "${BATS_WEB_CONTAINER}" .well-known/probe.txt <<<'well-known ok'
 }
 
 teardown_file() {
@@ -118,4 +137,55 @@ teardown_file() {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" \
     '<?php echo extension_loaded("xdebug") ? "loaded" : "absent";'
   assert_output -l "absent"
+}
+
+# The monitoring server declared the application docroot as its root and had no
+# catch-all, so every path that was not an endpoint fell through to the static
+# handler -- returning PHP as source, and outside the MONITORING_ALLOW check,
+# which guards the named locations only.
+@test "[$TEST_FILE] The monitoring port serves no application file" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
+
+  run web_status "${BATS_MONITORING_PORT}" /secret.php
+  assert_output -l "404"
+}
+
+@test "[$TEST_FILE] The monitoring port endpoints still answer" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
+
+  local endpoint
+  for endpoint in /healthcheck /metrics /vts-status /stub-status /real-time-status /status /ping; do
+    run web_status "${BATS_MONITORING_PORT}" "${endpoint}"
+    assert_output -l "200"
+  done
+}
+
+# A prefix match answered on /metricsfoo and resolved any path under the
+# /real-time-status alias.
+@test "[$TEST_FILE] The monitoring endpoints are exact paths" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
+
+  run web_status "${BATS_MONITORING_PORT}" /metricsfoo
+  assert_output -l "404"
+}
+
+@test "[$TEST_FILE] Dotfiles in the docroot are not served" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "the apache variant is covered once its own hardening lands"
+
+  run web_status "${BATS_WEB_PORT}" /.env
+  assert_output -l "404"
+}
+
+@test "[$TEST_FILE] A file inside a dot directory is not served" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "the apache variant is covered once its own hardening lands"
+
+  run web_status "${BATS_WEB_PORT}" /.git/config
+  assert_output -l "404"
+}
+
+@test "[$TEST_FILE] /.well-known keeps its normal handling" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "the apache variant is covered once its own hardening lands"
+
+  run web_status "${BATS_WEB_PORT}" /.well-known/probe.txt
+  assert_output -l "200"
 }
