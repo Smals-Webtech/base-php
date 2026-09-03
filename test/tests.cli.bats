@@ -2,8 +2,13 @@
 load "helpers/tests"
 load "helpers/containers"
 
-load "lib/batslib"
-load "lib/output"
+# bats-support and bats-assert are resolved through BATS_LIB_PATH: the CI job
+# gets it from bats-core/bats-action, a local run from `make -C test deps`,
+# which clones the same pinned tags into test/lib.
+export BATS_LIB_PATH="${BATS_LIB_PATH:+${BATS_LIB_PATH}:}${BATS_TEST_DIRNAME%/}/lib"
+
+bats_load_library bats-support
+bats_load_library bats-assert
 
 source ${BATS_TEST_DIRNAME%/}/.env
 
@@ -35,7 +40,7 @@ teardown_file() {
 
 @test "[$TEST_FILE] Test PHP version" {
   run_cli "${BATS_CLI_IMAGE}" -v
-  assert_output -l -r "^PHP ${BATS_PHP_VERSION} \(cli\) \(.*\) \(NTS\)"
+  assert_line --regexp "^PHP ${BATS_PHP_VERSION} \(cli\) \(.*\) \(NTS\)"
 }
 
 @test "[$TEST_FILE] Testing NPM Version (with unrecognized uid and anonymous volumes)" {
@@ -43,17 +48,17 @@ teardown_file() {
     -v /app/tmp \
     -v /opt/etc \
     "${BATS_CLI_IMAGE}" npm -v
-  assert_output -l -r "^[0-9]+.[0-9]+.[0-9]+*$"
+  assert_line --regexp "^[0-9]+.[0-9]+.[0-9]+*$"
 }
 
 @test "[$TEST_FILE] Test aws cli version" {
   run_cli "${BATS_CLI_IMAGE}" aws --version
-  assert_output -l -r "^aws-cli/${BATS_AWS_CLI_VERSION} Python/.* .*$"
+  assert_line --regexp "^aws-cli/${BATS_AWS_CLI_VERSION} Python/.* .*$"
 }
 
 @test "[$TEST_FILE] Test GH cli version (dev only)" {
   [ "${BATS_TARGET}" = "dev" ] || skip "the GitHub CLI ships in cli-dev only"
 
   run_cli "${BATS_CLI_IMAGE}" gh --version
-  assert_output -l -r "^gh version [0-9]+\.[0-9]+\.[0-9]+ \([^)]+\)$"
+  assert_line --regexp "^gh version [0-9]+\.[0-9]+\.[0-9]+ \([^)]+\)$"
 }

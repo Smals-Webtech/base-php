@@ -76,7 +76,7 @@ function container_assert_healthy {
   # Calling container_health_state directly left $output from the previous run,
   # so the assertion checked an unrelated command's output.
   run container_health_state "$container"
-  assert_output -l "healthy"
+  assert_line "healthy"
 }
 
 # asserts logs from container $1 contains $2
@@ -84,7 +84,7 @@ function container_assert_log {
   local -r container=$1
   shift
   run ${BATS_CONTAINER_ENGINE} logs $container
-  assert_output -r "$*"
+  assert_output --regexp "$*"
 }
 
 # asserts command $2 output from container $1 contains $3
@@ -93,7 +93,7 @@ function container_assert_command {
   local -r command_to_exec=$2
   shift 2
   run ${BATS_CONTAINER_ENGINE} exec $container $command_to_exec
-  assert_output -r "$*"
+  assert_output --regexp "$*"
 }
 
 # wait for a container to produce a given text in its log

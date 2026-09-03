@@ -159,15 +159,15 @@ jobs:
       # made of the same commits, each of which came through a pull request that
       # ran this step.
       - name: Set up bats
+        id: bats
         if: matrix.platform == 'linux/amd64' && !fromJson(needs.prepare.outputs.push)
         uses: bats-core/bats-action@4.0.0
         with:
-          # Pinned so a local run and a CI run exercise the same bats. The
-          # assertion helpers live in test/lib, vendored, so the libraries this
-          # action can also install are not wanted here.
+          # Pinned so a local run and a CI run exercise the same bats and the
+          # same assertions; `make -C test deps` fetches these very tags.
           bats-version: 1.10.0
-          support-install: false
-          assert-install: false
+          support-version: 0.3.0
+          assert-version: 2.1.0
           detik-install: false
           file-install: false
 
@@ -178,6 +178,9 @@ jobs:
           DOCKER_IMAGE_VERSION: snapshot
           BATS_VARIANT: ${{ matrix.variant }}
           BATS_TARGET: ${{ matrix.target }}
+          # The action exposes the install location as a step output rather than
+          # exporting it, so the suites are handed it here.
+          BATS_LIB_PATH: ${{ steps.bats.outputs.lib-path }}
         run: |
           case "${BATS_VARIANT}" in
             cli)          suite=tests.cli.bats ;;

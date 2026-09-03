@@ -1,0 +1,4 @@
+# bats-support and bats-assert are fetched by `make -C test deps`, at the tags
+# pinned in the Makefile -- the same ones the CI job installs.
+/bats-support/
+/bats-assert/

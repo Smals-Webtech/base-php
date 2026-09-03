@@ -11,8 +11,13 @@
 load "helpers/tests"
 load "helpers/containers"
 
-load "lib/batslib"
-load "lib/output"
+# bats-support and bats-assert are resolved through BATS_LIB_PATH: the CI job
+# gets it from bats-core/bats-action, a local run from `make -C test deps`,
+# which clones the same pinned tags into test/lib.
+export BATS_LIB_PATH="${BATS_LIB_PATH:+${BATS_LIB_PATH}:}${BATS_TEST_DIRNAME%/}/lib"
+
+bats_load_library bats-support
+bats_load_library bats-assert
 
 source ${BATS_TEST_DIRNAME%/}/.env
 
@@ -93,19 +98,19 @@ teardown_file() {
 
 @test "[$TEST_FILE] php-fpm runs the expected PHP version" {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" '<?php echo PHP_VERSION;'
-  assert_output -l "${BATS_PHP_VERSION}"
+  assert_line "${BATS_PHP_VERSION}"
 }
 
 @test "[$TEST_FILE] php-fpm answers requests over FastCGI, not as source" {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" '<?php echo "executed";'
-  assert_output -l "executed"
+  assert_line "executed"
 }
 
 # Guards the php_admin_value regression: the pool file must not pin memory_limit,
 # or the two assertions below report 16M whatever php.ini and the environment say.
 @test "[$TEST_FILE] memory_limit through php-fpm is the php.ini default" {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" '<?php echo ini_get("memory_limit");'
-  assert_output -l "${BATS_PHP_MEMORY_LIMIT}"
+  assert_line "${BATS_PHP_MEMORY_LIMIT}"
 }
 
 @test "[$TEST_FILE] PHP_MEMORY_LIMIT reaches php-fpm" {
@@ -117,18 +122,18 @@ teardown_file() {
   # Nothing may run between `run` and the assertion: any command resets $output.
   # The container is removed in teardown_file.
   run web_php "${container}" "${port}" '<?php echo ini_get("memory_limit");'
-  assert_output -l "512M"
+  assert_line "512M"
 }
 
 @test "[$TEST_FILE] A request may allocate up to the configured limit" {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" \
     '<?php $b = str_repeat("x", 32 * 1024 * 1024); echo "allocated ", strlen($b);'
-  assert_output -l "allocated 33554432"
+  assert_line "allocated 33554432"
 }
 
 @test "[$TEST_FILE] expose_php stays off" {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" '<?php echo ini_get("expose_php") ? "on" : "off";'
-  assert_output -l "off"
+  assert_line "off"
 }
 
 @test "[$TEST_FILE] Xdebug is absent from a production image" {
@@ -136,7 +141,7 @@ teardown_file() {
 
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" \
     '<?php echo extension_loaded("xdebug") ? "loaded" : "absent";'
-  assert_output -l "absent"
+  assert_line "absent"
 }
 
 # The monitoring server declared the application docroot as its root and had no
@@ -147,7 +152,7 @@ teardown_file() {
   [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
 
   run web_status "${BATS_MONITORING_PORT}" /secret.php
-  assert_output -l "404"
+  assert_line "404"
 }
 
 @test "[$TEST_FILE] The monitoring port endpoints still answer" {
@@ -156,7 +161,7 @@ teardown_file() {
   local endpoint
   for endpoint in /healthcheck /metrics /vts-status /stub-status /real-time-status /status /ping; do
     run web_status "${BATS_MONITORING_PORT}" "${endpoint}"
-    assert_output -l "200"
+    assert_line "200"
   done
 }
 
@@ -166,26 +171,26 @@ teardown_file() {
   [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
 
   run web_status "${BATS_MONITORING_PORT}" /metricsfoo
-  assert_output -l "404"
+  assert_line "404"
 }
 
 @test "[$TEST_FILE] Dotfiles in the docroot are not served" {
   [ "${BATS_VARIANT}" = "nginx" ] || skip "the apache variant is covered once its own hardening lands"
 
   run web_status "${BATS_WEB_PORT}" /.env
-  assert_output -l "404"
+  assert_line "404"
 }
 
 @test "[$TEST_FILE] A file inside a dot directory is not served" {
   [ "${BATS_VARIANT}" = "nginx" ] || skip "the apache variant is covered once its own hardening lands"
 
   run web_status "${BATS_WEB_PORT}" /.git/config
-  assert_output -l "404"
+  assert_line "404"
 }
 
 @test "[$TEST_FILE] /.well-known keeps its normal handling" {
   [ "${BATS_VARIANT}" = "nginx" ] || skip "the apache variant is covered once its own hardening lands"
 
   run web_status "${BATS_WEB_PORT}" /.well-known/probe.txt
-  assert_output -l "200"
+  assert_line "200"
 }
