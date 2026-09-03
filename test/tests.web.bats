@@ -175,22 +175,40 @@ teardown_file() {
 }
 
 @test "[$TEST_FILE] Dotfiles in the docroot are not served" {
-  [ "${BATS_VARIANT}" = "nginx" ] || skip "the apache variant is covered once its own hardening lands"
-
   run web_status "${BATS_WEB_PORT}" /.env
   assert_line "404"
 }
 
 @test "[$TEST_FILE] A file inside a dot directory is not served" {
-  [ "${BATS_VARIANT}" = "nginx" ] || skip "the apache variant is covered once its own hardening lands"
-
   run web_status "${BATS_WEB_PORT}" /.git/config
   assert_line "404"
 }
 
 @test "[$TEST_FILE] /.well-known keeps its normal handling" {
-  [ "${BATS_VARIANT}" = "nginx" ] || skip "the apache variant is covered once its own hardening lands"
-
   run web_status "${BATS_WEB_PORT}" /.well-known/probe.txt
   assert_line "200"
+}
+
+# The docroot was browsable and the PHP front controller was not a DirectoryIndex
+# candidate, so / returned a listing of the application files instead of running
+# the application.
+@test "[$TEST_FILE] The document root is not browsable" {
+  ${BATS_CONTAINER_ENGINE} exec "${BATS_WEB_CONTAINER}" rm -f /app/var/www/html/index.html
+  web_put "${BATS_WEB_CONTAINER}" index.php <<<'<?php echo "front controller";'
+
+  run curl --silent --max-time 20 "http://127.0.0.1:${BATS_WEB_PORT}/"
+  assert_line "front controller"
+}
+
+@test "[$TEST_FILE] TRACE is refused" {
+  run curl --silent --output /dev/null --write-out '%{http_code}' --max-time 20 \
+    --request TRACE "http://127.0.0.1:${BATS_WEB_PORT}/"
+  refute_line "200"
+}
+
+# ServerTokens is Prod, so the error page footer must not disagree by printing
+# the server version and port.
+@test "[$TEST_FILE] Error pages carry no server signature" {
+  run curl --silent --max-time 20 "http://127.0.0.1:${BATS_WEB_PORT}/no-such-path"
+  refute_output --partial "<address>"
 }
