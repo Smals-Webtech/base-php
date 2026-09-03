@@ -63,8 +63,7 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
              /rootfs/app/var/tmp/fastcgi \
              /rootfs/app/var/tmp/uwsgi \
              /rootfs/app/var/tmp/proxy ; \
-    touch /rootfs/app/var/log/supervisord.log \
-          /rootfs/app/var/run/supervisord.pid \
+    touch /rootfs/app/var/run/supervisord.pid \
           /rootfs/app/var/cache/varnish/secret ;
 
 #

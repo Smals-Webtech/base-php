@@ -1,8 +1,13 @@
 [eventlistener:logrotate]
 command=/usr/local/bin/supervisord-event-listener.py /opt/config/sbin/logrotate.sh
 events=TICK_60
-autorestart=false
-stdout_logfile=/dev/stdout
-stdout_logfile_maxbytes=0
+
+; Rotation is the only thing standing between a long-lived container and a full
+; log volume; a listener that died once must not take it away for good. Matches
+; the fail-fast listener.
+autorestart=true
+; stdout is how an event listener talks to supervisor -- READY, RESULT -- so it
+; is not a log stream. Capturing it put a RESULT line in the container log on
+; every event. stderr is the listener's own output and stays.
 stderr_logfile=/dev/stderr
 stderr_logfile_maxbytes=0
