@@ -78,7 +78,7 @@ COPY --chown=1001:0 migrate.sh /opt/bin/container-entrypoint.d/10-migrate.sh
 
 Three things are worth knowing before writing one.
 
-**They run once per `/app/var` volume, not once per image.** A fingerprint of the hook file names
+**They run once per `/app/var` volume, not once per image.** A fingerprint of the hook filenames
 and their contents is written to `/app/var/lock/appinit`; the hooks re-run when that fingerprint
 changes, and are skipped otherwise. On an ephemeral volume — a `tmpfs`, or an `emptyDir` recreated
 with the pod — that means they run at every start. Helper files a hook sources are not part of the
