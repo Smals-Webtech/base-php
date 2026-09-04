@@ -158,7 +158,7 @@ If you need genuinely different policies per file, keep their paths disjoint fro
 | `LOGROTATE_DEFAULT_PATH`      | "/app/var/log/*.log"               | Glob of log files to rotate. Point it at whatever the application writes on the shared volume.           |
 | `LOGROTATE_DEFAULT_SIZE_LIMIT`| "50M"                              | Rotate a file once it grows past this size (`logrotate` `size` directive).                               |
 | `LOGROTATE_DEFAULT_RETENTION` | "5"                                | Number of rotated files to keep (`logrotate` `rotate` directive).                                       |
-| `LOGROTATE_DEFAULT_OPTIONS`   | "compress copytruncate missingok notifempty" | Space-separated `logrotate` directives applied to the stanza. Keep `copytruncate` on a read-only root filesystem. |
+| `LOGROTATE_DEFAULT_OPTIONS`   | "compress;copytruncate;missingok;notifempty" | `logrotate` directives applied to the stanza, separated by `;`. A directive keeps its argument: `maxage 7`, `olddir /app/var/log/old`. Keep `copytruncate` on a read-only root filesystem. The rendered stanza is validated at startup and the container refuses to boot if it is malformed. |
 
 ## 🐘 PHP Configuration
 
