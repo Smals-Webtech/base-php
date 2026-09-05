@@ -345,10 +345,19 @@ declare -A PHP_INI_DIRECTIVE_MAP=(
 # preserves the input order, so values map back to their variable by index.
 PHP_INI_DIRECTIVE_NAMES=("${!PHP_INI_DIRECTIVE_MAP[@]}")
 
+# The scan directory is neutralised for the probe. PHP_INI_SCAN_DIR points at
+# /opt/etc/php/conf.d, which is where this container renders its configuration,
+# so wherever /opt/etc outlives the container -- docker restart reuses the
+# anonymous volume behind VOLUME /opt/etc, a persistent claim keeps it across
+# pods -- an unqualified probe reads back the *previous* run's output instead of
+# the defaults it is meant to capture. A value set once then removed from the
+# environment would keep applying, silently, for the life of the volume.
+# Clearing the variable keeps php.ini and drops the rendered files, which is
+# exactly what this probe sees on a first boot.
 # shellcheck disable=SC2016  # the $name is PHP code, intentionally not expanded by the shell
 mapfile -d '' -t PHP_INI_DIRECTIVE_VALUES < <(
 	printf '%s\n' "${PHP_INI_DIRECTIVE_NAMES[@]}" |
-		php -r 'while (($name = fgets(STDIN)) !== false) { $name = rtrim($name, "\n"); if ($name === "") { continue; } echo (string) ini_get($name), "\0"; }'
+		PHP_INI_SCAN_DIR='' php -r 'while (($name = fgets(STDIN)) !== false) { $name = rtrim($name, "\n"); if ($name === "") { continue; } echo (string) ini_get($name), "\0"; }'
 )
 
 for _idx in "${!PHP_INI_DIRECTIVE_NAMES[@]}"; do

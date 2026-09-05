@@ -34,6 +34,10 @@ Runtime-writable directories:
 /opt/etc    → Middleware configuration (Apache, PHP-FPM, Supervisor, etc.)
 ```
 
+`/opt/etc` is regenerated from the templates on every start, so any file the image owns there is
+replaced; mount your own configuration under a name the image does not use (for PHP, anything other
+than `base-php-*.ini`) and it is preserved.
+
 This layout cleanly separates static and dynamic concerns:
 - the **base image remains immutable**,
 - all runtime configuration and state are confined to mounted volumes,

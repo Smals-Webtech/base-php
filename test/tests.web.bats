@@ -95,7 +95,10 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-failfast"
   container_clean "${BATS_WEB_CONTAINER}-init1"
   container_clean "${BATS_WEB_CONTAINER}-init2"
-  ${BATS_CONTAINER_ENGINE} volume rm -f "${BATS_WEB_CONTAINER}-lock" "${BATS_WEB_CONTAINER}-log" >/dev/null 2>&1 || true
+  container_clean "${BATS_WEB_CONTAINER}-etc1"
+  container_clean "${BATS_WEB_CONTAINER}-etc2"
+  ${BATS_CONTAINER_ENGINE} volume rm -f "${BATS_WEB_CONTAINER}-lock" "${BATS_WEB_CONTAINER}-log" \
+    "${BATS_WEB_CONTAINER}-etc" >/dev/null 2>&1 || true
 }
 
 @test "[$TEST_FILE] The container reports healthy" {
@@ -414,4 +417,32 @@ teardown_file() {
   run ${BATS_CONTAINER_ENGINE} exec "${BATS_WEB_CONTAINER}-init1" \
     sh -c 'grep -c ran /app/var/log/hook-runs.txt'
   assert_output "1"
+}
+
+# /opt/etc holds the rendered configuration, and PHP_INI_SCAN_DIR points at it,
+# so the entrypoint read its own previous output back as input. Where the volume
+# outlives the container, the extension_dir probe resolved to the symlink farm
+# the entrypoint itself builds, every extension symlink was recreated pointing
+# at itself, and PHP loaded none of them -- a "Symbolic link loop" per module on
+# stderr, with the container still starting and serving. An override taken out
+# of the environment kept applying from the same stale render.
+@test "[$TEST_FILE] A reused /opt/etc does not poison the PHP configuration" {
+  local -r etc="${BATS_WEB_CONTAINER}-etc"
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+
+  ${BATS_CONTAINER_ENGINE} volume create "${etc}" >/dev/null
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${BATS_WEB_CONTAINER}-etc1" \
+    --volume "${etc}:/opt/etc" --env PHP_MEMORY_LIMIT=512M "${image}" >/dev/null
+  container_wait_for_healthy "${BATS_WEB_CONTAINER}-etc1" 60 >/dev/null
+  ${BATS_CONTAINER_ENGINE} rm -f "${BATS_WEB_CONTAINER}-etc1" >/dev/null
+
+  # Same volume, no override: the second boot has to render from the image
+  # defaults rather than from what the first boot left behind.
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${BATS_WEB_CONTAINER}-etc2" \
+    --volume "${etc}:/opt/etc" "${image}" >/dev/null
+  container_wait_for_healthy "${BATS_WEB_CONTAINER}-etc2" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${BATS_WEB_CONTAINER}-etc2" \
+    php -r 'echo ini_get("memory_limit"), " apcu=", (int) extension_loaded("apcu");'
+  assert_line "128M apcu=1"
 }
