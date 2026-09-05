@@ -446,3 +446,18 @@ teardown_file() {
     php -r 'echo ini_get("memory_limit"), " apcu=", (int) extension_loaded("apcu");'
   assert_line "128M apcu=1"
 }
+
+# The wrapper that points the CLI at its rendered configuration used to be
+# written into /opt/sbin, a runtime volume. Mounted noexec -- a hardened
+# --read-only deployment -- execve on it fails with EACCES, the shell carries on
+# with its PATH search, and /usr/bin/aws runs unconfigured: every value reads
+# <not set> and nothing errors. `command -v aws` keeps naming the wrapper
+# throughout, so the region is what actually distinguishes the two.
+@test "[$TEST_FILE] The AWS wrapper survives a noexec /opt/sbin" {
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --tmpfs /opt/sbin:rw,noexec \
+    --entrypoint sh "${image}" -c \
+    '/usr/local/bin/container-entrypoint true >/dev/null 2>&1; aws configure list'
+  assert_line --regexp "^ *region *: us-east-1 *: config-file *: /opt/etc/aws/config *$"
+}

@@ -453,17 +453,23 @@ Requests arriving over a **Unix socket** are always allowed — reaching the soc
 ## ☁️ AWS CLI Configuration
 
 AWS CLI v2 is pre-installed in all variants. The entrypoint renders `/opt/etc/aws/config` and, when
-both keys are given, `/opt/etc/aws/credentials` — not `~/.aws`, which does not exist here — and the
-CLI is pointed at them through a wrapper on `PATH`. The credentials file is written `0600` and is
-removed when no keys are given, so the default credential chain (IAM role, instance metadata) is not
-shadowed by an empty profile.
+both keys are given, `/opt/etc/aws/credentials` — not `~/.aws`, which does not exist here. The
+credentials file is written `0600` and is removed when no keys are given, so the default credential
+chain (IAM role, instance metadata) is not shadowed by an empty profile. A wrapper baked into the
+image at `/usr/local/bin/aws` points the CLI at both files; it precedes `/usr/bin/aws` on `PATH` and
+reads its paths from `/opt/etc/aws/wrapper.env`, so it keeps working on a `--read-only` container
+whose writable mounts are `noexec`.
 
-> **The variables below reach the CLI, not your application.** The entrypoint unsets every variable
-> it resolved before handing over, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and
-> `AWS_DEFAULT_REGION` included, so an SDK inside your PHP code finds none of them and falls through
-> to the instance metadata endpoint. Pass credentials to the SDK yourself, point it at
-> `/opt/etc/aws/credentials`, or prefer a role: `AWS_ROLE_ARN` with `AWS_WEB_IDENTITY_TOKEN_FILE`
-> and `AWS_REGION` carry no defaults here and are therefore passed through untouched.
+> **The variables below configure the CLI, not your application — by design.** The entrypoint unsets
+> every variable it resolved before handing over, so no AWS credential is left in the environment of
+> your PHP process, where it would be readable through `phpinfo()`, a stack trace, `/proc/<pid>/environ`
+> or any child process. This applies to every variant, `cli` included. The CLI still works, because it
+> is configured through files rather than through the environment.
+>
+> For AWS access **from your application**, prefer a role — `AWS_ROLE_ARN` with
+> `AWS_WEB_IDENTITY_TOKEN_FILE` and `AWS_REGION` carry no defaults here and are therefore passed
+> through untouched — or read `/opt/etc/aws/credentials` yourself. `AWS_ENDPOINT_URL_S3` is passed
+> through in the same way.
 >
 > **Security note**: do not pass `AWS_ACCESS_KEY_ID` or `AWS_SECRET_ACCESS_KEY` as plain
 > environment variables in production. Prefer IAM instance roles, OIDC federation, or a secrets
@@ -473,8 +479,9 @@ shadowed by an empty profile.
 |----------------------|---------|-------------|
 | `AWS_ACCESS_KEY_ID` | `""` | AWS access key ID. |
 | `AWS_SECRET_ACCESS_KEY` | `""` | AWS secret access key. |
-| `AWS_DEFAULT_REGION` | `us-east-1` | Default AWS region for CLI commands. |
-| `AWS_PROFILE` | `default` | Name of the profile section written to the rendered files. Only `[default]` is produced, so setting this changes nothing today. |
+| `AWS_SESSION_TOKEN` | `""` | Session token for temporary credentials (STS, `assume-role`). Rendered alongside the two keys; without it temporary credentials are rejected. |
+| `AWS_DEFAULT_REGION` | `us-east-1` | Region written to the rendered config file. Defaults to `AWS_REGION` when that is set, so passing either one is enough. |
+| `AWS_PROFILE` | `default` | Name of the profile section written to the rendered files, and the profile the wrapper selects. |
 | `AWS_DEFAULT_OUTPUT` | `json` | Default output format (`json`, `text`, `table`). |
 | `AWS_CONFIG_FILE` | `/opt/etc/aws/config` | Path to the generated AWS config file. |
 | `AWS_SHARED_CREDENTIALS_FILE` | `/opt/etc/aws/credentials` | Path to the generated AWS credentials file. |

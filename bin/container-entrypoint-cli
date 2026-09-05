@@ -10,6 +10,7 @@ source /usr/local/bin/container-entrypoint.d/entrypoint.d/00-functions.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/00-php.default.values.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/00-php.ini.values.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/01-php.sh
+source /usr/local/bin/container-entrypoint.d/entrypoint.d/60-aws-config.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/99-export-vars.sh
 
 log "INFO" "  ____                   ____  _   _ ____   "
@@ -24,6 +25,11 @@ log "INFO" "                                            "
 log "INFO" "+---- Configure PHP Container -----"
 
 source /usr/local/bin/container-entrypoint.d/base.d/01-php.sh
+# The AWS CLI ships in every variant, and a cli container is the likeliest place
+# to run it. Without these two the variant had no rendered configuration and no
+# wrapper -- and, because nothing registered the variables for cleanup, the raw
+# AWS_* reached the process, the opposite of the policy the web variants apply.
+source /usr/local/bin/container-entrypoint.d/base.d/60-aws-config.sh
 source /usr/local/bin/container-entrypoint.d/base.d/99-cleanup-vars.sh
 
 log "INFO" "+---- PHP Container configured successfully -----"

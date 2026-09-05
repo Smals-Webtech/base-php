@@ -1,3 +1,4 @@
-[default]
+{{/* The CLI names the default profile [default] and every other one [profile x]. */ -}}
+{{ if eq .Env.AWS_PROFILE "default" }}[default]{{ else }}[profile {{ .Env.AWS_PROFILE }}]{{ end }}
 region={{ .Env.AWS_DEFAULT_REGION }}
 output={{ .Env.AWS_DEFAULT_OUTPUT }}

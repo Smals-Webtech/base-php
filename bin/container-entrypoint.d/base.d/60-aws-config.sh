@@ -32,12 +32,15 @@ else
 
 fi
 
-log "INFO" "- Setup AWS Wrapper Script ..."
+log "INFO" "- Setup AWS Wrapper Configuration ..."
 
-apply-template /opt/config/sbin/aws.tmpl /opt/sbin/aws.sh
+# The wrapper itself is baked into the image at /usr/local/bin/aws; see the
+# comment there for why it cannot live on a runtime volume. All that is rendered
+# here is the data it reads, which needs no execute permission.
+apply-template /opt/config/aws/wrapper.env.tmpl /opt/etc/aws/wrapper.env
 
-chmod +x /opt/sbin/aws.sh
-
-create-symlink /opt/sbin/aws /opt/sbin/aws.sh
+# /opt/sbin precedes /usr/local/bin on PATH, so a wrapper left there by an older
+# image would still win on a reused /opt/etc-style volume. Remove it.
+rm -f /opt/sbin/aws /opt/sbin/aws.sh
 
 true
