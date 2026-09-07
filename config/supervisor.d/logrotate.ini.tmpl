@@ -1,5 +1,5 @@
 [eventlistener:logrotate]
-command=/usr/local/bin/supervisord-event-listener.py /opt/config/sbin/logrotate.sh
+command=/usr/local/bin/supervisord-event-listener.py /opt/sbin/logrotate.sh
 events=TICK_60
 
 ; Rotation is the only thing standing between a long-lived container and a full

@@ -10,6 +10,14 @@ for FILE in $(find /usr/local/bin/container-entrypoint.d/entrypoint.d -iname \*.
 	source "${FILE}"
 done
 
+# Checked before anything is rendered, so a missing mount names every path at
+# once instead of surfacing one at a time as the boot proceeds. /opt/sbin is
+# tested for execution too: it holds the rendered scripts supervisor runs.
+require-writable /opt/etc
+require-writable /app/var
+require-writable /app/tmp
+require-executable /opt/sbin
+
 log "INFO" "  ____                   ____  _   _ ____   "
 log "INFO" " | __ )  __ _ ___  ___  |  _ \| | | |  _ \  "
 log "INFO" " |  _ \ / _\` / __|/ _ \ | |_) | |_| | |_) | "

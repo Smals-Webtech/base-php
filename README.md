@@ -25,14 +25,51 @@ All immutable application code and static assets are baked into the image at bui
 /opt/config → Static configuration templates (build-time)
 ```
 
-Runtime-writable directories:
+Runtime-writable directories, which **the caller must provide**:
 
 ```text
 /app/var    → Application runtime data (cache, logs, sessions, PIDs)
 /app/tmp    → Temporary files
-/opt/sbin   → Auto-generated executable scripts created at startup
+/opt/sbin   → Executable scripts rendered at startup (must be mounted `exec`)
 /opt/etc    → Middleware configuration (Apache, PHP-FPM, Supervisor, etc.)
 ```
+
+The image declares no `VOLUME` for them. A `VOLUME` is inherited by every child image and cannot be
+removed, and anything a child image writes to such a path **during its build is silently discarded** —
+a `RUN php bin/console cache:warmup` under `/app/var` would lose its files without an error. Dropping
+the declarations means an image built on this one is free to write there at build time.
+
+In exchange the paths are yours to mount. The entrypoint checks them before rendering anything and
+refuses to start, naming each unusable path, rather than failing halfway through:
+
+```bash
+docker run --read-only \
+  --tmpfs /opt/etc --tmpfs /opt/sbin:exec --tmpfs /app/var --tmpfs /app/tmp \
+  smalswebtech/base-php:latest-nginx
+```
+
+On Kubernetes and OpenShift, mount an `emptyDir` at each path — `VOLUME` was never honoured there in
+any case. The `cli` variant runs no supervisor and needs only `/opt/etc` and `/app/tmp`. Without
+`--read-only` nothing has to be mounted at all: the writes land in the container layer.
+
+### Adding your own startup scripts
+
+`/opt/config/sbin` is the extension point. Mount a `.tmpl` there and the entrypoint renders it with
+the resolved environment and makes it executable in `/opt/sbin`:
+
+```text
+/opt/config/sbin/my-job.sh.tmpl   →   /opt/sbin/my-job.sh   (executable)
+```
+
+That is how the image renders its own supervised scripts, so anything you add is treated identically.
+This is also why `/opt/sbin` must be mounted `exec`: a `noexec` mount makes `execve` fail with
+`EACCES`, and a shell then quietly falls through to the next `PATH` entry rather than reporting an
+error. The entrypoint refuses such a mount at startup.
+
+Scripts that must exist in **every** variant — the `aws` wrapper, which shadows `/usr/bin/aws` on
+`PATH` — are baked into `/usr/local/bin` instead, since the `cli` variant has no reason to mount
+`/opt/sbin` at all. The rule: `/opt/sbin` carries what supervisor runs, `/usr/local/bin` carries the
+`PATH` shims.
 
 `/opt/etc` is regenerated from the templates on every start, so any file the image owns there is
 replaced; mount your own configuration under a name the image does not use (for PHP, anything other
@@ -40,7 +77,7 @@ than `base-php-*.ini`) and it is preserved.
 
 This layout cleanly separates static and dynamic concerns:
 - the **base image remains immutable**,
-- all runtime configuration and state are confined to mounted volumes,
+- all runtime configuration and state are confined to the mounts listed above,
 - allowing the container to run entirely in **read-only mode** with predictable behavior.
 
 ## ⚙️ Container startup design

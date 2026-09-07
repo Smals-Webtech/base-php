@@ -126,8 +126,8 @@ RUN set -eux ; \
 
 RUN install-php-extensions ${PHP_EXT_INSTALL}
 
-COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/opt/ /opt/
-COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/app/ /app/
+COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
+COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/
 COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
 
 ENV PYTHONWARNINGS="ignore" \
@@ -137,11 +137,6 @@ ENV PYTHONWARNINGS="ignore" \
     PATH=/opt/bin:/opt/sbin:/usr/local/bin:/usr/bin:$PATH
 
 WORKDIR /app
-
-VOLUME /opt/sbin
-VOLUME /opt/etc
-VOLUME /app/var
-VOLUME /app/tmp
 
 USER 1001
 
@@ -287,8 +282,8 @@ RUN set eux; \
 
 RUN install-php-extensions ${PHP_EXT_INSTALL}
 
-COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/opt/ /opt/
-COPY --from=builder --chmod=777 --chown=1001:0 /rootfs/app/ /app/
+COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
+COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/
 COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
 
 ENV PYTHONWARNINGS="ignore" \

@@ -97,6 +97,9 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-init2"
   container_clean "${BATS_WEB_CONTAINER}-etc1"
   container_clean "${BATS_WEB_CONTAINER}-etc2"
+  container_clean "${BATS_WEB_CONTAINER}-ro"
+  container_clean "${BATS_WEB_CONTAINER}-plain"
+  container_clean "${BATS_WEB_CONTAINER}-mounts"
   ${BATS_CONTAINER_ENGINE} volume rm -f "${BATS_WEB_CONTAINER}-lock" "${BATS_WEB_CONTAINER}-log" \
     "${BATS_WEB_CONTAINER}-etc" >/dev/null 2>&1 || true
 }
@@ -270,7 +273,7 @@ teardown_file() {
     --env "LOGROTATE_DEFAULT_SIZE_LIMIT=1k")"
 
   ${BATS_CONTAINER_ENGINE} exec "${container}" sh -c \
-    'head -c 4096 /dev/zero | tr "\0" "x" > /app/var/log/rotate-me.log; /opt/config/sbin/logrotate.sh'
+    'head -c 4096 /dev/zero | tr "\0" "x" > /app/var/log/rotate-me.log; /opt/sbin/logrotate.sh'
 
   run ${BATS_CONTAINER_ENGINE} exec "${container}" test -f /app/var/log/rotate-me.log.1.gz
   assert_success
@@ -447,17 +450,128 @@ teardown_file() {
   assert_line "128M apcu=1"
 }
 
-# The wrapper that points the CLI at its rendered configuration used to be
-# written into /opt/sbin, a runtime volume. Mounted noexec -- a hardened
-# --read-only deployment -- execve on it fails with EACCES, the shell carries on
-# with its PATH search, and /usr/bin/aws runs unconfigured: every value reads
-# <not set> and nothing errors. `command -v aws` keeps naming the wrapper
-# throughout, so the region is what actually distinguishes the two.
-@test "[$TEST_FILE] The AWS wrapper survives a noexec /opt/sbin" {
+# The wrapper that points the CLI at its rendered configuration is baked into
+# the image, not written to a runtime path: it has to shadow /usr/bin/aws in
+# every variant, including cli, which mounts no /opt/sbin at all. It used to
+# live in /opt/sbin, where a noexec mount made execve fail with EACCES while the
+# shell quietly carried on with its PATH search and ran /usr/bin/aws
+# unconfigured. That mount is now refused outright at startup -- see "A noexec
+# /opt/sbin is refused at startup" -- so what is asserted here is the property
+# that made the move worthwhile: the wrapper is image content, and it is the one
+# that runs.
+@test "[$TEST_FILE] The AWS wrapper is image content, not a rendered file" {
   local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
 
-  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --tmpfs /opt/sbin:rw,noexec \
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --read-only \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
     --entrypoint sh "${image}" -c \
-    '/usr/local/bin/container-entrypoint true >/dev/null 2>&1; aws configure list'
+    '/usr/local/bin/container-entrypoint true >/dev/null 2>&1; command -v aws; aws configure list'
+  assert_line "/usr/local/bin/aws"
   assert_line --regexp "^ *region *: us-east-1 *: config-file *: /opt/etc/aws/config *$"
+}
+
+# The image used to declare VOLUME for its four runtime paths. A VOLUME is
+# inherited and cannot be removed by a child image, and anything a child writes
+# to such a path during its build is silently discarded -- a cache warmup under
+# /app/var would lose its files without an error.
+@test "[$TEST_FILE] The image declares no VOLUME" {
+  run ${BATS_CONTAINER_ENGINE} image inspect \
+    --format '{{if .Config.Volumes}}{{range $k,$_ := .Config.Volumes}}{{$k}} {{end}}{{else}}none{{end}}' \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_output "none"
+}
+
+# Without the declarations a read-only container gets no anonymous volume, so an
+# unusable path has to be reported at startup rather than surfacing halfway
+# through the boot as a confusing render failure.
+@test "[$TEST_FILE] A read-only container without mounts refuses to start" {
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --read-only \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "/opt/etc is not writable"
+  assert_output --partial "--tmpfs /opt/etc"
+}
+
+@test "[$TEST_FILE] A read-only container with the documented mounts is healthy" {
+  local -r name="${BATS_WEB_CONTAINER}-ro"
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} inspect -f '{{.State.Health.Status}}' "${name}"
+  assert_output "healthy"
+}
+
+# /opt/sbin holds rendered scripts. A noexec mount reports nothing on its own:
+# execve returns EACCES and the shell quietly moves on to the next PATH entry,
+# which is how log rotation would stop without a single error line.
+@test "[$TEST_FILE] A noexec /opt/sbin is refused at startup" {
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --read-only \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,noexec --tmpfs /app/var --tmpfs /app/tmp \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "/opt/sbin is mounted noexec"
+}
+
+# /opt/config/sbin is the extension point: a mounted template is rendered with
+# the resolved environment and made executable, the same way the image renders
+# its own supervised scripts.
+@test "[$TEST_FILE] A template mounted in /opt/config/sbin becomes an executable" {
+  local -r tmpl="${BATS_TEST_TMPDIR}/my-job.sh.tmpl"
+
+  printf '#!/bin/sh\necho region={{ .Env.AWS_DEFAULT_REGION }}\n' >"${tmpl}"
+
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm \
+    --volume "${tmpl}:/opt/config/sbin/my-job.sh.tmpl:ro" \
+    --entrypoint sh "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" -c \
+    '/usr/local/bin/container-entrypoint true >/dev/null 2>&1; /opt/sbin/my-job.sh'
+  assert_output "region=us-east-1"
+}
+
+# The image shipped everything under /opt and /app world-writable, files
+# included -- every configuration template and every hook. The runtime user is
+# 1001:0 and an arbitrary uid still lands in group 0, so group write is enough.
+@test "[$TEST_FILE] Nothing under /opt or /app is world-writable" {
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint sh \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" -c \
+    'find /opt /app -perm -o+w 2>/dev/null | wc -l'
+  assert_output "0"
+}
+
+# The common case, and the one the VOLUME declarations used to serve: a plain
+# docker run. Nothing has to be mounted -- the writes land in the container
+# layer. Against an image that still declares the volumes, /opt/etc shows up in
+# /proc/mounts as the anonymous volume backing it, which is what this asserts is
+# gone.
+@test "[$TEST_FILE] A container without --read-only and without mounts is healthy" {
+  local -r name="${BATS_WEB_CONTAINER}-plain"
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" "${image}" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c \
+    'echo "separate_mounts=$(grep -c " /opt/etc " /proc/mounts)"; test -f /opt/etc/php/conf.d/base-php-core.ini && echo rendered'
+  assert_line "separate_mounts=0"
+  assert_line "rendered"
+}
+
+# Mounts without --read-only: what a compose file that wants the runtime state
+# on a tmpfs or a named volume looks like, short of a fully hardened container.
+# The rendered configuration has to land in the mount, not in the layer beneath.
+@test "[$TEST_FILE] A container without --read-only but with mounts is healthy" {
+  local -r name="${BATS_WEB_CONTAINER}-mounts"
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
+    "${image}" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c \
+    'echo "type=$(grep " /opt/etc " /proc/mounts | cut -d" " -f3)"; test -f /opt/etc/php/conf.d/base-php-core.ini && echo rendered'
+  assert_line "type=tmpfs"
+  assert_line "rendered"
 }

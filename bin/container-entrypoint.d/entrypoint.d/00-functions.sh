@@ -36,6 +36,64 @@ function log {
 
 }
 
+# The four runtime paths this image writes to used to be declared as VOLUME, so
+# a plain `docker run --read-only` got an anonymous volume for each and always
+# worked. The declarations are gone -- they are inherited, cannot be removed by
+# a child image, and silently discard anything a child writes to those paths at
+# build time -- so the caller now provides the mounts, and an unusable path has
+# to say so loudly instead of failing halfway through the boot.
+function _mount-hint {
+
+	log "ERROR" "! docker:     add --tmpfs /opt/etc --tmpfs /opt/sbin:exec --tmpfs /app/var --tmpfs /app/tmp"
+	log "ERROR" "! Kubernetes: mount an emptyDir at each path."
+
+}
+
+# A real write rather than `[ -w ]`, which reports success for root even on a
+# read-only mount.
+function require-writable {
+
+	local dir=$1
+	local probe="${dir}/.wcmtech-writable-$$"
+
+	mkdir -p "$dir" 2>/dev/null
+
+	if ! (: >"$probe") 2>/dev/null; then
+		log "ERROR" "! ${dir} is not writable."
+		log "ERROR" "! This image renders its runtime state there and no longer declares a VOLUME for it."
+		_mount-hint
+		return 1
+	fi
+
+	rm -f "$probe"
+
+}
+
+# /opt/sbin holds scripts, so it has to be executable and not merely writable. A
+# noexec mount reports nothing: execve returns EACCES and the shell quietly
+# carries on with its PATH search, which is how a wrapper on that path was being
+# bypassed without a single error line. Refuse it at boot instead.
+function require-executable {
+
+	local dir=$1
+	local probe="${dir}/.wcmtech-executable-$$"
+
+	require-writable "$dir" || return 1
+
+	printf '#!/bin/sh\nexit 0\n' >"$probe"
+	chmod +x "$probe" 2>/dev/null
+
+	if ! "$probe" 2>/dev/null; then
+		rm -f "$probe"
+		log "ERROR" "! ${dir} is mounted noexec, and this image renders scripts there."
+		log "ERROR" "! Mount it executable, e.g. --tmpfs ${dir}:rw,exec"
+		return 1
+	fi
+
+	rm -f "$probe"
+
+}
+
 function apply-template {
 
 	SRC=$1
@@ -45,13 +103,9 @@ function apply-template {
 	if [ -f "$SRC" ]; then
 
 		if [[ "$SRC" == *.tmpl ]]; then
-			if [ -d "$(dirname "$DEST")" ] && [ -w "$(dirname "$DEST")" ]; then
-				log "INFO" "  Rendering template: $SRC → $DEST"
-				gomplate -f "$SRC" -o "$DEST"
-			else
-				log "ERROR" "! Write permission is NOT granted on $(dirname "$DEST") ."
-				return 1
-			fi
+			require-writable "$(dirname "$DEST")" || return 1
+			log "INFO" "  Rendering template: $SRC → $DEST"
+			gomplate -f "$SRC" -o "$DEST"
 		else
 			log "ERROR" "! File $SRC is not a .tmpl file."
 			return 1
@@ -64,15 +118,23 @@ function apply-template {
 			log "ERROR" "! $DEST is not a directory."
 			return 1
 		fi
-		if [ ! -w "$DEST" ]; then
-			log "ERROR" "! Write permission is NOT granted on $DEST ."
-			return 1
-		fi
+		require-writable "$DEST" || return 1
+
+		# Without nullglob an empty directory leaves the pattern literal and
+		# gomplate is handed a path that does not exist. /opt/config/sbin is
+		# exactly that case: the image may ship no template there at all, and
+		# everything in it comes from whoever mounts one.
+		local had_nullglob=1
+		shopt -q nullglob || had_nullglob=0
+		shopt -s nullglob
+
 		for f in "$SRC"/*.tmpl; do
 			ff=$(basename "$f")
 			log "INFO" "  Rendering template: $f → $DEST/${ff%.tmpl}"
 			gomplate -f "$f" -o "$DEST/${ff%.tmpl}"
 		done
+
+		[ "$had_nullglob" -eq 1 ] || shopt -u nullglob
 
 	else
 		log "ERROR" "! $SRC is neither a tmpl file nor a directory."
