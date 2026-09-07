@@ -58,7 +58,7 @@ services:
     env_file:
       - ../.env
     command:
-      - "--scrape_uri=http://prime:9000/server-status/?auto"
+      - "--scrape_uri=http://prime:9090/server-status/?auto"
       - "--host_override=default.localhost"     
     depends_on:
       prime:

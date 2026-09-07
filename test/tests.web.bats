@@ -103,6 +103,7 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-hook0"
   container_clean "${BATS_WEB_CONTAINER}-hooklock"
   container_clean "${BATS_WEB_CONTAINER}-hookenv"
+  container_clean "${BATS_WEB_CONTAINER}-port"
   ${BATS_CONTAINER_ENGINE} volume rm -f "${BATS_WEB_CONTAINER}-lock" "${BATS_WEB_CONTAINER}-log" \
     "${BATS_WEB_CONTAINER}-etc" >/dev/null 2>&1 || true
 }
@@ -164,17 +165,23 @@ teardown_file() {
 # handler -- returning PHP as source, and outside the MONITORING_ALLOW check,
 # which guards the named locations only.
 @test "[$TEST_FILE] The monitoring port serves no application file" {
-  [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
-
   run web_status "${BATS_MONITORING_PORT}" /secret.php
   assert_line "404"
 }
 
 @test "[$TEST_FILE] The monitoring port endpoints still answer" {
-  [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
+  local endpoint endpoints
 
-  local endpoint
-  for endpoint in /healthcheck /metrics /vts-status /stub-status /real-time-status /status /ping; do
+  # The two web servers expose different sets: the nginx ones come from VTS and
+  # the stub-status module, apache's from mod_status. What both must satisfy is
+  # that every endpoint they do publish answers on the monitoring port.
+  case "${BATS_VARIANT}" in
+    nginx)  endpoints="/healthcheck /metrics /vts-status /stub-status /real-time-status /status /ping" ;;
+    apache) endpoints="/server-status /status /real-time-status" ;;
+    *)      skip "no monitoring port on the ${BATS_VARIANT} variant" ;;
+  esac
+
+  for endpoint in ${endpoints}; do
     run web_status "${BATS_MONITORING_PORT}" "${endpoint}"
     assert_line "200"
   done
@@ -183,8 +190,6 @@ teardown_file() {
 # A prefix match answered on /metricsfoo and resolved any path under the
 # /real-time-status alias.
 @test "[$TEST_FILE] The monitoring endpoints are exact paths" {
-  [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
-
   run web_status "${BATS_MONITORING_PORT}" /metricsfoo
   assert_line "404"
 }
@@ -365,7 +370,7 @@ teardown_file() {
 # add_header appends, so these locations answered with the Content-Type nginx had
 # already set plus the one they added.
 @test "[$TEST_FILE] Responses carry a single Content-Type" {
-  [ "${BATS_VARIANT}" = "nginx" ] || skip "only the nginx variant has a separate monitoring port"
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "the /healthcheck endpoint is nginx-only"
 
   run bash -c "curl --silent --head --max-time 20 http://127.0.0.1:${BATS_MONITORING_PORT}/healthcheck | grep -ci '^content-type'"
   assert_output "1"
@@ -655,4 +660,50 @@ teardown_file() {
 
   run web_php "${name}" "${port}" '<?php echo getenv("HOOK_INJECTED") ?: "(absent)";'
   assert_line "(absent)"
+}
+
+# The endpoints used to live in the application vhost, on the port a Route or a
+# Service publishes. MONITORING_ALLOW could not protect them there: behind a
+# router the address the server sees is the router's, which is private and so
+# matches the list -- every request from the internet did too. Measured on
+# 8.5.9-apache from outside the container: /server-status, /status and
+# /real-time-status all answered 200.
+@test "[$TEST_FILE] The application port serves no monitoring endpoint" {
+  local endpoint
+
+  for endpoint in /server-status /status /real-time-status; do
+    run web_status "${BATS_WEB_PORT}" "${endpoint}"
+    assert_line "404"
+  done
+}
+
+# Both listen ports are knobs now. A port knob that reached no template would
+# behave exactly like the default and go unnoticed, which is how six inert knobs
+# survived in this image until they were measured -- so this asserts the new
+# port answers and the default one no longer does.
+@test "[$TEST_FILE] The monitoring listen port is configurable" {
+  local -r name="${BATS_WEB_CONTAINER}-port"
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  local var port
+
+  case "${BATS_VARIANT}" in
+    nginx)  var=NGINX_MONITORING_LISTEN ;;
+    apache) var=APACHE_MONITORING_LISTEN ;;
+    *)      skip "no monitoring port on the ${BATS_VARIANT} variant" ;;
+  esac
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+    --publish 127.0.0.1::8090 --publish 127.0.0.1::9090 \
+    --env "${var}=8090" "${image}" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  port="$(${BATS_CONTAINER_ENGINE} port "${name}" 8090/tcp | head -1 | sed 's/.*://')"
+  run web_status "${port}" /status
+  assert_line "200"
+
+  # Nothing is listening on the default any more, so the connection fails and
+  # curl reports 000 rather than a status code.
+  port="$(${BATS_CONTAINER_ENGINE} port "${name}" 9090/tcp | head -1 | sed 's/.*://')"
+  run web_status "${port}" /status
+  refute_line "200"
 }

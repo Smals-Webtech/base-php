@@ -1,6 +1,7 @@
 ServerTokens {{.Env.APACHE_SERVER_TOKENS}}
 ServerRoot {{.Env.APACHE_SERVER_ROOT}}
 Listen {{.Env.APACHE_LISTEN}}
+Listen {{.Env.APACHE_MONITORING_LISTEN}}
 
 LoadModule authn_file_module modules/mod_authn_file.so
 LoadModule authn_core_module modules/mod_authn_core.so
