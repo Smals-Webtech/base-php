@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+
+# Wrapper for the AWS CLI.
+#
+# This image deliberately keeps the AWS_* variables out of the application
+# environment: 99-cleanup-vars.sh unsets everything the entrypoint resolved, so
+# no credential ever reaches the PHP process. The CLI is configured through
+# files instead, and this wrapper is what points it at them.
+#
+# It is baked into the image rather than rendered into /opt/sbin, because that
+# path is a runtime volume. Mounted noexec -- a hardened --read-only
+# deployment -- execve on a rendered wrapper fails with EACCES, the shell
+# silently carries on with its PATH search, and /usr/bin/aws runs with no
+# configuration at all: `aws configure list` reports every value as <not set>
+# and nothing errors. /usr/local/bin is image content and still precedes
+# /usr/bin on PATH, so the wrapper cannot be skipped that way.
+#
+# The configurable part is a data file the entrypoint renders. Reading it needs
+# no execute permission, so a noexec mount cannot disable it either.
+
+set -euo pipefail
+
+# Defaults for the case where the entrypoint has not run -- `docker run
+# --entrypoint sh`, or a container started from an image built before the
+# rendered file existed. They match the documented defaults of the two knobs.
+AWS_CONFIG_FILE="/opt/etc/aws/config"
+AWS_SHARED_CREDENTIALS_FILE="/opt/etc/aws/credentials"
+AWS_PROFILE="default"
+
+AWS_WRAPPER_ENV="${AWS_WRAPPER_ENV:-/opt/etc/aws/wrapper.env}"
+
+if [ -r "$AWS_WRAPPER_ENV" ]; then
+	# shellcheck source=/dev/null
+	. "$AWS_WRAPPER_ENV"
+fi
+
+export AWS_CONFIG_FILE AWS_SHARED_CREDENTIALS_FILE AWS_PROFILE
+
+# exec replaces this process, so the exports above reach the CLI and nothing
+# else -- no subshell needed to contain them.
+exec /usr/bin/aws "$@"

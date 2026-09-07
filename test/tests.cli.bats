@@ -62,3 +62,50 @@ teardown_file() {
   run_cli "${BATS_CLI_IMAGE}" gh --version
   assert_line --regexp "^gh version [0-9]+\.[0-9]+\.[0-9]+ \([^)]+\)$"
 }
+
+# The cli variant sourced no AWS script at all: no rendered configuration, no
+# wrapper -- and, because nothing registered the variables for cleanup, the raw
+# AWS_* reached the process. That is the opposite of what the web variants do,
+# in the variant most likely to actually run `aws`.
+@test "[$TEST_FILE] The cli variant renders the AWS configuration" {
+  run_cli "${BATS_CLI_IMAGE}" sh -c 'command -v aws; ls /opt/etc/aws'
+  assert_line "/usr/local/bin/aws"
+  assert_line "config"
+  assert_line "wrapper.env"
+}
+
+# The policy this image applies on purpose: the CLI is configured through files,
+# so no AWS credential is left in the environment the application runs in.
+@test "[$TEST_FILE] AWS credentials never reach the application environment" {
+  run_cli \
+    -e AWS_ACCESS_KEY_ID=AKIAEXAMPLE \
+    -e AWS_SECRET_ACCESS_KEY=secret \
+    -e AWS_SESSION_TOKEN=FwoGZXIvEXAMPLE \
+    "${BATS_CLI_IMAGE}" \
+    sh -c 'echo "id=${AWS_ACCESS_KEY_ID:-unset} secret=${AWS_SECRET_ACCESS_KEY:-unset} token=${AWS_SESSION_TOKEN:-unset}"'
+  assert_line "id=unset secret=unset token=unset"
+}
+
+# Temporary credentials (STS, assume-role) are rejected without their session
+# token, and the credentials template rendered only the two long-term keys.
+@test "[$TEST_FILE] Temporary credentials are rendered with their session token" {
+  run_cli \
+    -e AWS_ACCESS_KEY_ID=ASIAEXAMPLE \
+    -e AWS_SECRET_ACCESS_KEY=secret \
+    -e AWS_SESSION_TOKEN=FwoGZXIvEXAMPLE \
+    "${BATS_CLI_IMAGE}" sh -c 'cat /opt/etc/aws/credentials'
+  assert_line "aws_session_token=FwoGZXIvEXAMPLE"
+}
+
+# Both templates used to hard-code [default], so a named profile produced files
+# the CLI could not find. The config file prefixes every non-default profile
+# with "profile", the credentials file never does.
+@test "[$TEST_FILE] A named AWS profile is honoured" {
+  run_cli \
+    -e AWS_PROFILE=ci \
+    -e AWS_ACCESS_KEY_ID=AKIAEXAMPLE \
+    -e AWS_SECRET_ACCESS_KEY=secret \
+    "${BATS_CLI_IMAGE}" sh -c 'cat /opt/etc/aws/config /opt/etc/aws/credentials'
+  assert_line "[profile ci]"
+  assert_line "[ci]"
+}
