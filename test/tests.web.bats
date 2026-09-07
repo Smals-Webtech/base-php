@@ -100,6 +100,9 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-ro"
   container_clean "${BATS_WEB_CONTAINER}-plain"
   container_clean "${BATS_WEB_CONTAINER}-mounts"
+  container_clean "${BATS_WEB_CONTAINER}-hook0"
+  container_clean "${BATS_WEB_CONTAINER}-hooklock"
+  container_clean "${BATS_WEB_CONTAINER}-hookenv"
   ${BATS_CONTAINER_ENGINE} volume rm -f "${BATS_WEB_CONTAINER}-lock" "${BATS_WEB_CONTAINER}-log" \
     "${BATS_WEB_CONTAINER}-etc" >/dev/null 2>&1 || true
 }
@@ -574,4 +577,82 @@ teardown_file() {
     'echo "type=$(grep " /opt/etc " /proc/mounts | cut -d" " -f3)"; test -f /opt/etc/php/conf.d/base-php-core.ini && echo rendered'
   assert_line "type=tmpfs"
   assert_line "rendered"
+}
+
+# Late hooks used to be sourced into the entrypoint's own shell. Ending a script
+# with `exit 0` is a common habit, and it terminated the entrypoint before it
+# could exec supervisord: the container stopped with exit code 0, so nothing
+# reported an error and restart-on-failure never fired.
+@test "[$TEST_FILE] A hook ending in exit 0 does not stop the container" {
+  local -r name="${BATS_WEB_CONTAINER}-hook0"
+  local -r hook="${BATS_TEST_TMPDIR}/10-exit0.sh"
+
+  printf '#!/bin/bash\necho "hook: doing my init"\nexit 0\n' >"${hook}"
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+    --volume "${hook}:/opt/bin/container-entrypoint.d/10-exit0.sh:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} logs "${name}"
+  assert_output --partial "hook: doing my init"
+  assert_output --partial "10-exit0.sh done"
+}
+
+# A hook that fails still stops the boot -- that has not changed, and should not:
+# a failed migration must not lead to a serving container. What changed is that
+# the log now says which hook it was and what it returned.
+@test "[$TEST_FILE] A failing hook stops the boot and is named" {
+  local -r hook="${BATS_TEST_TMPDIR}/10-fail.sh"
+
+  printf '#!/bin/bash\necho "hook: about to fail"\nexit 3\n' >"${hook}"
+
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm \
+    --volume "${hook}:/opt/bin/container-entrypoint.d/10-fail.sh:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "10-fail.sh exited with 3"
+}
+
+# Sourcing put the hooks in this script's variable scope, so a hook assigning
+# APP_INIT_LOCK sent the run-once fingerprint somewhere else and left the real
+# marker unwritten -- which silently re-ran every hook on every start.
+@test "[$TEST_FILE] A hook cannot redirect the run-once marker" {
+  local -r name="${BATS_WEB_CONTAINER}-hooklock"
+  local -r hook="${BATS_TEST_TMPDIR}/10-clobber.sh"
+
+  printf '#!/bin/bash\nAPP_INIT_LOCK=/tmp/hijacked\necho "hook ran"\n' >"${hook}"
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+    --volume "${hook}:/opt/bin/container-entrypoint.d/10-clobber.sh:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  ${BATS_CONTAINER_ENGINE} restart "${name}" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  # The marker survived, so the second boot skipped the hook.
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c \
+    'test -s /app/var/lock/appinit && echo marker-written'
+  assert_output "marker-written"
+
+  run ${BATS_CONTAINER_ENGINE} logs "${name}"
+  assert_equal "$(grep -c 'hook ran' <<<"${output}")" "1"
+}
+
+# Hooks are child processes, so what they set stays with them. This pins the
+# contract: the place to put a variable in the application's environment is an
+# early hook, which is sourced.
+@test "[$TEST_FILE] A variable exported by a late hook does not reach the application" {
+  local -r name="${BATS_WEB_CONTAINER}-hookenv"
+  local -r hook="${BATS_TEST_TMPDIR}/10-export.sh"
+  local port
+
+  printf '#!/bin/bash\nexport HOOK_INJECTED=yes\n' >"${hook}"
+
+  port="$(web_container_start "${name}" \
+    --volume "${hook}:/opt/bin/container-entrypoint.d/10-export.sh:ro")"
+
+  run web_php "${name}" "${port}" '<?php echo getenv("HOOK_INJECTED") ?: "(absent)";'
+  assert_line "(absent)"
 }

@@ -104,8 +104,17 @@ A child image can run its own code during startup by dropping files into
 
 They run after every configuration file has been rendered and **before Supervisor starts**, so no
 web server or php-fpm is listening yet. This is where migrations, cache warm-ups and asset builds
-belong. They run as uid `1001`, with `/app` as the working directory, and `.php` files are executed
-with `php -f`.
+belong. They run as uid `1001`, with `/app` as the working directory.
+
+Each one runs as a **child process** — `.sh` with `bash -e -o pipefail`, `.php` with `php -f`. Three
+things follow from that:
+
+- **A non-zero exit stops the boot**, and the log names the hook and its status. Any failing command
+  in a hook is enough, exactly as before.
+- **`exit 0` ends the hook, not the container.** Use a non-zero exit to refuse the start.
+- **A variable a late hook sets does not leave it.** It reaches neither the entrypoint, nor the next
+  hook, nor the application. To put a variable in the application's environment, use an early hook,
+  which is sourced.
 
 **Early hooks** — `/opt/bin/container-entrypoint.d/entrypoint.d/*.sh`
 
