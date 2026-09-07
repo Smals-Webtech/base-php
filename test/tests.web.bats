@@ -104,6 +104,7 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-hooklock"
   container_clean "${BATS_WEB_CONTAINER}-hookenv"
   container_clean "${BATS_WEB_CONTAINER}-port"
+  container_clean "${BATS_WEB_CONTAINER}-remoteip"
   ${BATS_CONTAINER_ENGINE} volume rm -f "${BATS_WEB_CONTAINER}-lock" "${BATS_WEB_CONTAINER}-log" \
     "${BATS_WEB_CONTAINER}-etc" >/dev/null 2>&1 || true
 }
@@ -706,4 +707,31 @@ teardown_file() {
   port="$(${BATS_CONTAINER_ENGINE} port "${name}" 9090/tcp | head -1 | sed 's/.*://')"
   run web_status "${port}" /status
   refute_line "200"
+}
+
+# Behind a proxy the address apache reports is the proxy's, so the access log,
+# Require ip and REMOTE_ADDR all named the router rather than the client. nginx
+# has resolved this since it gained NGINX_REAL_IP_*; apache had no equivalent.
+# Off by default on both, so this asserts the capability, not a new default.
+@test "[$TEST_FILE] The client address is resolved from a configurable header" {
+  [ "${BATS_VARIANT}" = "apache" ] || skip "the nginx variant resolves it through NGINX_REAL_IP_*"
+
+  local -r name="${BATS_WEB_CONTAINER}-remoteip"
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  local port
+
+  # A name of an organisation's own, to prove the header is not hard-coded.
+  port="$(web_container_start "${name}" \
+    --env APACHE_REMOTE_IP_ENABLED=true \
+    --env APACHE_REMOTE_IP_HEADER_NAME=X-Corp-Client-IP)"
+
+  curl --silent --output /dev/null --max-time 20 \
+    --header "X-Corp-Client-IP: 203.0.113.42" "http://127.0.0.1:${port}/"
+  # Only the configured header is read, so a forged standard one changes nothing.
+  curl --silent --output /dev/null --max-time 20 \
+    --header "X-Forwarded-For: 198.51.100.7" "http://127.0.0.1:${port}/"
+
+  run ${BATS_CONTAINER_ENGINE} logs "${name}"
+  assert_output --partial "203.0.113.42"
+  refute_output --partial "198.51.100.7"
 }

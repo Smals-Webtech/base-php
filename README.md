@@ -515,6 +515,27 @@ running as a separate service over a Swarm overlay).
 Changing a port leaves the `EXPOSE` metadata in the image pointing at `9000` and `9090`. That is
 documentation only — it constrains nothing, and publishing works the same.
 
+### Client address behind a proxy
+
+Behind a router or an ingress, the address the web server sees is the proxy's. Left alone, that is
+what lands in the access log, what `Require ip` checks, and what the application reads from
+`REMOTE_ADDR`. Both variants can resolve the real client address from a header instead, and both
+leave it **off** by default.
+
+The replacement applies only to requests arriving from a declared proxy, so a client connecting
+directly cannot supply its own value. Only the configured header is read — naming a header of your
+own is therefore also what makes a forged `X-Forwarded-For` useless.
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `APACHE_REMOTE_IP_ENABLED` | `false` | Resolve the client address from a header (Apache, `mod_remoteip`). |
+| `APACHE_REMOTE_IP_HEADER_NAME` | `X-Forwarded-For` | Header carrying the client address. Set it to your own if your proxies use a different one. |
+| `APACHE_REMOTE_IP_TRUSTED_PROXIES` | `10.0.0.0/8 172.16.0.0/12 192.168.0.0/16` | Proxies whose requests may carry that header. |
+| `NGINX_REAL_IP_ENABLED` | `false` | The same, for Nginx. |
+| `NGINX_REAL_IP_HEADER_NAME` | `X-Forwarded-For` | Header carrying the client address. |
+| `NGINX_REAL_IP_TRUSTED_PROXIES` | `10.0.0.0/8 172.16.0.0/12 192.168.0.0/16` | Proxies whose requests may carry that header. |
+| `NGINX_REAL_IP_RECURSIVE` | `on` | Walk the header chain right to left, taking the first untrusted address. Nginx only: `mod_remoteip` always does this. |
+
 > **Security note**: php-fpm `/status` and the Apache/Nginx status pages disclose internal runtime
 > details. Do **not** publish the monitoring port on an untrusted network, and do not widen
 > `MONITORING_ALLOW` to public ranges.

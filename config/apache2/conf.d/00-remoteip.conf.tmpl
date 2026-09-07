@@ -1,0 +1,14 @@
+{{- if eq (strings.ToLower .Env.APACHE_REMOTE_IP_ENABLED) "true" }}
+# Resolve the real client address from a proxy header.
+#
+# Without this, everything apache reports about the client is the proxy: the
+# access log, Require ip, and REMOTE_ADDR as the application sees it. The
+# replacement is applied only to requests arriving from a declared proxy, so a
+# client connecting directly cannot supply its own value -- and only the header
+# named here is read, which is why setting a custom name also neutralises a
+# forged X-Forwarded-For.
+LoadModule remoteip_module modules/mod_remoteip.so
+
+RemoteIPHeader {{ .Env.APACHE_REMOTE_IP_HEADER_NAME }}
+RemoteIPTrustedProxy {{ .Env.APACHE_REMOTE_IP_TRUSTED_PROXIES }}
+{{- end }}
