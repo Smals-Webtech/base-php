@@ -525,15 +525,59 @@ Varnish supports two storage backends. File storage is enabled by default; mallo
 
 ## 🔒 Monitoring Access Control
 
-The web server exposes monitoring/status endpoints over HTTP — php-fpm `/status` & `/ping`, the Nginx VTS `/metrics`, `/stub-status`, `/vts-status`, `/real-time-status`, and the Apache `/server-status` / `/server-info` / `/status`. Access to these is restricted to an allow-list of client CIDRs (applies to both the Nginx and Apache variants).
+Both variants serve their monitoring endpoints on a **separate port** — `9090` by default, against
+`9000` for the application. Publish only the application port and the endpoints are unreachable from
+outside, whatever the allow-list says. That is the point: behind a router or an ingress, the address
+the web server sees is the _router's_, which is private and therefore matches any sensible CIDR list,
+so an allow-list alone cannot tell a legitimate scraper from the internet behind the proxy.
 
-Requests arriving over a **Unix socket** are always allowed — reaching the socket already implies a host-local / same-pod peer (e.g. a Prometheus exporter sidecar reading the socket from a shared OpenShift `emptyDir`). The CIDR allow-list only gates **TCP** access (e.g. an exporter running as a separate service over a Swarm overlay).
+The endpoints are php-fpm `/status` & `/ping`, the Nginx VTS `/metrics`, `/stub-status`,
+`/vts-status`, `/real-time-status`, and the Apache `/server-status` / `/status`. Anything else on the
+monitoring port is refused — the vhost has an empty document root of its own, so it never serves an
+application file.
+
+A sidecar in the same pod shares the network namespace and reaches them over `localhost`. Nginx also
+listens on a **Unix socket**, always allowed — reaching the socket already implies a host-local or
+same-pod peer, e.g. an exporter reading it from a shared OpenShift `emptyDir`. Apache cannot listen
+on a Unix socket, so it offers the TCP port only. The CIDR allow-list gates TCP access, and remains a
+second line of defence for a deployment that does publish the monitoring port (e.g. an exporter
+running as a separate service over a Swarm overlay).
 
 | Environment Variable | Default | Description |
 |----------------------|---------|-------------|
 | `MONITORING_ALLOW` | `127.0.0.1/32 ::1/128 10.0.0.0/8 172.16.0.0/12 192.168.0.0/16 fc00::/7` | Space-separated list of CIDRs allowed to reach the monitoring/status endpoints over TCP. Defaults to loopback + private (RFC1918 / IPv6 ULA) ranges. Set to `0.0.0.0/0 ::/0` to expose them to everyone, or to a narrower list to lock them down. Unix-socket access is unaffected. |
+| `NGINX_LISTEN` | `9000` | Port the Nginx application server listens on. |
+| `NGINX_MONITORING_LISTEN` | `9090` | Port the Nginx monitoring endpoints listen on. |
+| `APACHE_LISTEN` | `9000` | Port the Apache application vhost listens on. |
+| `APACHE_MONITORING_LISTEN` | `9090` | Port the Apache monitoring vhost listens on. |
 
-> **Security note**: php-fpm `/status` and the Apache/Nginx status pages disclose internal runtime details. Do **not** widen this list to public ranges, and never publish the monitoring port (Nginx `9090`, Apache shares the app port) on an untrusted network.
+Changing a port leaves the `EXPOSE` metadata in the image pointing at `9000` and `9090`. That is
+documentation only — it constrains nothing, and publishing works the same.
+
+### Client address behind a proxy
+
+Behind a router or an ingress, the address the web server sees is the proxy's. Left alone, that is
+what lands in the access log, what `Require ip` checks, and what the application reads from
+`REMOTE_ADDR`. Both variants can resolve the real client address from a header instead, and both
+leave it **off** by default.
+
+The replacement applies only to requests arriving from a declared proxy, so a client connecting
+directly cannot supply its own value. Only the configured header is read — naming a header of your
+own is therefore also what makes a forged `X-Forwarded-For` useless.
+
+| Environment Variable | Default | Description |
+|----------------------|---------|-------------|
+| `APACHE_REMOTE_IP_ENABLED` | `false` | Resolve the client address from a header (Apache, `mod_remoteip`). |
+| `APACHE_REMOTE_IP_HEADER_NAME` | `X-Forwarded-For` | Header carrying the client address. Set it to your own if your proxies use a different one. |
+| `APACHE_REMOTE_IP_TRUSTED_PROXIES` | `10.0.0.0/8 172.16.0.0/12 192.168.0.0/16` | Proxies whose requests may carry that header. |
+| `NGINX_REAL_IP_ENABLED` | `false` | The same, for Nginx. |
+| `NGINX_REAL_IP_HEADER_NAME` | `X-Forwarded-For` | Header carrying the client address. |
+| `NGINX_REAL_IP_TRUSTED_PROXIES` | `10.0.0.0/8 172.16.0.0/12 192.168.0.0/16` | Proxies whose requests may carry that header. |
+| `NGINX_REAL_IP_RECURSIVE` | `on` | Walk the header chain right to left, taking the first untrusted address. Nginx only: `mod_remoteip` always does this. |
+
+> **Security note**: php-fpm `/status` and the Apache/Nginx status pages disclose internal runtime
+> details. Do **not** publish the monitoring port on an untrusted network, and do not widen
+> `MONITORING_ALLOW` to public ranges.
 
 ## ☁️ AWS CLI Configuration
 

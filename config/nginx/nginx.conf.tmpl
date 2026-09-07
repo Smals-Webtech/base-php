@@ -106,7 +106,7 @@ http {
 
     server {
 
-      listen       9090;
+      listen       {{ .Env.NGINX_MONITORING_LISTEN }};
       listen       unix:/app/var/run/nginx/default.localhost.sock;
       server_name  default.localhost;
 
@@ -183,7 +183,7 @@ http {
 
     server {
 
-      listen       9000;
+      listen       {{ .Env.NGINX_LISTEN }};
       server_name  default.localhost;
 
 {{ if ne .Env.NGINX_SOFT_THROTTLE_ENABLED "false" }}

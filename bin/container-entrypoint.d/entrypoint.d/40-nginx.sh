@@ -2,6 +2,13 @@
 
 NGINX_ENABLED_WCMTECH_DEFAULT="false"
 
+# Both ports were hard-coded in nginx.conf.tmpl while the apache variant had
+# APACHE_LISTEN. They are knobs on both variants now, with the values they
+# always had. The monitoring port is meant to stay unpublished: that is what
+# keeps the status endpoints off the public route.
+NGINX_LISTEN_WCMTECH_DEFAULT="9000"
+NGINX_MONITORING_LISTEN_WCMTECH_DEFAULT="9090"
+
 NGINX_LUA_ENABLED_WCMTECH_DEFAULT="false"
 NGINX_NJS_ENABLED_WCMTECH_DEFAULT="false"
 

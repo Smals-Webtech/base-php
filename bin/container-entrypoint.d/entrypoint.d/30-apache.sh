@@ -5,6 +5,37 @@ APACHE_ENABLED_WCMTECH_DEFAULT="false"
 APACHE_SERVER_TOKENS_WCMTECH_DEFAULT="Prod"
 APACHE_LISTEN_WCMTECH_DEFAULT="9000"
 
+# The monitoring endpoints live on their own port, the way the nginx variant
+# already serves them. On the application port they sat behind the same route
+# as the site, and the CIDR allow-list could not help: what it saw was the
+# router's address, which is private and therefore allowed. Publish only the
+# application port and the endpoints are simply not reachable from outside.
+APACHE_MONITORING_LISTEN_WCMTECH_DEFAULT="9090"
+
+# An empty directory: the monitoring vhost must not inherit the application
+# document root, or it would serve the site on this port too.
+APACHE_MONITORING_DOCUMENT_ROOT_WCMTECH_DEFAULT="/app/var/www/monitoring"
+
+# Behind a proxy, the address apache sees is the proxy's: logs, Require ip and
+# anything the application reads from REMOTE_ADDR all get the router instead of
+# the client. mod_remoteip replaces it with the address carried in a header, but
+# only for requests coming from a declared proxy -- a client connecting directly
+# cannot spoof its way in, since its own address is not on the trusted list.
+#
+# Off by default, mirroring NGINX_REAL_IP_ENABLED: nothing resolves the client
+# address today either, so this adds a capability rather than changing one.
+#
+# The header name is configurable because an organisation may standardise on its
+# own rather than X-Forwarded-For, and only the configured one is read -- a
+# client forging the standard header gets nowhere once a custom one is set.
+#
+# There is no equivalent of NGINX_REAL_IP_RECURSIVE: mod_remoteip always walks
+# the chain from the right, skipping declared proxies, so there is nothing to
+# switch.
+APACHE_REMOTE_IP_ENABLED_WCMTECH_DEFAULT="false"
+APACHE_REMOTE_IP_HEADER_NAME_WCMTECH_DEFAULT="X-Forwarded-For"
+APACHE_REMOTE_IP_TRUSTED_PROXIES_WCMTECH_DEFAULT="10.0.0.0/8 172.16.0.0/12 192.168.0.0/16"
+
 APACHE_SERVER_ROOT_WCMTECH_DEFAULT="/app/var/www"
 APACHE_SERVER_ADMIN_WCMTECH_DEFAULT="you@example.com"
 APACHE_SERVER_NAME_WCMTECH_DEFAULT="default.localhost"
@@ -45,5 +76,14 @@ APACHE_DAEMON_LOG_WCMTECH_DEFAULT="info"
 
 APACHE_LOG_FORMAT_COMBINED_WCMTECH_DEFAULT="%h %l %u %t \\\"%r\\\" %>s %b \\\"%{Referer}i\\\" \\\"%{User-Agent}i\\\""
 APACHE_LOG_FORMAT_COMMON_WCMTECH_DEFAULT="%h %l %u %t \\\"%r\\\" %>s %b"
+
+# TLS settings for a vhost this image does not open itself -- nothing here
+# listens on 443. They are configured anyway because the image can be used as a
+# reverse proxy, and in that case the defaults applied: "all -SSLv3" still
+# permits TLSv1 and TLSv1.1, and the MEDIUM cipher class pulls in suites nobody
+# wants any more. Both are knobs, so a deployment that has to talk to a legacy
+# peer can widen them deliberately rather than inherit the width by accident.
+APACHE_SSL_PROTOCOL_WCMTECH_DEFAULT="all -SSLv3 -TLSv1 -TLSv1.1"
+APACHE_SSL_CIPHER_SUITE_WCMTECH_DEFAULT="HIGH:!aNULL:!MD5:!RC4:!3DES"
 
 true

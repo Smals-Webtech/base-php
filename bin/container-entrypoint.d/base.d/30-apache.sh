@@ -4,7 +4,7 @@ log "INFO" "Configure Apache ..."
 
 if [[ "${APACHE_ENABLED}" == "true" ]]; then
 
-	OUTDIR="/app/var/cache/apache2/mod_ssl /opt/etc/apache2/conf.d /opt/etc/apache2/sites-enabled /app/var/run/apache2 /app/var/www/html"
+	OUTDIR="/app/var/cache/apache2/mod_ssl /opt/etc/apache2/conf.d /opt/etc/apache2/sites-enabled /app/var/run/apache2 /app/var/www/html ${APACHE_MONITORING_DOCUMENT_ROOT}"
 
 	for dir in $OUTDIR; do
 		mkdir -p "$dir"
