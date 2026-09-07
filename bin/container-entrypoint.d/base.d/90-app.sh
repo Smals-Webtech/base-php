@@ -61,19 +61,42 @@ done
 # Re-read inside the lock: whoever held it may have just finished the work.
 if [ "$(cat "$APP_INIT_LOCK" 2>/dev/null)" != "$APP_INIT_FINGERPRINT" ]; then
 
-	for f in "$APP_INIT_DIR"/*; do
-		case "$f" in
-		*.sh)
-			log "INFO" "- $0: running $f"
-			. "$f"
+	# Hooks run as child processes. Sourcing them put them in this shell, which
+	# had two consequences worth spelling out. A hook ending in `exit 0` -- a
+	# common habit -- terminated the entrypoint before it could exec supervisord,
+	# so the container stopped with exit code 0: no error, and restart-on-failure
+	# never fired. And a hook shared this script's variables, so assigning
+	# APP_INIT_LOCK sent the fingerprint somewhere else and left the real marker
+	# unwritten, which re-ran every hook on every start.
+	#
+	# `bash -e -o pipefail` keeps the strictness sourcing gave them: any failing
+	# command in a hook already aborted the boot, and still does. What changes is
+	# that the failure is now reported with the hook's name and its exit code.
+	for APP_INIT_HOOK in "$APP_INIT_DIR"/*; do
+
+		# An array, not `set --`: this file is sourced, and container-entrypoint
+		# reads its own positional parameters after the base.d phase to build the
+		# command it execs.
+		case "$APP_INIT_HOOK" in
+		*.sh) APP_INIT_CMD=(bash -e -o pipefail "$APP_INIT_HOOK") ;;
+		*.php) APP_INIT_CMD=(php -f "$APP_INIT_HOOK") ;;
+		*)
+			log "INFO" "- $0: ignoring $APP_INIT_HOOK"
+			continue
 			;;
-		*.php)
-			log "INFO" "- $0: running $f"
-			php -f "$f"
-			echo
-			;;
-		*) log "INFO" "- $0: ignoring $f" ;;
 		esac
+
+		log "INFO" "- $0: running $APP_INIT_HOOK"
+
+		if "${APP_INIT_CMD[@]}"; then
+			log "INFO" "- $0: $APP_INIT_HOOK done"
+		else
+			APP_INIT_STATUS=$?
+			log "ERROR" "! $APP_INIT_HOOK exited with ${APP_INIT_STATUS}."
+			log "ERROR" "! The application init scripts did not complete; refusing to start."
+			exit "$APP_INIT_STATUS"
+		fi
+
 	done
 
 	printf '%s\n' "$APP_INIT_FINGERPRINT" >"$APP_INIT_LOCK"
@@ -87,5 +110,6 @@ fi
 exec {APP_INIT_LOCK_FD}>&-
 
 unset APP_INIT_DIR APP_INIT_LOCK APP_INIT_LOCK_FILE APP_INIT_LOCK_FD APP_INIT_LOCK_WAITED APP_INIT_FINGERPRINT
+unset APP_INIT_HOOK APP_INIT_CMD APP_INIT_STATUS
 
 true
