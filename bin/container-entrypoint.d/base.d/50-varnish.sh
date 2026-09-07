@@ -13,13 +13,12 @@ if [[ "${VARNISH_ENABLED}" == "true" ]]; then
 	done
 
 	apply-template /opt/config/supervisor.d/varnish.ini.tmpl /opt/etc/supervisor.d/varnish.ini
-	apply-template /opt/config/sbin/start-varnishncsa.tmpl /opt/sbin/start-varnishncsa.sh
-	apply-template /opt/config/sbin/start-varnishd.tmpl /opt/sbin/start-varnishd.sh
 
-	chmod +x /opt/sbin/start-varnishncsa.sh /opt/sbin/start-varnishd.sh
-
-	create-symlink /opt/sbin/start-varnishncsa /opt/sbin/start-varnishncsa.sh
-	create-symlink /opt/sbin/start-varnishd /opt/sbin/start-varnishd.sh
+	# The start scripts are rendered by 45-sbin.sh, which now applies every
+	# template in /opt/config/sbin and makes the result executable. It produces
+	# /opt/sbin/start-varnishd and /opt/sbin/start-varnishncsa directly -- the
+	# names varnish.ini invokes -- so the .sh copies and the symlinks that used
+	# to bridge the two are gone.
 
 	log "INFO" "- Create Varnish secret file ..."
 

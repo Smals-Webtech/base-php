@@ -41,6 +41,6 @@ apply-template /opt/config/aws/wrapper.env.tmpl /opt/etc/aws/wrapper.env
 
 # /opt/sbin precedes /usr/local/bin on PATH, so a wrapper left there by an older
 # image would still win on a reused /opt/etc-style volume. Remove it.
-rm -f /opt/sbin/aws /opt/sbin/aws.sh
+rm -f /opt/sbin/aws /opt/sbin/aws.sh 2>/dev/null || true
 
 true

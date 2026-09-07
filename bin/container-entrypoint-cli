@@ -13,6 +13,12 @@ source /usr/local/bin/container-entrypoint.d/entrypoint.d/01-php.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/60-aws-config.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/99-export-vars.sh
 
+# The cli variant runs no supervisor, so it renders no script into /opt/sbin
+# and keeps no runtime state under /app/var. Requiring either would make a
+# read-only cli container mount paths it never writes.
+require-writable /opt/etc
+require-writable /app/tmp
+
 log "INFO" "  ____                   ____  _   _ ____   "
 log "INFO" " | __ )  __ _ ___  ___  |  _ \| | | |  _ \  "
 log "INFO" " |  _ \ / _\` / __|/ _ \ | |_) | |_| | |_) | "
