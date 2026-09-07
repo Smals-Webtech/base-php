@@ -50,6 +50,10 @@ PHP_FPM_REQUEST_TERMINATE_TIMEOUT_TRACK_FINISHED_WCMTECH_DEFAULT="no"
 PHP_FPM_REQUEST_SLOWLOG_TIMEOUT_WCMTECH_DEFAULT="0"
 PHP_FPM_REQUEST_SLOWLOG_TRACE_DEPTH_WCMTECH_DEFAULT="20"
 
-PHP_FPM_SLOWLOG_WCMTECH_DEFAULT="/app/var/log/php-fpm.log.slow"
+# The name has to end in .log: rotation matches /app/var/log/*.log, and
+# "php-fpm.log.slow" fell outside it. logrotate never considered the file, so
+# a deployment that enabled the slowlog grew one unbounded file on the volume
+# every other log on was being rotated.
+PHP_FPM_SLOWLOG_WCMTECH_DEFAULT="/app/var/log/php-fpm-slow.log"
 
 true

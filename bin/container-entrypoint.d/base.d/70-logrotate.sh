@@ -40,11 +40,28 @@ OPTIONS_JSON=$(printf '%s\n' "${OPTIONS_UNIQ[@]}" | jq -R . | jq -s -c .)
 
 export OPTIONS_JSON
 
-gomplate -f /opt/config/logrotate/logrotate.d/default.conf.tmpl \
-	-d options=env:/OPTIONS_JSON?type=application/json \
-	-o /opt/etc/logrotate.d/default.conf
+# Every template in the directory, not just the one the image ships. logrotate.conf
+# is an `include /opt/etc/logrotate.d`, so a second stanza has always been possible
+# in principle -- but nothing rendered one, and the README described a flexibility
+# that did not exist. Mount a .tmpl here and it is rendered with the resolved
+# environment, the same way /opt/config/sbin works.
+for LOGROTATE_TMPL in /opt/config/logrotate/logrotate.d/*.tmpl; do
 
-unset OPTIONS OPTIONS_UNIQ OPTIONS_JSON
+	[ -e "$LOGROTATE_TMPL" ] || continue
+
+	LOGROTATE_OUT="/opt/etc/logrotate.d/$(basename "${LOGROTATE_TMPL%.tmpl}")"
+
+	log "INFO" "  Rendering template: $LOGROTATE_TMPL → $LOGROTATE_OUT"
+
+	# The options datasource is passed to every stanza, so an operator template can
+	# reuse LOGROTATE_DEFAULT_OPTIONS instead of restating the policy.
+	gomplate -f "$LOGROTATE_TMPL" \
+		-d options=env:/OPTIONS_JSON?type=application/json \
+		-o "$LOGROTATE_OUT"
+
+done
+
+unset OPTIONS OPTIONS_UNIQ OPTIONS_JSON LOGROTATE_TMPL LOGROTATE_OUT
 
 # A directive logrotate rejects makes it skip the whole stanza, so no file is
 # rotated at all -- and the only trace is a line in the event listener's output

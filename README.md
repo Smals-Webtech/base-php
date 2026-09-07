@@ -210,6 +210,48 @@ If you need genuinely different policies per file, keep their paths disjoint fro
 | `LOGROTATE_DEFAULT_RETENTION` | "5"                                | Number of rotated files to keep (`logrotate` `rotate` directive).                                       |
 | `LOGROTATE_DEFAULT_OPTIONS`   | "compress;copytruncate;missingok;notifempty" | `logrotate` directives applied to the stanza, separated by `;`. A directive keeps its argument: `maxage 7`, `olddir /app/var/log/old`. Keep `copytruncate` on a read-only root filesystem. The rendered stanza is validated at startup and the container refuses to boot if it is malformed. |
 
+### Adding a stanza of your own
+
+`logrotate.conf` is an `include /opt/etc/logrotate.d`, and every `.tmpl` in
+`/opt/config/logrotate/logrotate.d` is rendered into it at startup with the resolved environment.
+Mount one there to rotate files the global glob does not cover:
+
+```text
+/opt/config/logrotate/logrotate.d/myapp.conf.tmpl   →   /opt/etc/logrotate.d/myapp.conf
+```
+
+The `options` datasource is available to your template, so a stanza can reuse
+`LOGROTATE_DEFAULT_OPTIONS` rather than restate the policy:
+
+```gotemplate
+/app/var/log/myapp/*.log {
+    size 10M
+    rotate 3
+{{- range (datasource "options") }}
+    {{ . }}
+{{- end }}
+}
+```
+
+Keep its paths **disjoint** from `LOGROTATE_DEFAULT_PATH`, for the reason given above: a file matched
+by two stanzas makes the whole run fail with `duplicate log entry`.
+
+### Sizing the volume
+
+`copytruncate` copies the file and then truncates the original in place, which is what lets rotation
+work without signalling any service on a read-only root filesystem. Two consequences worth planning
+for:
+
+- **A small loss window.** Lines written between the copy and the truncation are lost. For access and
+  error logs that is a handful of lines per rotation; if you cannot afford it, ship the logs off the
+  volume with a sidecar collector rather than relying on the rotated files.
+- **Transient double size.** During a rotation the live file and its copy exist together, and with
+  `compress` the compressed output briefly joins them. Budget roughly
+  `LOGROTATE_DEFAULT_SIZE_LIMIT × (LOGROTATE_DEFAULT_RETENTION + 2)` per matched pattern as an upper
+  bound — compression usually brings the steady state well below that, but the peak is what evicts a
+  pod. With the defaults, that is about 350 MB for `/app/var/log/*.log`; size the `emptyDir`
+  accordingly, or lower the limit.
+
 ## 🐘 PHP Configuration
 
 The PHP image ships with all required extensions pre-installed, but it’s designed to run in read-only mode at runtime.  

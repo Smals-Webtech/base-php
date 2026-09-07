@@ -105,6 +105,8 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-hookenv"
   container_clean "${BATS_WEB_CONTAINER}-port"
   container_clean "${BATS_WEB_CONTAINER}-remoteip"
+  container_clean "${BATS_WEB_CONTAINER}-slowlog"
+  container_clean "${BATS_WEB_CONTAINER}-stanza"
   ${BATS_CONTAINER_ENGINE} volume rm -f "${BATS_WEB_CONTAINER}-lock" "${BATS_WEB_CONTAINER}-log" \
     "${BATS_WEB_CONTAINER}-etc" >/dev/null 2>&1 || true
 }
@@ -734,4 +736,48 @@ teardown_file() {
   run ${BATS_CONTAINER_ENGINE} logs "${name}"
   assert_output --partial "203.0.113.42"
   refute_output --partial "198.51.100.7"
+}
+
+# The slowlog default was php-fpm.log.slow, which the /app/var/log/*.log glob
+# does not match: logrotate never considered it, so a deployment that turned the
+# slowlog on grew one unbounded file on the very volume every other log was being
+# rotated on. Measured on 8.5.9: 60 MB untouched while app.log rotated.
+@test "[$TEST_FILE] The php-fpm slowlog is covered by the rotation glob" {
+  local -r name="${BATS_WEB_CONTAINER}-slowlog"
+
+  web_container_start "${name}" --env PHP_FPM_REQUEST_SLOWLOG_TIMEOUT=1s >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c \
+    ': > "$(sed -n "s/^slowlog *= *//p" /opt/etc/php/php-fpm.d/base-php.conf)"
+     logrotate --debug --state /tmp/rotate-probe /opt/etc/logrotate.conf 2>&1'
+  assert_output --partial "considering log /app/var/log/php-fpm-slow.log"
+}
+
+# logrotate.conf is an `include /opt/etc/logrotate.d`, so a second stanza was
+# always possible in principle -- but nothing rendered one, and the README
+# described a flexibility that did not exist.
+@test "[$TEST_FILE] A logrotate template mounted by the operator is rendered" {
+  local -r name="${BATS_WEB_CONTAINER}-stanza"
+  local -r tmpl="${BATS_TEST_TMPDIR}/myapp.conf.tmpl"
+
+  # Uses the options datasource, to prove a stanza can reuse the shared policy.
+  cat >"${tmpl}" <<'TMPL'
+/app/var/log/myapp/*.log {
+    size 10M
+    rotate 3
+{{- range (datasource "options") }}
+    {{ . }}
+{{- end }}
+}
+TMPL
+
+  web_container_start "${name}" \
+    --volume "${tmpl}:/opt/config/logrotate/logrotate.d/myapp.conf.tmpl:ro" >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c \
+    'mkdir -p /app/var/log/myapp && : > /app/var/log/myapp/x.log
+     grep -q compress /opt/etc/logrotate.d/myapp.conf && echo options-applied
+     logrotate --debug --state /tmp/rotate-probe /opt/etc/logrotate.conf 2>&1'
+  assert_output --partial "options-applied"
+  assert_output --partial "considering log /app/var/log/myapp/x.log"
 }

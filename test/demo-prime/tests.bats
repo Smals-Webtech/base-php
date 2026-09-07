@@ -53,19 +53,24 @@ export BATS_VARNISH_CONTAINER_NAME="$(${BATS_CONTAINER_ENGINE} ps --filter "labe
   assert_line --regexp "Docker Base image - Default index.php page"
 }
 
-@test "[$TEST_FILE] Re-Check for Monitoring /real-time-status page response code 200 via Varnish" {
+# These three used to assert 200 and were, in effect, asserting the defect: the
+# status endpoints answered through Varnish, which fronts the application port,
+# so anything that could reach the cache could read them. They now live on their
+# own port, which nothing in front of the application forwards to -- reaching
+# them through Varnish is exactly the path that is meant to be closed.
+@test "[$TEST_FILE] Monitoring /real-time-status is not reachable through Varnish" {
   retry 12 5 curl_container ${BATS_VARNISH_CONTAINER_NAME} :6081/real-time-status -H "Host: default.localhost" -s -w %{http_code} -o /dev/null
-  assert_line -n 0 $'200'
+  assert_line -n 0 $'404'
 }
 
-@test "[$TEST_FILE] Re-Check for Monitoring /status page response code 200 via Varnish" {
+@test "[$TEST_FILE] Monitoring /status is not reachable through Varnish" {
   retry 12 5 curl_container ${BATS_VARNISH_CONTAINER_NAME} :6081/status -H "Host: default.localhost" -s -w %{http_code} -o /dev/null
-  assert_line -n 0 $'200'
+  assert_line -n 0 $'404'
 }
 
-@test "[$TEST_FILE] Re-Check for Monitoring /server-status page response code 200 via Varnish" {
+@test "[$TEST_FILE] Monitoring /server-status is not reachable through Varnish" {
   retry 12 5 curl_container ${BATS_VARNISH_CONTAINER_NAME} :6081/server-status -H "Host: default.localhost" -s -w %{http_code} -o /dev/null
-  assert_line -n 0 $'200'
+  assert_line -n 0 $'404'
 }
 
 @test "[$TEST_FILE] Check for (App) index.php response code 200" {
