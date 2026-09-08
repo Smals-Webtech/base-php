@@ -130,6 +130,17 @@ COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/
 COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
 
+# These four are written by whatever uid the container runs as, and the group bit
+# is not enough on its own. `--user $(id -u):$(id -g)` -- how a build is invoked
+# so that its output belongs to the person who started it -- puts the process in
+# its own gid, not in group 0, so 775 owned 1001:0 locks it out. Docker only
+# falls back to gid 0 when the user is given as a bare uid.
+#
+# 1777 is the /tmp semantics: anyone may create, only the owner may remove. It
+# stays confined to the runtime directories, which ship empty; the configuration
+# templates under /opt/config keep 775 and stay out of reach.
+RUN find /opt/etc /opt/sbin /app/tmp /app/var -type d -exec chmod 1777 {} +
+
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/opt/etc/php/conf.d" \
     HOME=/home/default \
@@ -285,6 +296,17 @@ RUN install-php-extensions ${PHP_EXT_INSTALL}
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/
 COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
+
+# These four are written by whatever uid the container runs as, and the group bit
+# is not enough on its own. `--user $(id -u):$(id -g)` -- how a build is invoked
+# so that its output belongs to the person who started it -- puts the process in
+# its own gid, not in group 0, so 775 owned 1001:0 locks it out. Docker only
+# falls back to gid 0 when the user is given as a bare uid.
+#
+# 1777 is the /tmp semantics: anyone may create, only the owner may remove. It
+# stays confined to the runtime directories, which ship empty; the configuration
+# templates under /opt/config keep 775 and stay out of reach.
+RUN find /opt/etc /opt/sbin /app/tmp /app/var -type d -exec chmod 1777 {} +
 
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/opt/etc/php/conf.d" \

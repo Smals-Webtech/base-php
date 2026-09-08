@@ -51,6 +51,18 @@ teardown_file() {
   assert_line --regexp "^[0-9]+.[0-9]+.[0-9]+*$"
 }
 
+# The test above passes a bare uid, which Docker completes with gid 0 -- so the
+# group bit of a 775 runtime directory carries it. A build invoked the way the
+# demo Makefiles do it, `--user $(id -u):$(id -g)` so that its output belongs to
+# the person who started it, lands in its own gid instead and was locked out.
+# That is the form asserted here.
+@test "[$TEST_FILE] The runtime paths accept an arbitrary uid:gid" {
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm -u 4242:4242 \
+    "${BATS_CLI_IMAGE}" php -r 'echo "started";'
+  assert_success
+  assert_line "started"
+}
+
 @test "[$TEST_FILE] Test aws cli version" {
   run_cli "${BATS_CLI_IMAGE}" aws --version
   assert_line --regexp "^aws-cli/${BATS_AWS_CLI_VERSION} Python/.* .*$"
