@@ -39,6 +39,12 @@ removed, and anything a child image writes to such a path **during its build is 
 a `RUN php bin/console cache:warmup` under `/app/var` would lose its files without an error. Dropping
 the declarations means an image built on this one is free to write there at build time.
 
+Those four directories are world-writable with the sticky bit, `/tmp` style: any uid may create
+files there, only the owner may remove them. That is what lets the container run under **any**
+`uid:gid` — including a build invoked as `--user $(id -u):$(id -g)`, so that its output belongs to
+the person who started it, which puts the process in its own group rather than in group 0. Nothing
+else is world-writable: the configuration templates under `/opt/config` are not.
+
 In exchange the paths are yours to mount. The entrypoint checks them before rendering anything and
 refuses to start, naming each unusable path, rather than failing halfway through:
 

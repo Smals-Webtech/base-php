@@ -542,12 +542,32 @@ teardown_file() {
 }
 
 # The image shipped everything under /opt and /app world-writable, files
-# included -- every configuration template and every hook. The runtime user is
-# 1001:0 and an arbitrary uid still lands in group 0, so group write is enough.
-@test "[$TEST_FILE] Nothing under /opt or /app is world-writable" {
-  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint sh \
-    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" -c \
-    'find /opt /app -perm -o+w 2>/dev/null | wc -l'
+# included -- every configuration template and every hook, 89 entries in all.
+#
+# The first version of this test asked for none at all, which was too strong: it
+# forbade what the design needs. The runtime directories have to be writable by
+# whatever uid runs the container, and the group bit does not carry a process
+# started as `--user $(id -u):$(id -g)`, which lands in its own gid rather than
+# in group 0. They are 1777 -- the /tmp semantics -- and the invariant is that
+# nothing *else* is, and that every world-writable entry is sticky, so one uid
+# cannot remove another's files.
+@test "[$TEST_FILE] Only the runtime directories are world-writable, and they are sticky" {
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint sh "${image}" -c \
+    "find /opt /app -perm -o+w \
+       ! -path '/opt/etc*' ! -path '/opt/sbin*' \
+       ! -path '/app/var*' ! -path '/app/tmp*' 2>/dev/null | wc -l"
+  assert_output "0"
+
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint sh "${image}" -c \
+    'find /opt /app -perm -o+w ! -perm -1000 2>/dev/null | wc -l'
+  assert_output "0"
+
+  # And the configuration templates, the 61 entries that made up most of the
+  # original 89, stay out of reach.
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint sh "${image}" -c \
+    'find /opt/config -perm -o+w 2>/dev/null | wc -l'
   assert_output "0"
 }
 
