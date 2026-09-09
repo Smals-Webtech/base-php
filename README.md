@@ -166,8 +166,9 @@ All but `log` **return 1 on failure**, which under the hook's `bash -e` ends the
 the boot. That is usually what you want; call them with that in mind on a path that is genuinely
 optional. `print-banner` is the one exception worth knowing: called with **no argument** it is
 silent when the image ships no banner, because the image's own is optional; called with an explicit
-path it fails loudly, because you meant that file. Anything named with a leading underscore is
-internal and may change. A `.php` hook gets none of this — it has no shell.
+path it fails loudly, because you meant that file — including when that path is a directory, which
+is what a bind mount leaves behind when its source is missing on the host. Anything named with a
+leading underscore is internal and may change. A `.php` hook gets none of this — it has no shell.
 
 Three more things are worth knowing before writing one.
 

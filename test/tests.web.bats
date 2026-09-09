@@ -781,7 +781,24 @@ HOOK
     --volume "${hook}:/opt/bin/container-entrypoint.d/10-nobanner.sh:ro" \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
   assert_failure
-  assert_output --partial "/opt/config/typo-motd is not readable"
+  assert_output --partial "/opt/config/typo-motd is not a readable file"
+}
+
+# The shape a missing banner actually takes in practice. A bind mount whose
+# source does not exist on the host makes the engine create a *directory* at the
+# mount point, and a directory passes -r and reads as empty -- so the banner
+# used to disappear with nothing said, on a hook that had asked for it by name.
+@test "[$TEST_FILE] print-banner rejects a banner path that is a directory" {
+  local -r hook="${BATS_TEST_TMPDIR}/10-dirbanner.sh"
+
+  printf '#!/bin/bash\nprint-banner /opt/config/dir-motd\n' >"${hook}"
+
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm \
+    --volume "${BATS_TEST_TMPDIR}:/opt/config/dir-motd:ro" \
+    --volume "${hook}:/opt/bin/container-entrypoint.d/10-dirbanner.sh:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "/opt/config/dir-motd is not a readable file"
 }
 
 # The endpoints used to live in the application vhost, on the port a Route or a

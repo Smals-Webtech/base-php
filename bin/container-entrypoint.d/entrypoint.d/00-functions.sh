@@ -191,9 +191,14 @@ function print-banner {
 	local file=${1:-/opt/config/motd}
 	local content
 
-	if [ ! -r "$file" ]; then
+	# A directory passes -r, and reading one yields nothing: a bind mount whose
+	# source is missing on the host makes the engine create a directory in its
+	# place, and the banner then vanished in silence. Rejecting directories
+	# rather than requiring a regular file keeps a fifo, or a process
+	# substitution, working.
+	if [ -d "$file" ] || [ ! -r "$file" ]; then
 		[ $# -eq 0 ] && return 0
-		log "ERROR" "! Banner file ${file} is not readable."
+		log "ERROR" "! Banner file ${file} is not a readable file."
 		return 1
 	fi
 
