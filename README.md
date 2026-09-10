@@ -321,19 +321,27 @@ for:
 
 ## 🐘 PHP Configuration
 
-The PHP image ships with all required extensions pre-installed, but it’s designed to run in read-only mode at runtime.  
-To enable dynamic configuration, a writable volume is mounted and used as the active PHP configuration directory. During container startup, the entrypoint generates configuration files
-via gomplate and sets `PHP_INI_SCAN_DIR` to point to this writable path.  The default php.ini file ( `/usr/local/etc/php/php.ini` ) — which may differ depending on the image variant — is still loaded first, and the configuration files in `PHP_INI_SCAN_DIR` override any settings defined there.
+The image ships with every extension pre-installed and is designed to run read-only. Configuration is
+therefore done through the environment: every `php.ini` directive is settable with a variable whose
+name is the directive upper-cased, with `.` replaced by `_` — `memory_limit` is `PHP_MEMORY_LIMIT`,
+`opcache.memory_consumption` is `PHP_OPCACHE_MEMORY_CONSUMPTION`.
 
-This mechanism provides full flexibility at startup while keeping the base image immutable and compatible with read-only filesystem deployments.
+At startup the entrypoint writes **only the directives you set** into `/opt/etc/php/conf.d`, the
+writable path `PHP_INI_SCAN_DIR` points at. `/usr/local/etc/php/php.ini` — `php.ini-production` in the
+`prd` variants, `php.ini-development` in the `dev` ones — is loaded first and supplies every value you
+leave alone. The variable itself is removed from the environment before the application starts.
 
-| Environment Variable | Default | Description |
-|----------------------|---------|-------------|
-| `PHP_BYPASS_INI_DEFAULT_VALUES` | `false` | Set to `true` to skip reading the active `php.ini` file for default values. All directives will fall back to the fixed built-in defaults defined in the image. Useful for fully predictable startup behavior regardless of the base `php.ini` variant. |
+The set of directives is not a list anyone maintains: it is enumerated from PHP at build time and
+shipped at `/usr/local/share/base-php/ini-directives.list`. See [docs/php.md](docs/php.md) for the
+whole mechanism, the eight directives the image deliberately sets itself, and the deprecated
+variables.
 
 ### Core
 
-The table below lists the most commonly overridden PHP core directives. For the full reference including all directives, see [docs/php.md](docs/php.md).
+The table below lists the most commonly overridden core directives, with the value that applies when
+you set nothing. All of them come from `php.ini` except `expose_php` and `date.timezone`, which the
+image sets itself. Every other directive PHP knows is settable the same way — see
+[docs/php.md](docs/php.md).
 
 | Directive | Environment Variable | Default (prd) | Default (dev) | Documentation |
 |-----------|----------------------|---------------|---------------|---------------|
@@ -354,18 +362,17 @@ The table below lists the most commonly overridden PHP core directives. For the 
 
 ### PHP Extensions
 
-All installed extensions are symlinked by default from their actual `.so` locations into this
-writable directory. Each extension’s activation is controlled by a variable built from the
-**extension name**, uppercased: `PHP_APCU_ENABLED=false` disables `apcu`,
-`PHP_XDEBUG_ENABLED=false` disables `xdebug`. When enabled, the entrypoint also generates the
-appropriate `.ini` configuration file for the extension within the writable volume.
+Each extension's activation is controlled by a variable built from the **extension name**,
+uppercased: `PHP_APCU_ENABLED=false` disables `apcu`, `PHP_XDEBUG_ENABLED=false` disables `xdebug`.
+Enabling one links its `.ini` into the scan directory, which is what loads it; disabling one leaves
+the extension on disk and out of the process.
 
 Do not confuse `PHP_APCU_ENABLED` with `PHP_APC_ENABLED`: the second is the `apc.enabled` ini
 directive, a different setting.
 
 | Environment Variable        | Extension       | Enabled (prd) | Enabled (dev) | Configuration                        | Documentation                                                               |
 |-----------------------------|-----------------|---------------|---------------|--------------------------------------|-----------------------------------------------------------------------------|
-| `PHP_APC_ENABLED`           | `apcu`          | `true`        | `true`        | [Link](docs/php.md#apcu)             | [Link](https://www.php.net/manual/en/book.apcu.php)                         |
+| `PHP_APCU_ENABLED`          | `apcu`          | `true`        | `true`        | [Link](docs/php.md#apcu)             | [Link](https://www.php.net/manual/en/book.apcu.php)                         |
 | `PHP_BCMATH_ENABLED`        | `bcmath`        | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.bc.php)                           |
 | `PHP_BZ2_ENABLED`           | `bz2`           | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.bzip2.php)                        |
 | `PHP_CALENDAR_ENABLED`      | `calendar`      | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.calendar.php)                     |

@@ -130,6 +130,44 @@ RUN set -eux ; \
 
 RUN install-php-extensions ${PHP_EXT_INSTALL}
 
+# The list of ini directives this image can be asked about, derived from PHP
+# itself instead of written by hand. It is what makes a directive overridable
+# *and* cleaned: entrypoint.d/01-php.sh declares one <NAME>_WCMTECH_DEFAULT per
+# entry, and 99-export-vars.sh registers each promoted name for the cleanup that
+# runs before supervisord is exec'd. A name the image does not know is neither.
+#
+# Generated at build so the boot pays nothing: one `mapfile` instead of a `php`
+# process. PHP_INI_SCAN_DIR is named explicitly rather than left to the ENV set
+# further down -- it must be the image's own conf.d, so that every installed
+# extension is loaded and its directives enumerated, and never /opt/etc, which is
+# render output (#69).
+#
+# ini_get_all() only knows the SAPI that runs it, and a directive it misses is
+# neither configurable nor cleaned. The ones FPM declares and the CLI does not
+# are appended here -- fastcgi.logging, which this image forces, among them.
+#
+# The list is the union across the PHP versions this image tracks, so two of them
+# are inert on one of the branches: cgi.force_redirect and cgi.redirect_status_env
+# exist under FPM on 8.4 and were removed in 8.5. A name PHP does not know costs
+# an empty variable that is declared and cleaned, which is the safe direction.
+#
+# tests.web.bats re-derives the difference against a live php-fpm rather than
+# trusting this list, and that assertion is what caught those two -- a
+# measurement taken on 8.5 alone had called them dead.
+#
+# Chained with && rather than piped into sort: a pipeline reports the status of
+# its last command, so a php that failed to enumerate would have shipped a short
+# list and let the build succeed.
+RUN mkdir -p /usr/local/share/base-php \
+ && PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d \
+      php -r 'foreach (array_keys(ini_get_all(null, false)) as $name) { echo $name, PHP_EOL; }' > /tmp/ini-names \
+ && printf '%s\n' cgi.discard_path cgi.fix_pathinfo cgi.force_redirect cgi.nph \
+                   cgi.redirect_status_env cgi.rfc2616_headers fastcgi.error_header \
+                   fastcgi.logging fastcgi.script_path_encoded fpm.config >> /tmp/ini-names \
+ && LC_ALL=C sort -u /tmp/ini-names > /usr/local/share/base-php/ini-directives.list \
+ && rm /tmp/ini-names \
+ && test -s /usr/local/share/base-php/ini-directives.list
+
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/
 COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
@@ -297,6 +335,44 @@ RUN set eux; \
     rm -rf /var/cache/apk/*
 
 RUN install-php-extensions ${PHP_EXT_INSTALL}
+
+# The list of ini directives this image can be asked about, derived from PHP
+# itself instead of written by hand. It is what makes a directive overridable
+# *and* cleaned: entrypoint.d/01-php.sh declares one <NAME>_WCMTECH_DEFAULT per
+# entry, and 99-export-vars.sh registers each promoted name for the cleanup that
+# runs before supervisord is exec'd. A name the image does not know is neither.
+#
+# Generated at build so the boot pays nothing: one `mapfile` instead of a `php`
+# process. PHP_INI_SCAN_DIR is named explicitly rather than left to the ENV set
+# further down -- it must be the image's own conf.d, so that every installed
+# extension is loaded and its directives enumerated, and never /opt/etc, which is
+# render output (#69).
+#
+# ini_get_all() only knows the SAPI that runs it, and a directive it misses is
+# neither configurable nor cleaned. The ones FPM declares and the CLI does not
+# are appended here -- fastcgi.logging, which this image forces, among them.
+#
+# The list is the union across the PHP versions this image tracks, so two of them
+# are inert on one of the branches: cgi.force_redirect and cgi.redirect_status_env
+# exist under FPM on 8.4 and were removed in 8.5. A name PHP does not know costs
+# an empty variable that is declared and cleaned, which is the safe direction.
+#
+# tests.web.bats re-derives the difference against a live php-fpm rather than
+# trusting this list, and that assertion is what caught those two -- a
+# measurement taken on 8.5 alone had called them dead.
+#
+# Chained with && rather than piped into sort: a pipeline reports the status of
+# its last command, so a php that failed to enumerate would have shipped a short
+# list and let the build succeed.
+RUN mkdir -p /usr/local/share/base-php \
+ && PHP_INI_SCAN_DIR=/usr/local/etc/php/conf.d \
+      php -r 'foreach (array_keys(ini_get_all(null, false)) as $name) { echo $name, PHP_EOL; }' > /tmp/ini-names \
+ && printf '%s\n' cgi.discard_path cgi.fix_pathinfo cgi.force_redirect cgi.nph \
+                   cgi.redirect_status_env cgi.rfc2616_headers fastcgi.error_header \
+                   fastcgi.logging fastcgi.script_path_encoded fpm.config >> /tmp/ini-names \
+ && LC_ALL=C sort -u /tmp/ini-names > /usr/local/share/base-php/ini-directives.list \
+ && rm /tmp/ini-names \
+ && test -s /usr/local/share/base-php/ini-directives.list
 
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/

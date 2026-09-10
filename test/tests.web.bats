@@ -225,6 +225,28 @@ teardown_file() {
   [ "${elapsed}" -lt 10 ]
 }
 
+# ini_get_all() only knows the SAPI that runs it, and the shipped list is
+# generated at build by the CLI. Eight directives exist under FPM and not under
+# the CLI -- fastcgi.logging, which this image forces, among them -- so the
+# Dockerfile appends them by hand. This keeps that addendum honest: everything
+# php-fpm declares has to be in the list, or the directive quietly leaves the
+# mechanism, stops being overridable and stops being cleaned.
+@test "[$TEST_FILE] The shipped list covers every directive php-fpm declares" {
+  local shipped declared
+
+  shipped="$(${BATS_CONTAINER_ENGINE} exec "${BATS_WEB_CONTAINER}" \
+    cat /usr/local/share/base-php/ini-directives.list)"
+
+  run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" \
+    '<?php foreach (array_keys(ini_get_all(null, false)) as $name) { echo $name, "\n"; }'
+  assert_success
+  declared="${output}"
+
+  # Left-only lines: declared by php-fpm, absent from the list.
+  run comm -23 <(LC_ALL=C sort <<<"${declared}") <(LC_ALL=C sort <<<"${shipped}")
+  assert_output ""
+}
+
 @test "[$TEST_FILE] expose_php stays off" {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" '<?php echo ini_get("expose_php") ? "on" : "off";'
   assert_line "off"
@@ -793,6 +815,11 @@ HOOK
 # helpers being available rather than an accident of the mechanism: a child
 # image can render its own templates out of /opt/config -- the mount-in
 # extension point -- with the same writability preflight and the same log lines.
+#
+# The variable is set on the container on purpose. A PHP_* directive variable
+# carries what the operator asked for, not the value in force: the image renders
+# only what is set and lets php.ini supply the rest, so a directive nobody
+# overrode has no value to read here. Ask PHP for the effective one.
 @test "[$TEST_FILE] A late hook can render its own template with apply-template" {
   local -r name="${BATS_WEB_CONTAINER}-hooktmpl"
   local -r hook="${BATS_TEST_TMPDIR}/10-render.sh"
@@ -802,13 +829,14 @@ HOOK
   printf '#!/bin/bash\napply-template /opt/config/app.conf.tmpl /opt/etc/app.conf\n' >"${hook}"
 
   ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+    --env PHP_MEMORY_LIMIT=256M \
     --volume "${tmpl}:/opt/config/app.conf.tmpl:ro" \
     --volume "${hook}:/opt/bin/container-entrypoint.d/10-render.sh:ro" \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
   container_wait_for_healthy "${name}" 60 >/dev/null
 
   run ${BATS_CONTAINER_ENGINE} exec "${name}" cat /opt/etc/app.conf
-  assert_line "memory=${BATS_PHP_MEMORY_LIMIT}"
+  assert_line "memory=256M"
 }
 
 # The banner mechanism is a helper rather than a block inlined in the two

@@ -122,6 +122,25 @@ teardown_file() {
   assert_line "[ci]"
 }
 
+# The list of ini directives the image can be asked about is derived from PHP at
+# build time rather than written by hand, so the only thing left to watch is
+# drift: a PHP release that adds or removes a directive must be seen, not
+# absorbed in silence. The fixture is that witness -- `make ini-directives`
+# regenerates it, and the diff of the pull request names what moved.
+#
+# It is version-specific, like the php.ini files: a backport regenerates it
+# instead of cherry-picking it.
+@test "[$TEST_FILE] The shipped ini directive list matches the fixture" {
+  local -r fixture="${BATS_TEST_DIRNAME}/fixtures/ini-directives.list"
+  local -r shipped="${BATS_TEST_TMPDIR}/ini-directives.list"
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint cat "${BATS_CLI_IMAGE}" \
+    /usr/local/share/base-php/ini-directives.list >"${shipped}"
+
+  run diff --unified=0 "${fixture}" "${shipped}"
+  assert_success
+}
+
 # The banner is drawn with runs of spaces, and a web console that renders its
 # logs into HTML collapses every run to a single space: the art arrived as a
 # line of debris. Measured on the production OpenShift console -- the QA one
