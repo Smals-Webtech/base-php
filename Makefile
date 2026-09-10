@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 .DEFAULT_GOAL := help
-.PHONY: help build test
+.PHONY: help build test ini-directives
 
 help: # Show help for each of the Makefile recipes.
 	@echo "Base PHP Build / Test"
@@ -50,6 +50,14 @@ build:
 
 test:
 	@$(MAKE) -C test demo-test
+
+# The fixture is the drift witness: a PHP release that adds or removes an ini
+# directive moves this file, and the diff of the pull request names it. It is
+# version-specific, so a backport regenerates it rather than cherry-picking it.
+ini-directives: ## ini-directives : regenerate test/fixtures/ini-directives.list from the built cli image
+	@docker run --rm --entrypoint cat $(DOCKER_IMAGE_NAME):$${DOCKER_IMAGE_TAG:-snapshot}-cli \
+	   /usr/local/share/base-php/ini-directives.list > test/fixtures/ini-directives.list
+	@echo "test/fixtures/ini-directives.list <- $(DOCKER_IMAGE_NAME):$${DOCKER_IMAGE_TAG:-snapshot}-cli ($$(wc -l < test/fixtures/ini-directives.list) directives)"
 
 # —— Docker build —————————————————————————————————————————————————————————————————————————————————————————————————————
 

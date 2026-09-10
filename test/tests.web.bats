@@ -225,6 +225,28 @@ teardown_file() {
   [ "${elapsed}" -lt 10 ]
 }
 
+# ini_get_all() only knows the SAPI that runs it, and the shipped list is
+# generated at build by the CLI. Eight directives exist under FPM and not under
+# the CLI -- fastcgi.logging, which this image forces, among them -- so the
+# Dockerfile appends them by hand. This keeps that addendum honest: everything
+# php-fpm declares has to be in the list, or the directive quietly leaves the
+# mechanism, stops being overridable and stops being cleaned.
+@test "[$TEST_FILE] The shipped list covers every directive php-fpm declares" {
+  local shipped declared
+
+  shipped="$(${BATS_CONTAINER_ENGINE} exec "${BATS_WEB_CONTAINER}" \
+    cat /usr/local/share/base-php/ini-directives.list)"
+
+  run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" \
+    '<?php foreach (array_keys(ini_get_all(null, false)) as $name) { echo $name, "\n"; }'
+  assert_success
+  declared="${output}"
+
+  # Left-only lines: declared by php-fpm, absent from the list.
+  run comm -23 <(LC_ALL=C sort <<<"${declared}") <(LC_ALL=C sort <<<"${shipped}")
+  assert_output ""
+}
+
 @test "[$TEST_FILE] expose_php stays off" {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" '<?php echo ini_get("expose_php") ? "on" : "off";'
   assert_line "off"
