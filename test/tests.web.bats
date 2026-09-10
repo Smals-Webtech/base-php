@@ -815,6 +815,11 @@ HOOK
 # helpers being available rather than an accident of the mechanism: a child
 # image can render its own templates out of /opt/config -- the mount-in
 # extension point -- with the same writability preflight and the same log lines.
+#
+# The variable is set on the container on purpose. A PHP_* directive variable
+# carries what the operator asked for, not the value in force: the image renders
+# only what is set and lets php.ini supply the rest, so a directive nobody
+# overrode has no value to read here. Ask PHP for the effective one.
 @test "[$TEST_FILE] A late hook can render its own template with apply-template" {
   local -r name="${BATS_WEB_CONTAINER}-hooktmpl"
   local -r hook="${BATS_TEST_TMPDIR}/10-render.sh"
@@ -824,13 +829,14 @@ HOOK
   printf '#!/bin/bash\napply-template /opt/config/app.conf.tmpl /opt/etc/app.conf\n' >"${hook}"
 
   ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+    --env PHP_MEMORY_LIMIT=256M \
     --volume "${tmpl}:/opt/config/app.conf.tmpl:ro" \
     --volume "${hook}:/opt/bin/container-entrypoint.d/10-render.sh:ro" \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
   container_wait_for_healthy "${name}" 60 >/dev/null
 
   run ${BATS_CONTAINER_ENGINE} exec "${name}" cat /opt/etc/app.conf
-  assert_line "memory=${BATS_PHP_MEMORY_LIMIT}"
+  assert_line "memory=256M"
 }
 
 # The banner mechanism is a helper rather than a block inlined in the two
