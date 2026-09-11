@@ -55,7 +55,7 @@ done
 log "INFO" "- Rendering PHP configuration file(s) ..."
 
 # Only what the operator actually set is written; php.ini carries the rest. The
-# eight directives where this image departs from PHP are set as defaults in
+# nine directives where this image departs from PHP are set as defaults in
 # entrypoint.d/01-php.sh and therefore land here like any other value.
 #
 # Values are quoted, because unquoted PHP reads `yes`, `no`, `on`, `off`, `true`,
