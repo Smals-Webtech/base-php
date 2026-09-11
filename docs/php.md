@@ -42,7 +42,7 @@ is image plumbing, not a knob: pointing it elsewhere means nothing this containe
 
 ## Where the image departs from PHP
 
-Eight directives, and only these, are set by the image itself. Each is still overridable.
+Nine directives, and only these, are set by the image itself. Each is still overridable.
 
 | directive | value | why |
 | --- | --- | --- |
@@ -50,6 +50,7 @@ Eight directives, and only these, are set by the image itself. Each is still ove
 | `fastcgi.logging` | `Off` | otherwise every PHP notice is duplicated into the web server's log ([docker-library/php#1360](https://github.com/docker-library/php/pull/1360)) |
 | `date.timezone` | `Europe/Brussels` | PHP falls back to UTC |
 | `soap.wsdl_cache_dir` | `/app/tmp` | the default `/tmp` is not the writable path in a read-only container |
+| `opcache.lockfile_path` | `/app/tmp` | same, and `/tmp` is where PHP puts it by default |
 | `xdebug.output_dir` | `/app/tmp` | same |
 | `xdebug.client_host` | `host.docker.internal` | the debugger runs on the host, not in the container |
 | `xdebug.mode` | `off` | xdebug ships in every variant and stays inert until asked for |

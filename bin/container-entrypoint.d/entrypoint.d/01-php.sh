@@ -38,7 +38,7 @@ PHP_EXT_ENABLED_WCMTECH_DEFAULT="${PHP_EXT_ENABLED}"
 # about 30 ms.
 #
 # Nothing is rendered from an empty value: php.ini carries the defaults, and only
-# what the operator actually sets is written. The exceptions are the eight
+# what the operator actually sets is written. The exceptions are the nine
 # directives below, where this image deliberately departs from PHP.
 
 PHP_INI_DIRECTIVES_FILE="/usr/local/share/base-php/ini-directives.list"
@@ -75,6 +75,7 @@ PHP_EXPOSE_PHP_WCMTECH_DEFAULT="Off"                          # hardening
 PHP_FASTCGI_LOGGING_WCMTECH_DEFAULT="Off"                     # docker-library/php#1360
 PHP_DATE_TIMEZONE_WCMTECH_DEFAULT="Europe/Brussels"           # business default
 PHP_SOAP_WSDL_CACHE_DIR_WCMTECH_DEFAULT="/app/tmp"            # the writable runtime dir
+PHP_OPCACHE_LOCKFILE_PATH_WCMTECH_DEFAULT="/app/tmp"          # idem: /tmp is read-only here
 PHP_XDEBUG_OUTPUT_DIR_WCMTECH_DEFAULT="/app/tmp"              # idem
 PHP_XDEBUG_CLIENT_HOST_WCMTECH_DEFAULT="host.docker.internal" # reach the host from a container
 PHP_XDEBUG_MODE_WCMTECH_DEFAULT="${XDEBUG_MODE:-off}"         # xdebug's own keyword for "no mode"
