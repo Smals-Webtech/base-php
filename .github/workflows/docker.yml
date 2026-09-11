@@ -266,3 +266,73 @@ jobs:
           docker buildx imagetools inspect $(jq -cr '.target."${{ matrix.variant }}-${{ matrix.target }}".tags | first' <<< ${METADATA})
         env:
           METADATA: ${{ needs.prepare.outputs.metadata }}
+
+  # ── Vulnerability scan of the published prd images (Trivy → Security tab) ────────────────────────
+  #
+  # Only the prd images: the dev ones carry Composer, the GitHub CLI and Xdebug, and they are not
+  # what runs in production -- scanning them would double the job count for findings nobody acts on.
+  #
+  # The reference is the LAST tag of the target rather than the first: `first` is the floating
+  # `:<variant>` tag, `last` is the versioned one (`8.5.10-cli`, or `snapshot-cli` from main), so a
+  # result in the Security tab is attributable to a release instead of to a tag that moves.
+  scan:
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      security-events: write
+
+    needs:
+      - prepare
+      - push
+
+    if: fromJson(needs.prepare.outputs.push)
+
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: ${{ fromJson(needs.prepare.outputs.variants) }}
+
+    steps:
+      - name: Resolve the published image
+        id: image
+        shell: bash
+        run: |
+          set -e
+          ref="$(jq -cr '.target."${{ matrix.variant }}-prd".tags | last' <<< "${METADATA}")"
+          if [ -z "${ref}" ] || [ "${ref}" = "null" ]; then
+            echo "::error::no tag resolved for ${{ matrix.variant }}-prd" >&2
+            exit 1
+          fi
+          echo "resolved ${{ matrix.variant }}-prd -> ${ref}"
+          echo "ref=${ref}" >> "${GITHUB_OUTPUT}"
+        env:
+          METADATA: ${{ needs.prepare.outputs.metadata }}
+
+      - name: Run Trivy (SARIF)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          format: sarif
+          output: trivy.sarif
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+
+      # One category per variant: GitHub indexes code-scanning results by category, so four uploads
+      # sharing one would overwrite each other and the tab would only ever show the last variant.
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy.sarif
+          category: trivy-${{ matrix.variant }}
+
+      - name: Trivy summary (table, non-blocking)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          format: table
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"
