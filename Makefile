@@ -103,6 +103,11 @@ _docker-bake/%:
 
 # —— Release & Tag ————————————————————————————————————————————————————————————————————————————————————————————————————
 
+# Ritual: edit CHANGELOG.md first -- move what is under [Unreleased] beneath a new
+# [x.y.z] heading -- then run `make release VERSION=x.y.z`, whose commit sweeps that
+# edit in. CHANGELOG.md is the durable copy: `retag` and `notes` regenerate the GitHub
+# release notes from the previous tag and discard anything hand-written there.
+
 .PHONY: release-info sync release retag tag-restore notes build-version
 
 # Canonical remote: 'upstream' when working from a fork, else 'origin' (the real repo).
@@ -151,8 +156,23 @@ release: ## release VERSION=x.y.z : prepare commit + signed tag + push + GitHub 
 	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
 	@b=$$(git rev-parse --abbrev-ref HEAD); case "$$b" in main|[0-9]*.[0-9]*) ;; *) echo "release only from main or x.y (on $$b)" >&2; exit 1;; esac
 	@git rev-parse "$(VERSION)" >/dev/null 2>&1 && { echo "tag $(VERSION) already exists -> use 'make retag VERSION=$(VERSION)'" >&2; exit 1; } || true
+	@# `git commit -a` stages tracked files only, so a new file that was never added
+	@# would be released without ever being committed. --exclude-standard honours
+	@# .git/info/exclude, so a deliberately untracked file does not trip this.
+	@u=$$(git ls-files --others --exclude-standard); [ -z "$$u" ] || { \
+		echo "untracked files present -- 'git commit -a' would SKIP them:" >&2; \
+		echo "$$u" | sed 's/^/  /' >&2; \
+		echo "git add them (or exclude them) before releasing" >&2; exit 1; }
 	@if [ -z "$(YES)" ]; then printf "Release $(VERSION) from $$(git rev-parse --abbrev-ref HEAD) to $(RELEASE_REMOTE) ($(REPO))? [y/N] "; read a; [ "$$a" = y ] || [ "$$a" = Y ] || { echo Aborted >&2; exit 1; }; fi
-	@git commit -S -a -m "chore: prepare release $(VERSION)" || echo "No changes to commit."
+	@# Only a genuinely clean tree may skip the commit. `git commit ... || echo` used
+	@# to swallow every failure: a locked GPG agent made the signature fail, printed
+	@# "No changes to commit", and the target carried on to tag a tree with no release
+	@# commit in it. Measured: the old form exits 0 on a signing failure, this one 128.
+	@if [ -n "$$(git status --porcelain --untracked-files=no)" ]; then \
+		git commit -S -a -m "chore: prepare release $(VERSION)"; \
+	else \
+		echo "Nothing to commit -- tagging the current HEAD."; \
+	fi
 	@git tag -s -m "Version $(VERSION)" $(VERSION)
 	@b=$$(git rev-parse --abbrev-ref HEAD); \
 	 git push $(RELEASE_REMOTE) $$b; \
