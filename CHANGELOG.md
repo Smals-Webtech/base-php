@@ -41,6 +41,11 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Fixed
 
+- **The image scan uploads only the severities it says it does.** `aquasecurity/trivy-action`
+  ignores its `severity` input when the output format is SARIF unless
+  `limit-severities-for-sarif` is set, so the Security tab was filling with `MEDIUM` and `UNKNOWN`
+  findings that the job's own table step never showed. Measured on `8.5.10-fpm`: 25 findings
+  uploaded where the declared filter allows 5.
 - **`make release` no longer tags a tree that has no release commit.** `git commit ... || echo "No
   changes to commit."` swallowed every failure, not just an empty tree: a locked GPG agent made the
   signature fail, the target printed that message and carried on to tag. Measured: the old form exits

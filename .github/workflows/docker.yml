@@ -324,6 +324,9 @@ jobs:
           output: trivy.sarif
           scanners: vuln
           severity: CRITICAL,HIGH
+          # Without this the action ignores `severity` for SARIF output and uploads every severity,
+          # so the Security tab filled with MEDIUM and UNKNOWN findings the table step never showed.
+          limit-severities-for-sarif: true
           ignore-unfixed: true
         env:
           TRIVY_VEX: ${{ github.workspace }}/.vex/gomplate.openvex.json
