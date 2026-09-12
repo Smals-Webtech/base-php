@@ -24,7 +24,7 @@ used:
 | module | reached through | used here |
 | --- | --- | --- |
 | `github.com/go-git/go-git/v5` | the `git://`, `git+https://`, `git+ssh://` datasources | no |
-| `golang.org/x/crypto` (ssh, openpgp) | go-git's SSH transport; `bcrypt` is the only part gomplate imports directly | no |
+| `golang.org/x/crypto` (`ssh`, `openpgp`) | go-git's SSH transport; `bcrypt` is the only part gomplate imports directly | no |
 | `google.golang.org/grpc` | the Google Cloud client libraries behind the `gs://` datasource | no |
 
 ## How it is applied

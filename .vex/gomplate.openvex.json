@@ -48,9 +48,7 @@
       "products": [
         {
           "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
-          "subcomponents": [
-            { "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }
-          ]
+          "subcomponents": [{ "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }]
         }
       ],
       "status": "not_affected",
@@ -66,9 +64,7 @@
       "products": [
         {
           "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
-          "subcomponents": [
-            { "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }
-          ]
+          "subcomponents": [{ "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }]
         }
       ],
       "status": "not_affected",
@@ -84,9 +80,7 @@
       "products": [
         {
           "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
-          "subcomponents": [
-            { "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }
-          ]
+          "subcomponents": [{ "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }]
         }
       ],
       "status": "not_affected",
@@ -101,9 +95,7 @@
       "products": [
         {
           "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
-          "subcomponents": [
-            { "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }
-          ]
+          "subcomponents": [{ "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }]
         }
       ],
       "status": "not_affected",
