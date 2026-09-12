@@ -294,6 +294,10 @@ jobs:
         variant: ${{ fromJson(needs.prepare.outputs.variants) }}
 
     steps:
+      # Only for .vex/: the VEX document has to be on disk before Trivy runs.
+      - name: Checkout source
+        uses: actions/checkout@v6
+
       - name: Resolve the published image
         id: image
         shell: bash
@@ -309,6 +313,9 @@ jobs:
         env:
           METADATA: ${{ needs.prepare.outputs.metadata }}
 
+      # TRIVY_VEX, not a `with:` input: the action exposes no flag for it. The document declares the
+      # gomplate findings this image does not reach; see .vex/README.md for what it claims and when
+      # it must be revisited.
       - name: Run Trivy (SARIF)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -318,6 +325,8 @@ jobs:
           scanners: vuln
           severity: CRITICAL,HIGH
           ignore-unfixed: true
+        env:
+          TRIVY_VEX: ${{ github.workspace }}/.vex/gomplate.openvex.json
 
       # One category per variant: GitHub indexes code-scanning results by category, so four uploads
       # sharing one would overwrite each other and the tab would only ever show the last variant.
@@ -327,6 +336,8 @@ jobs:
           sarif_file: trivy.sarif
           category: trivy-${{ matrix.variant }}
 
+      # TRIVY_SHOW_SUPPRESSED prints what the VEX filtered out, and which statement did it, so the
+      # suppression is visible in the build log rather than only in a file nobody opens.
       - name: Trivy summary (table, non-blocking)
         uses: aquasecurity/trivy-action@v0.36.0
         with:
@@ -336,3 +347,6 @@ jobs:
           severity: CRITICAL,HIGH
           ignore-unfixed: true
           exit-code: "0"
+        env:
+          TRIVY_VEX: ${{ github.workspace }}/.vex/gomplate.openvex.json
+          TRIVY_SHOW_SUPPRESSED: "true"

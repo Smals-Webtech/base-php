@@ -24,6 +24,13 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Added
 
+- **Findings the image cannot reach are declared, not hidden.** `.vex/gomplate.openvex.json` is an
+  OpenVEX document stating, per advisory, that the ten `go-git`, `x/crypto` and `grpc` findings in
+  `/usr/bin/gomplate` are `not_affected`: those modules arrive behind the `git://`, `gs://` and SSH
+  datasource schemes, and this image invokes gomplate with `env:` datasources only. Trivy filters
+  them out of the SARIF and prints what it suppressed in the build log. Measured on
+  `8.5.10-fpm`: 5 HIGH before, 0 after, with the 20 OS-package findings untouched. `.vex/README.md`
+  carries the reasoning and the conditions that invalidate it.
 - **The published `prd` images are scanned for vulnerabilities** on every push that publishes, and
   the results land in the repository's Security tab — one category per variant, so `cli`, `fpm`,
   `apache` and `nginx` do not overwrite each other. `CRITICAL` and `HIGH` only, unfixed advisories
