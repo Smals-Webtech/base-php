@@ -1,0 +1,174 @@
+{
+  "@context": "https://openvex.dev/ns/v0.2.0",
+  "@id": "https://github.com/Smals-Webtech/base-php/.vex/gomplate.openvex.json",
+  "author": "Smals Webtech",
+  "timestamp": "2026-09-12T11:29:55Z",
+  "version": 1,
+  "statements": [
+    {
+      "vulnerability": {
+        "name": "CVE-2026-71556",
+        "description": "go-git: worktree operations may follow symlinks"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [
+            { "@id": "pkg:golang/github.com/go-git/go-git/v5@v5.19.1" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "go-git backs gomplate's git://, git+https:// and git+ssh:// datasources. This image invokes gomplate with env: datasources only, so no repository is ever cloned and no worktree operation runs."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-71557",
+        "description": "go-git: malicious reference names may modify files outside the reference storage"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [
+            { "@id": "pkg:golang/github.com/go-git/go-git/v5@v5.19.1" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "go-git backs gomplate's git://, git+https:// and git+ssh:// datasources. This image invokes gomplate with env: datasources only, so no remote reference is ever fetched or stored."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-56854",
+        "description": "golang.org/x/crypto/ssh: source-address critical option not enforced for non-public-key auth callbacks",
+        "aliases": ["GO-2026-6303"]
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [{ "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The advisory affects golang.org/x/crypto/ssh and concerns an SSH server authorising a connection. gomplate imports golang.org/x/crypto only for bcrypt; x/crypto/ssh is reached solely through go-git's SSH transport, which this image never exercises, and gomplate runs no SSH server."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-56855",
+        "description": "golang.org/x/crypto/ssh: denial of service on a deadlocked established channel",
+        "aliases": ["GO-2026-6355"]
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [{ "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The advisory affects golang.org/x/crypto/ssh. gomplate imports golang.org/x/crypto only for bcrypt; x/crypto/ssh is reached solely through go-git's SSH transport, which this image never exercises."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-78662",
+        "description": "golang.org/x/crypto/ssh: denial of service on a deadlocked undecided channel",
+        "aliases": ["GO-2026-6354"]
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [{ "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The advisory affects golang.org/x/crypto/ssh. gomplate imports golang.org/x/crypto only for bcrypt; x/crypto/ssh is reached solely through go-git's SSH transport, which this image never exercises."
+    },
+    {
+      "vulnerability": {
+        "name": "GO-2026-5932",
+        "description": "golang.org/x/crypto/openpgp is unmaintained and unsafe by design"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [{ "@id": "pkg:golang/golang.org/x/crypto@v0.54.0" }]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "The advisory affects the golang.org/x/crypto/openpgp package tree, which gomplate does not import. Its only use of golang.org/x/crypto is bcrypt, for the crypto.Bcrypt template function."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-84304",
+        "description": "gRPC-Go: heap memory exhaustion via HTTP/2 DATA frame fragmentation"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [
+            { "@id": "pkg:golang/google.golang.org/grpc@v1.81.1" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "gRPC enters the binary transitively through the Google Cloud client libraries behind gomplate's gs:// datasource; gomplate's own source imports neither gRPC nor OpenTelemetry. This image invokes gomplate with env: datasources only, so no gRPC client or server is ever started and no HTTP/2 frame is parsed."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-84445",
+        "description": "gRPC-Go xDS servers: denial of service via crash due to missing validation"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [
+            { "@id": "pkg:golang/google.golang.org/grpc@v1.81.1" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "gRPC enters the binary transitively through the Google Cloud client libraries behind gomplate's gs:// datasource. This image invokes gomplate with env: datasources only, so no gRPC connection is ever established."
+    },
+    {
+      "vulnerability": {
+        "name": "GHSA-hrxh-6v49-42gf",
+        "description": "gRPC-Go: xDS RBAC and HTTP/2 vulnerabilities"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [
+            { "@id": "pkg:golang/google.golang.org/grpc@v1.81.1" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "gRPC enters the binary transitively through the Google Cloud client libraries behind gomplate's gs:// datasource. This image invokes gomplate with env: datasources only; no gRPC connection is established and nothing configures xDS."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-84303",
+        "description": "gRPC-Go: xDS RBAC HTTP filter bypass via mixed-case header matching"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [
+            { "@id": "pkg:golang/google.golang.org/grpc@v1.81.1" }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "gRPC enters the binary transitively through the Google Cloud client libraries behind gomplate's gs:// datasource. This image invokes gomplate with env: datasources only; no gRPC connection is established and nothing configures xDS."
+    }
+  ]
+}

@@ -24,6 +24,13 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Added
 
+- **Findings the image cannot reach are declared, not hidden.** `.vex/gomplate.openvex.json` is an
+  OpenVEX document stating, per advisory, that the ten `go-git`, `x/crypto` and `grpc` findings in
+  `/usr/bin/gomplate` are `not_affected`: those modules arrive behind the `git://`, `gs://` and SSH
+  datasource schemes, and this image invokes gomplate with `env:` datasources only. Trivy filters
+  them out of the SARIF and prints what it suppressed in the build log. Measured on
+  `8.4.25-fpm`: 5 HIGH before, 0 after, with the OS-package findings untouched. `.vex/README.md`
+  carries the reasoning and the conditions that invalidate it.
 - **The published `prd` images are scanned for vulnerabilities** on every push that publishes, and
   the results land in the repository's Security tab — one category per variant, so `cli`, `fpm`,
   `apache` and `nginx` do not overwrite each other. `CRITICAL` and `HIGH` only, unfixed advisories
@@ -34,6 +41,11 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Fixed
 
+- **The image scan uploads only the severities it says it does.** `aquasecurity/trivy-action`
+  ignores its `severity` input when the output format is SARIF unless
+  `limit-severities-for-sarif` is set, so the Security tab was filling with `MEDIUM` and `UNKNOWN`
+  findings that the job's own table step never showed. Measured on `8.4.25-fpm`: the declared filter
+  allows 5 findings; every severity was being uploaded.
 - **`make release` no longer tags a tree that has no release commit.** `git commit ... || echo "No
   changes to commit."` swallowed every failure, not just an empty tree: a locked GPG agent made the
   signature fail, the target printed that message and carried on to tag. Measured: the old form exits
