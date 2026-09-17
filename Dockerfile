@@ -218,19 +218,31 @@ LABEL be.smals.webtech.base.node-version="${NODE_VERSION_ARG}" \
 
 USER root
 
-COPY --from=node /usr/lib /usr/lib
-COPY --from=node /usr/local/share /usr/local/share
-COPY --from=node /usr/local/lib /usr/local/lib
-COPY --from=node /usr/local/include /usr/local/include
-COPY --from=node /usr/local/bin /usr/local/bin
+# Copy only the Node.js runtime, never the node image's /usr/lib. Copying that
+# whole tree replaced this image's system libraries (libcrypto3, libssl3, ...)
+# with the node image's older copies while apk still recorded the newer
+# versions -- a silent downgrade, invisible to scanners that read the apk
+# database. libstdc++/libgcc (node's only non-musl runtime deps) are installed
+# through apk below, and the npm/npx/corepack/yarn symlinks are recreated. yarn
+# is relocated under /usr/local/lib so nothing is written to /opt.
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node /usr/local/include/node /usr/local/include/node
+COPY --from=node /opt/yarn-v*/ /usr/local/lib/yarn/
 
 RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
-    apk add --no-cache --virtual .base-php-dev-rundeps git patch ; \
+    apk add --no-cache --virtual .base-php-dev-rundeps git patch libstdc++ libgcc ; \
+    ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm ; \
+    ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx ; \
+    ln -sf ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack ; \
+    ln -sf ../lib/yarn/bin/yarn /usr/local/bin/yarn ; \
+    ln -sf ../lib/yarn/bin/yarnpkg /usr/local/bin/yarnpkg ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir -p /home/default/.composer ; \
     chown 1001:0 /home/default/.composer ; \
     chmod -R ugo+rw /home/default/.composer ; \
-    rm -rf /var/cache/apk/* ;
+    rm -rf /var/cache/apk/* ; \
+    node --version && npm --version && npx --version && yarn --version
 
 USER 1001
 
@@ -302,11 +314,17 @@ ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli o
 COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
 COPY --from=gomplate --chmod=775 --chown=root:root /out/gomplate /usr/bin/gomplate
 
-COPY --from=node /usr/lib /usr/lib
-COPY --from=node /usr/local/share /usr/local/share
-COPY --from=node /usr/local/lib /usr/local/lib
-COPY --from=node /usr/local/include /usr/local/include
-COPY --from=node /usr/local/bin /usr/local/bin
+# Copy only the Node.js runtime, never the node image's /usr/lib. Copying that
+# whole tree replaced this image's system libraries (libcrypto3, libssl3, ...)
+# with the node image's older copies while apk still recorded the newer
+# versions -- a silent downgrade, invisible to scanners that read the apk
+# database. libstdc++/libgcc (node's only non-musl runtime deps) are installed
+# through apk below, and the npm/npx/corepack/yarn symlinks are recreated. yarn
+# is relocated under /usr/local/lib so nothing is written to /opt.
+COPY --from=node /usr/local/bin/node /usr/local/bin/node
+COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
+COPY --from=node /usr/local/include/node /usr/local/include/node
+COPY --from=node /opt/yarn-v*/ /usr/local/lib/yarn/
 
 RUN set eux; \
     mkdir -p /home/default ; \
@@ -317,12 +335,20 @@ RUN set eux; \
                                                    gettext \
                                                    groff \
                                                    jq \
+                                                   libgcc \
+                                                   libstdc++ \
                                                    mailx \
                                                    mysql-client \
                                                    postgresql-client \
                                                    postgresql-libs \
                                                    ssmtp \
                                                    tzdata ; \
+    ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm ; \
+    ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx ; \
+    ln -sf ../lib/node_modules/corepack/dist/corepack.js /usr/local/bin/corepack ; \
+    ln -sf ../lib/yarn/bin/yarn /usr/local/bin/yarn ; \
+    ln -sf ../lib/yarn/bin/yarnpkg /usr/local/bin/yarnpkg ; \
+    node --version ; npm --version ; npx --version ; yarn --version ; \
     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
