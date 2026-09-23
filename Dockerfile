@@ -6,6 +6,12 @@ ARG NODE_VERSION_ARG=24
 ARG COMPOSER_VERSION_ARG=2.10.3
 ARG GOMPLATE_VERSION_ARG=5.2.0
 
+FROM alpine:${ALPINE_VERSION_ARG} AS ca-bundle
+
+RUN --mount=type=secret,id=ca_bundle,required=false \
+    cp /etc/ssl/certs/ca-certificates.crt /ca-bundle.pem ; \
+    if [ -f /run/secrets/ca_bundle ]; then cat /run/secrets/ca_bundle >> /ca-bundle.pem ; fi
+
 FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext-installer
 
 # Build gomplate from source instead of copying the upstream prebuilt binary.
@@ -26,11 +32,12 @@ FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext
 # added back.
 FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS gomplate
 ARG TARGETOS TARGETARCH GOMPLATE_VERSION_ARG
-RUN apk add --no-cache git
-RUN git clone --depth 1 --branch "v${GOMPLATE_VERSION_ARG}" https://github.com/hairyhenderson/gomplate.git /src
 WORKDIR /src
-RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    go build -trimpath \
+RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    apk add --no-cache git \
+    && git clone --depth 1 --branch "v${GOMPLATE_VERSION_ARG}" https://github.com/hairyhenderson/gomplate.git /src \
+    && CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    && go build -trimpath \
       -ldflags "-w -s -X github.com/hairyhenderson/gomplate/v5/version.Version=v${GOMPLATE_VERSION_ARG}" \
       -o /out/gomplate ./cmd/gomplate
 
@@ -80,7 +87,8 @@ ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli o
 COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
 COPY --from=gomplate --chmod=775 --chown=root:root /out/gomplate /usr/bin/gomplate
 
-RUN set -eux ; \
+RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    set -eux ; \
     mkdir -p /home/default ; \
     echo "include=/opt/etc/php/php-fpm.d/*.conf" >> /usr/local/etc/php-fpm.conf ; \
     apk add --no-cache --virtual .base-php-rundeps aws-cli=~${AWS_CLI_VERSION_ARG} \
@@ -103,14 +111,16 @@ RUN set -eux ; \
     echo "Europe/Brussels" > /etc/timezone ; \
     adduser -D -u 1001 -g default -G root -s /sbin/nologin default ;
 
-RUN set -eux ; \
+RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    set -eux ; \
     apk add --no-cache --virtual .base-php-apache-rundeps apache2 \
                                                           apache2-utils \
                                                           apache2-proxy \
                                                           apache2-ssl ; \
     adduser default apache ;
 
-RUN set -eux ; \
+RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    set -eux ; \
     apk add --no-cache --virtual .base-php-nginx-rundeps nginx=~${NGINX_VERSION_ARG} \
                                                          nginx-mod-http-headers-more=~${NGINX_VERSION_ARG} \
                                                          nginx-mod-http-vts=~${NGINX_VERSION_ARG} \
@@ -124,7 +134,8 @@ RUN set -eux ; \
                                                          nginx-mod-http-js=~${NGINX_VERSION_ARG} ; \
     adduser default nginx ;
 
-RUN install-php-extensions ${PHP_EXT_INSTALL}
+RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    install-php-extensions ${PHP_EXT_INSTALL}
 
 # The list of ini directives this image can be asked about, derived from PHP
 # itself instead of written by hand. It is what makes a directive overridable
@@ -230,7 +241,8 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=node /usr/local/include/node /usr/local/include/node
 COPY --from=node /opt/yarn-v*/ /usr/local/lib/yarn/
 
-RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
+RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps git patch libstdc++ libgcc ; \
     ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm ; \
     ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx ; \
@@ -326,7 +338,8 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=node /usr/local/include/node /usr/local/include/node
 COPY --from=node /opt/yarn-v*/ /usr/local/lib/yarn/
 
-RUN set eux; \
+RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    set eux; \
     mkdir -p /home/default ; \
     apk add --no-cache --virtual .base-php-rundeps aws-cli=~${AWS_CLI_VERSION_ARG} \
                                                    bash \
@@ -355,7 +368,8 @@ RUN set eux; \
     adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
     rm -rf /var/cache/apk/*
 
-RUN install-php-extensions ${PHP_EXT_INSTALL}
+RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    install-php-extensions ${PHP_EXT_INSTALL}
 
 # The list of ini directives this image can be asked about, derived from PHP
 # itself instead of written by hand. It is what makes a directive overridable
@@ -434,7 +448,8 @@ ENV PHP_XDEBUG_ENABLED="true"
 
 USER root
 
-RUN install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
+RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps zsh ripgrep git patch make g++ github-cli ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \
     mkdir -p /home/default/.composer ; \

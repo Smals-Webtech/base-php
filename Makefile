@@ -43,6 +43,22 @@ DOCKER_PLATFORM             ?= linux/amd64
 DOCKER_BUILDER              ?= default
 DOCKER_OUTPUT               ?= type=image
 
+ENABLE_ATTESTATIONS			?= true
+
+DOCKER_PROXY_ARGS := \
+	--env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY \
+	--env http_proxy --env https_proxy --env no_proxy
+
+DOCKER_BUILD_PROXY_ARGS := \
+	--build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY \
+	--build-arg http_proxy --build-arg https_proxy --build-arg no_proxy
+
+ifneq ($(strip $(CUSTOM_CA_BUNDLE)),)
+DOCKER_CA_ARGS := --volume $(CUSTOM_CA_BUNDLE):/etc/ssl/certs/ca-certificates.crt:ro
+DOCKER_BUILD_CA_ARGS := --secret id=ca_bundle,src=$(CUSTOM_CA_BUNDLE)
+DOCKER_BAKE_CA_ARGS := --allow=fs.read=$(CUSTOM_CA_BUNDLE)
+endif
+
 # —— Docker Compose Stack —————————————————————————————————————————————————————————————————————————————————————————————
 
 build:
@@ -92,6 +108,7 @@ bake-cli/%: ## bake-cli/(prd|dev) [ options ]
 _docker-bake/%:
 	@echo "\n-- Running Docker bake --\n"
 	@docker bake --progress=plain \
+		$(DOCKER_BAKE_CA_ARGS) \
 		--set *.platform=${DOCKER_PLATFORM} \
 		--set *.output=${DOCKER_OUTPUT} \
 		--builder ${DOCKER_BUILDER} \
