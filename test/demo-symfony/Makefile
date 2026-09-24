@@ -29,10 +29,6 @@ COMPOSER_UPDATE_CMDLINE        = "composer -vvv update --no-interaction --no-sug
 COMPOSER_DIAGNOSE_CMDLINE      = "composer -vvv diagnose --no-interaction --no-scripts"
 COMPOSER_SELF_UPDATE_CMDLINE   = "composer -vvv self-update --no-interaction"
 
-NPM_CONFIG_CMDLINE             = "npm config set cafile=/etc/ssl/certs/ca-certificates.crt && npm config set strict-ssl=false"
-NPM_INSTALL_CMDLINE            = "npm install --prefix /app/src/elasticms/vendor/elasticms/admin-ui-bundle/assets"
-NPM_RUN_BUILD_CMDLINE          = "npm --prefix /app/src/elasticms/vendor/elasticms/admin-ui-bundle/assets run build"
-
 DEMO_SASS_BUILD_CMDLINE        = "php bin/console sass:build"
 DEMO_IMPORTMAP_INSTALL_CMDLINE = "php bin/console importmap:install"
 
@@ -247,59 +243,6 @@ composer-selfupdate: $(CA_PREREQ)
 		--rm \
 		${BUILDER_DOCKER_IMAGE_NAME} \
 		bash -c ${COMPOSER_SELF_UPDATE_CMDLINE}
-
-# —— NPM ——————————————————————————————————————————————————————————————————————————————————————————————————————————————
-
-npm-configure:
-	@echo "\n-- Running NPM config --\n"
-	@docker run \
-		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \
-		--env HOME=${CURRENT_HOMEDIR} \
-		--env USER=${CURRENT_USERNAME} \
-		$(DOCKER_PROXY_ARGS) \
-		--user ${CURRENT_UID}:${CURRENT_GID} \
-		$(DOCKER_CA_ARGS) \
-		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
-		--volume ${DEMO_DIR}:${BUILDER_WORKING_DIR}:rw \
-		--tmpfs /app/tmp:size=100m,mode=1777 \
-		--workdir ${BUILDER_WORKING_DIR} \
-		--rm \
-		${BUILDER_DOCKER_IMAGE_NAME} \
-		bash -c ${NPM_CONFIG_CMDLINE}
-
-npm-install:
-	@echo "\n-- Running NPM install --\n"
-	@docker run \
-		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \
-		--env HOME=${CURRENT_HOMEDIR} \
-		--env USER=${CURRENT_USERNAME} \
-		$(DOCKER_PROXY_ARGS) \
-		--user ${CURRENT_UID}:${CURRENT_GID} \
-		$(DOCKER_CA_ARGS) \
-		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
-		--volume ${DEMO_DIR}:${BUILDER_WORKING_DIR}:rw \
-		--tmpfs /app/tmp:size=100m,mode=1777 \
-		--workdir ${BUILDER_WORKING_DIR} \
-		--rm \
-		${BUILDER_DOCKER_IMAGE_NAME} \
-		bash -c ${NPM_INSTALL_CMDLINE}
-
-npm-build:
-	@echo "\n-- Running NPM run build --\n"
-	@docker run \
-		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \
-		--env HOME=${CURRENT_HOMEDIR} \
-		--env USER=${CURRENT_USERNAME} \
-		$(DOCKER_PROXY_ARGS) \
-		--user ${CURRENT_UID}:${CURRENT_GID} \
-		$(DOCKER_CA_ARGS) \
-		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
-		--volume ${DEMO_DIR}:${BUILDER_WORKING_DIR}:rw \
-		--tmpfs /app/tmp:size=100m,mode=1777 \
-		--workdir ${BUILDER_WORKING_DIR} \
-		--rm \
-		${BUILDER_DOCKER_IMAGE_NAME} \
-		bash -c ${NPM_RUN_BUILD_CMDLINE}
 
 # —— Load —————————————————————————————————————————————————————————————————————————————————————————————————————————————
 # These need the demo stack up: demo-infra (traefik, profile all) + symfony started.
