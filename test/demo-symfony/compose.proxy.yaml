@@ -1,0 +1,13 @@
+---
+# Applied only when the calling shell defines a proxy (see COMPOSE_FILE in the
+# Makefile). Passes the proxy variables through to the symfony service, whose
+# `configure` step downloads dart-sass and the importmap packages at run time.
+services:
+  symfony:
+    environment:
+      - HTTP_PROXY
+      - HTTPS_PROXY
+      - NO_PROXY
+      - http_proxy
+      - https_proxy
+      - no_proxy

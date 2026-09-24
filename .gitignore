@@ -1,2 +1,3 @@
 /test/demo-symfony/src/demo
 /test/demo-symfony/config/locust/urls.json
+/test/demo-symfony/.cache

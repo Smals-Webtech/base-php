@@ -36,17 +36,55 @@ NPM_RUN_BUILD_CMDLINE          = "npm --prefix /app/src/elasticms/vendor/elastic
 DEMO_SASS_BUILD_CMDLINE        = "php bin/console sass:build"
 DEMO_IMPORTMAP_INSTALL_CMDLINE = "php bin/console importmap:install"
 
-EXEC_DEMO		               = docker compose --env-file=../.env exec --user $(CURRENT_UID) symfony
+EXEC_DEMO		               = $(DOCKER_COMPOSE) exec --user $(CURRENT_UID) symfony
 
 BATS                           = bats -t -j 1
+
+# —— Corporate proxy / custom CA ——————————————————————————————————————————————————————————————————————————————————————
+#
+# Nothing here takes effect unless the calling environment asks for it, so a run
+# with direct internet access (CI, a plain workstation) is unchanged.
+#
+# Proxy: HTTP(S)_PROXY / NO_PROXY are passed through to the one-shot builder
+# containers (DOCKER_PROXY_ARGS) and, through compose.proxy.yaml, to the symfony
+# service, whose `configure` step downloads dart-sass and the importmap packages.
+#
+# CA: CUSTOM_CA_BUNDLE (an absolute path) is ADDED to the image's own trust store,
+# never substituted for it -- the semantics of the ca-bundle stage of the image
+# build. The combined bundle is written to .cache/ and mounted over the system
+# bundle of the builder containers (DOCKER_CA_ARGS) and, through compose.ca.yaml,
+# of the symfony service.
+#
+# COMPOSE_FILE is exported so that every compose call -- start, stop, exec, the
+# load profile and the bats helpers -- sees the same set of files.
 
 DOCKER_PROXY_ARGS := \
 	--env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY \
 	--env http_proxy --env https_proxy --env no_proxy
 
-ifneq ($(strip $(CUSTOM_CA_BUNDLE)),)
-DOCKER_CA_ARGS := --volume $(CUSTOM_CA_BUNDLE):/etc/ssl/certs/ca-certificates.crt:ro
+COMPOSE_FILE                  := compose.yaml:compose.override.yaml
+
+ifneq ($(strip $(HTTP_PROXY)$(HTTPS_PROXY)$(http_proxy)$(https_proxy)),)
+COMPOSE_FILE                  := $(COMPOSE_FILE):compose.proxy.yaml
 endif
+
+ifneq ($(strip $(CUSTOM_CA_BUNDLE)),)
+CA_RUNTIME_BUNDLE             := $(CURRENT_DIR)/.cache/ca-bundle.pem
+CA_PREREQ                     := $(CA_RUNTIME_BUNDLE)
+DOCKER_CA_ARGS                := --volume $(CA_RUNTIME_BUNDLE):/etc/ssl/certs/ca-certificates.crt:ro
+COMPOSE_FILE                  := $(COMPOSE_FILE):compose.ca.yaml
+export CA_RUNTIME_BUNDLE
+
+# Rebuilt whenever the custom CA changes, since it is the prerequisite.
+$(CA_RUNTIME_BUNDLE): $(CUSTOM_CA_BUNDLE)
+	@mkdir -p $(@D)
+	@docker run --rm --entrypoint cat $(BUILDER_DOCKER_IMAGE_NAME) /etc/ssl/certs/ca-certificates.crt > $@.tmp
+	@cat $(CUSTOM_CA_BUNDLE) >> $@.tmp
+	@mv $@.tmp $@
+	@echo "CA bundle: $(CUSTOM_CA_BUNDLE) added to the image trust store -> $@"
+endif
+
+export COMPOSE_FILE
 
 # —— Load generation ——————————————————————————————————————————————————————————————————————————————————————————————————
 
@@ -70,7 +108,7 @@ configure:
 
 # —— Docker ———————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-start:
+start: $(CA_PREREQ)
 	@$(DOCKER_COMPOSE) --profile=symfony up -d
 
 stop:
@@ -103,7 +141,7 @@ reset:
 	git reset --hard FETCH_HEAD
 
 clean:
-	rm -rf $(DEMO_DIR)
+	rm -rf $(DEMO_DIR) $(CURRENT_DIR)/.cache
 
 info:
 	@if [ -d "$(DEMO_DIR)/.git" ]; then \
@@ -130,7 +168,7 @@ info:
 
 # —— Composer —————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-composer-diagnose:
+composer-diagnose: $(CA_PREREQ)
 	@echo "\n-- Running Composer diagnose --\n"
 	@docker run \
 		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \
@@ -149,7 +187,7 @@ composer-diagnose:
 		${BUILDER_DOCKER_IMAGE_NAME} \
 		bash -c ${COMPOSER_DIAGNOSE_CMDLINE}
 
-composer-update:
+composer-update: $(CA_PREREQ)
 	@echo "\n-- Running Composer update --\n"
 	@docker run \
 		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \
@@ -170,7 +208,7 @@ composer-update:
 		${BUILDER_DOCKER_IMAGE_NAME} \
 		bash -c ${COMPOSER_UPDATE_CMDLINE}
 
-composer-install:
+composer-install: $(CA_PREREQ)
 	@echo "\n-- Running Composer install --\n"
 	@docker run \
 		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \
@@ -191,7 +229,7 @@ composer-install:
 		${BUILDER_DOCKER_IMAGE_NAME} \
 		bash -c ${COMPOSER_INSTALL_CMDLINE}
 
-composer-selfupdate:
+composer-selfupdate: $(CA_PREREQ)
 	@echo "\n-- Running Composer Self-Update --\n"
 	@docker run \
 		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \

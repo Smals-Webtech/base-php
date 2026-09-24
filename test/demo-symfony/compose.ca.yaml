@@ -1,0 +1,8 @@
+---
+# Applied only when CUSTOM_CA_BUNDLE is set (see COMPOSE_FILE in the Makefile).
+# Mounts the combined bundle -- the image's own trust store plus the custom CA,
+# built by the Makefile -- over the system bundle of the symfony service.
+services:
+  symfony:
+    volumes:
+      - ${CA_RUNTIME_BUNDLE:?set CUSTOM_CA_BUNDLE and run through the Makefile}:/etc/ssl/certs/ca-certificates.crt:ro
