@@ -669,6 +669,26 @@ teardown_file() {
   assert_output "0"
 }
 
+# HOME belongs to the same family as the runtime directories: tools write their
+# caches and settings there (~/.npm, ~/.cache, ~/.config), under whatever uid
+# runs the container. It was 2755 to uid 1001.
+@test "[$TEST_FILE] HOME is writable by an arbitrary uid, and sticky" {
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  local user
+
+  for user in 1000 4242:4242; do
+    run ${BATS_CONTAINER_ENGINE} run --pull=never --rm -u "${user}" --entrypoint sh "${image}" -c \
+      'mkdir -p "$HOME/.cache/probe" && echo "writable $HOME"'
+    assert_success
+    assert_output "writable /home/default"
+  done
+
+  # World-writable and sticky; the setgid bit adduser set stays, so what is
+  # created there keeps group 0.
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint stat "${image}" -c '%A' /home/default
+  assert_output "drwxrwsrwt"
+}
+
 # The common case, and the one the VOLUME declarations used to serve: a plain
 # docker run. Nothing has to be mounted -- the writes land in the container
 # layer. Against an image that still declares the volumes, /opt/etc shows up in

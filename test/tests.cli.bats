@@ -63,6 +63,20 @@ teardown_file() {
   assert_line "started"
 }
 
+# npm keeps its cache in ~/.npm. HOME was 2755 to uid 1001, so under any other
+# uid npm failed on the cache before doing anything -- with the bare uid Docker
+# puts in gid 0, as the elasticms demo runs it, as much as with a uid:gid pair.
+# `npm cache verify` writes the cache and needs no network.
+@test "[$TEST_FILE] npm can write its cache under any uid" {
+  local user
+  for user in 1000 4242:4242; do
+    run ${BATS_CONTAINER_ENGINE} run --pull=never --rm -u "${user}" \
+      --entrypoint npm "${BATS_CLI_IMAGE}" cache verify
+    assert_success
+    assert_line --partial "Cache verified and compressed"
+  done
+}
+
 @test "[$TEST_FILE] Test aws cli version" {
   run_cli "${BATS_CLI_IMAGE}" aws --version
   assert_line --regexp "^aws-cli/${BATS_AWS_CLI_VERSION} Python/.* .*$"

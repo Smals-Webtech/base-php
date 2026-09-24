@@ -95,6 +95,13 @@ ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli o
 COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
 COPY --from=gomplate --chmod=775 --chown=root:root /out/gomplate /usr/bin/gomplate
 
+# HOME is world-writable and sticky, like the runtime directories: whatever uid
+# runs the container -- an arbitrary OpenShift uid, `-u 1000`, or
+# `--user $(id -u):$(id -g)` in its own gid -- has to be able to write it.
+# adduser left it 2755 to uid 1001, so any other uid could not create ~/.npm,
+# ~/.cache or ~/.config, and npm failed on its cache before doing anything.
+# Sticky, so one uid cannot remove what another wrote; chmod keeps the setgid
+# bit adduser set (3777), so what is created there keeps group 0.
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
     set -eux ; \
     mkdir -p /home/default ; \
@@ -117,7 +124,8 @@ RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs
     cp "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini" ; \
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
-    adduser -D -u 1001 -g default -G root -s /sbin/nologin default ;
+    adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
+    chmod 1777 /home/default ;
 
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
     set -eux ; \
@@ -346,6 +354,7 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=node /usr/local/include/node /usr/local/include/node
 COPY --from=node /opt/yarn-v*/ /usr/local/lib/yarn/
 
+# HOME is world-writable and sticky: see fpm-prd.
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
     set eux; \
     mkdir -p /home/default ; \
@@ -374,6 +383,7 @@ RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs
     cp /usr/share/zoneinfo/Europe/Brussels /etc/localtime ; \
     echo "Europe/Brussels" > /etc/timezone ; \
     adduser -D -u 1001 -g default -G root -s /sbin/nologin default ; \
+    chmod 1777 /home/default ; \
     rm -rf /var/cache/apk/*
 
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
