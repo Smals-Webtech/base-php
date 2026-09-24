@@ -43,6 +43,34 @@ DOCKER_PLATFORM             ?= linux/amd64
 DOCKER_BUILDER              ?= default
 DOCKER_OUTPUT               ?= type=image
 
+ENABLE_ATTESTATIONS			?= true
+
+DOCKER_PROXY_ARGS := \
+	--env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY \
+	--env http_proxy --env https_proxy --env no_proxy
+
+DOCKER_BUILD_PROXY_ARGS := \
+	--build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY \
+	--build-arg http_proxy --build-arg https_proxy --build-arg no_proxy
+
+# Cache-less rebuild on the `docker buildx build` path is off by default; pass
+# NO_CACHE=true to force it. Leaving it cached is safe -- CA_BUNDLE_SHA already
+# busts the ca-bundle layer when the CA changes, so a cached build stays correct
+# behind a proxy while iterative builds stay fast.
+NO_CACHE                    ?= false
+DOCKER_BUILD_NO_CACHE       := $(if $(filter true,$(NO_CACHE)),--no-cache,)
+
+ifneq ($(strip $(CUSTOM_CA_BUNDLE)),)
+# The CA's checksum busts the ca-bundle stage cache when the CA changes (a secret
+# mount does not take part in the cache key, so a stale bundle would be reused).
+# Exported so `docker bake` reads it into the CA_BUNDLE_SHA variable, and passed
+# as a build-arg on the plain `docker build` path too.
+export CA_BUNDLE_SHA := $(shell sha256sum $(CUSTOM_CA_BUNDLE) | cut -d' ' -f1)
+DOCKER_CA_ARGS := --volume $(CUSTOM_CA_BUNDLE):/etc/ssl/certs/ca-certificates.crt:ro
+DOCKER_BUILD_CA_ARGS := --secret id=ca_bundle,src=$(CUSTOM_CA_BUNDLE) --build-arg CA_BUNDLE_SHA=$(CA_BUNDLE_SHA)
+DOCKER_BAKE_CA_ARGS := --allow=fs.read=$(CUSTOM_CA_BUNDLE)
+endif
+
 # —— Docker Compose Stack —————————————————————————————————————————————————————————————————————————————————————————————
 
 build:
@@ -60,6 +88,44 @@ ini-directives: ## ini-directives : regenerate test/fixtures/ini-directives.list
 	@echo "test/fixtures/ini-directives.list <- $(DOCKER_IMAGE_NAME):$${DOCKER_IMAGE_TAG:-snapshot}-cli ($$(wc -l < test/fixtures/ini-directives.list) directives)"
 
 # —— Docker build —————————————————————————————————————————————————————————————————————————————————————————————————————
+
+build-all: ## build-all [ options ]
+	@$(MAKE) build-fpm/prd
+	@$(MAKE) build-fpm/dev
+	@$(MAKE) build-apache/prd
+	@$(MAKE) build-apache/dev
+	@$(MAKE) build-nginx/prd
+	@$(MAKE) build-nginx/dev
+	@$(MAKE) build-cli/prd
+	@$(MAKE) build-cli/dev
+
+build-all/%: ## build-all/(prd|dev) [ options ]
+	@$(MAKE) build-fpm/${*}
+	@$(MAKE) build-apache/${*}
+	@$(MAKE) build-nginx/${*}
+	@$(MAKE) build-cli/${*}
+
+build-fpm/%: ## build-fpm/(prd|dev) [ options ]
+	@$(MAKE) _docker-build/fpm-${*}
+
+build-apache/%: ## build-apache/(prd|dev) [ options ]
+	@$(MAKE) _docker-build/apache-${*}
+
+build-nginx/%: ## build-nginx/(prd|dev) [ options ]
+	@$(MAKE) _docker-build/nginx-${*}
+
+build-cli/%: ## build-cli/(prd|dev) [ options ]
+	@$(MAKE) _docker-build/cli-${*}
+
+_docker-build/%: ## docker-build/(prd|dev)
+	@echo "\n-- Running Docker buildx build --\n"
+	@docker buildx build --progress=plain $(DOCKER_BUILD_NO_CACHE) \
+		$(DOCKER_BUILD_PROXY_ARGS) \
+		$(DOCKER_BUILD_CA_ARGS) \
+		--target ${*} \
+		--tag ${DOCKER_IMAGE_NAME}:$(patsubst %-prd,%,${*}) .
+
+# —— Docker bake ——————————————————————————————————————————————————————————————————————————————————————————————————————
 
 bake-all: ## bake-all [ options ]
 	@$(MAKE) bake-fpm/prd
@@ -92,6 +158,7 @@ bake-cli/%: ## bake-cli/(prd|dev) [ options ]
 _docker-bake/%:
 	@echo "\n-- Running Docker bake --\n"
 	@docker bake --progress=plain \
+		$(DOCKER_BAKE_CA_ARGS) \
 		--set *.platform=${DOCKER_PLATFORM} \
 		--set *.output=${DOCKER_OUTPUT} \
 		--builder ${DOCKER_BUILDER} \
