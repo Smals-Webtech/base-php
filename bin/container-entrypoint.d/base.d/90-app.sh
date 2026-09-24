@@ -104,7 +104,17 @@ if [ "$(cat "$APP_INIT_LOCK" 2>/dev/null)" != "$APP_INIT_FINGERPRINT" ]; then
 		# This gives back the functions, not the scope: the hook is still a
 		# separate process, so `exit 0` still ends the hook rather than the boot
 		# and what it sets still dies with it.
-		if BASH_ENV="$APP_INIT_FUNCTIONS" "${APP_INIT_CMD[@]}"; then
+		#
+		# CLEANUP_VAR_LIST is the colon-separated list of the variables this image
+		# owns -- its php.ini directives, pool settings, extension switches, AWS
+		# settings, and whatever a child image declared as a <NAME>_WCMTECH_DEFAULT
+		# -- which base.d/99-cleanup-vars.sh unsets before the application starts.
+		# Hooks run before that cleanup and still see those variables, so a hook
+		# that hands variables to the application on its own -- rendering php-fpm
+		# env[] entries, a dotenv file -- needs the list to leave them out, or it
+		# brings back what the cleanup removes. Handed over the same way as
+		# BASH_ENV: the hook's environment only, never the application's.
+		if BASH_ENV="$APP_INIT_FUNCTIONS" CLEANUP_VAR_LIST="$CLEANUP_VAR_LIST" "${APP_INIT_CMD[@]}"; then
 			log "INFO" "- $0: $APP_INIT_HOOK done"
 		else
 			APP_INIT_STATUS=$?

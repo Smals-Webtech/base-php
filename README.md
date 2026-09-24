@@ -187,6 +187,19 @@ alongside them.
 environment, so `SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD`, `AWS_SECRET_ACCESS_KEY` and anything else
 passed to the container are readable. A hook that dumps `env` to a log publishes them.
 
+**They are told what the application will not see.** `CLEANUP_VAR_LIST` holds the colon-separated
+names of every variable the entrypoint unsets before the application starts: this image's php.ini
+directives, pool and extension settings, AWS settings, and every `<VARIABLE>_WCMTECH_DEFAULT` a child
+image declared. A hook that hands variables to the application on its own — rendering php-fpm
+`env[]` entries, writing a dotenv file — has to leave those out, or it brings back exactly what the
+cleanup removes, secrets included:
+
+```bash
+[[ ":${CLEANUP_VAR_LIST}:" == *":${name}:"* ]] && continue   # the image's own: leave it out
+```
+
+The list is in the late hooks' environment only; it never reaches the application.
+
 The `cli` variant does not run late hooks: it has no Supervisor and a shorter entrypoint. A worker
 or cron image built from it has to invoke its initialization itself.
 
