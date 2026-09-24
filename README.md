@@ -724,6 +724,36 @@ docker buildx bake cli
 docker buildx bake default
 ```
 
+### 4. Behind a Corporate Proxy
+
+The build and the demo stacks work from a network that reaches the internet only through a proxy,
+including a TLS-inspecting one that re-signs traffic with its own CA. Nothing changes unless these
+variables are set in the calling shell:
+
+| Variable | Effect |
+|----------|--------|
+| `HTTP_PROXY`, `HTTPS_PROXY`, `NO_PROXY` (and lower case) | Passed to every build step, and to the demo containers that download at run time. |
+| `CUSTOM_CA_BUNDLE` | Absolute path to a PEM file holding the corporate CA. It is **added** to the trust store, never substituted for it. |
+| `NO_CACHE=true` | Forces a cache-less rebuild on the `make build-*` path. Not needed for a CA change: that already rebuilds the CA layer. |
+
+```bash
+export HTTPS_PROXY=http://proxy.corp:3128 HTTP_PROXY=http://proxy.corp:3128 NO_PROXY=localhost,127.0.0.1
+make build-all CUSTOM_CA_BUNDLE=/etc/pki/corp-root-ca.pem              # or: make bake-all ...
+make -C test demo-test CUSTOM_CA_BUNDLE=/etc/pki/corp-root-ca.pem
+```
+
+- **Build.** The CA is mounted as a build secret for the steps that download (apk, git, go,
+  `install-php-extensions`, Composer) and is **not** persisted: the published image never carries
+  your internal CA.
+- **Demo stacks.** `demo-symfony` downloads at run time (Composer, `sass:build`, `importmap:install`).
+  Its Makefile builds `.cache/ca-bundle.pem` (the image's own bundle plus your CA) and, only when the
+  variables are set, adds `compose.proxy.yaml` and `compose.ca.yaml` to `COMPOSE_FILE`. The bats
+  suites always exempt the loopback from the proxy.
+- **Image pulls** are made by the Docker daemon, not by the build: configure the daemon's own proxy
+  settings for those.
+- **Your own containers** that call out through the proxy at run time need the same two things the
+  demo gets: the proxy variables, and the CA mounted over `/etc/ssl/certs/ca-certificates.crt`.
+
 ## 🧪 Example Usage
 
 Extend from this image in your own `Dockerfile`:
