@@ -82,6 +82,44 @@ ini-directives: ## ini-directives : regenerate test/fixtures/ini-directives.list
 
 # —— Docker build —————————————————————————————————————————————————————————————————————————————————————————————————————
 
+build-all: ## build-all [ options ]
+	@$(MAKE) build-fpm/prd
+	@$(MAKE) build-fpm/dev
+	@$(MAKE) build-apache/prd
+	@$(MAKE) build-apache/dev
+	@$(MAKE) build-nginx/prd
+	@$(MAKE) build-nginx/dev
+	@$(MAKE) build-cli/prd
+	@$(MAKE) build-cli/dev
+
+build-all/%: ## build-all/(prd|dev) [ options ]
+	@$(MAKE) build-fpm/${*}
+	@$(MAKE) build-apache/${*}
+	@$(MAKE) build-nginx/${*}
+	@$(MAKE) build-cli/${*}
+
+build-fpm/%: ## build-fpm/(prd|dev) [ options ]
+	@$(MAKE) _docker-build/fpm-${*}
+
+build-apache/%: ## build-apache/(prd|dev) [ options ]
+	@$(MAKE) _docker-build/apache-${*}
+
+build-nginx/%: ## build-nginx/(prd|dev) [ options ]
+	@$(MAKE) _docker-build/nginx-${*}
+
+build-cli/%: ## build-cli/(prd|dev) [ options ]
+	@$(MAKE) _docker-build/cli-${*}
+
+_docker-build/%: ## docker-build/(prd|dev)
+	@echo "\n-- Running Docker buildx build --\n"
+	@docker buildx build --progress=plain --no-cache \
+		$(DOCKER_BUILD_PROXY_ARGS) \
+		$(DOCKER_BUILD_CA_ARGS) \
+		--target ${*} \
+		--tag ${DOCKER_IMAGE_NAME} .
+
+# —— Docker bake ——————————————————————————————————————————————————————————————————————————————————————————————————————
+
 bake-all: ## bake-all [ options ]
 	@$(MAKE) bake-fpm/prd
 	@$(MAKE) bake-fpm/dev
