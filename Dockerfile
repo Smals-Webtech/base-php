@@ -37,7 +37,7 @@ RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs
     apk add --no-cache git \
     && git clone --depth 1 --branch "v${GOMPLATE_VERSION_ARG}" https://github.com/hairyhenderson/gomplate.git /src \
     && CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
-    && go build -trimpath \
+       go build -trimpath \
       -ldflags "-w -s -X github.com/hairyhenderson/gomplate/v5/version.Version=v${GOMPLATE_VERSION_ARG}" \
       -o /out/gomplate ./cmd/gomplate
 
