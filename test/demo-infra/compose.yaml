@@ -318,7 +318,10 @@ services:
     # requires a depends_on target to share a profile with the dependent, so
     # `make start/grafana` brings MinIO up alongside Loki.
     profiles: [ "all","grafana" ]
-    image: docker.io/minio/minio:latest
+    # MinIO stopped publishing to Docker Hub; the image now lives on quay.io.
+    # Pinned to the last community release (the object browser was cut from later
+    # community builds, but this one still serves the WebUI on :9001).
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     restart: unless-stopped
     env_file:
       - ../.env
