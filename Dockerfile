@@ -356,7 +356,7 @@ COPY --from=node /opt/yarn-v*/ /usr/local/lib/yarn/
 
 # HOME is world-writable and sticky: see fpm-prd.
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
-    set eux; \
+    set -eux ; \
     mkdir -p /home/default ; \
     apk add --no-cache --virtual .base-php-rundeps aws-cli=~${AWS_CLI_VERSION_ARG} \
                                                    bash \
