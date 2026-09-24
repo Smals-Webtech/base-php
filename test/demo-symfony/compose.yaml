@@ -9,6 +9,12 @@ services:
       init-shared-var-permissions:
         condition: service_completed_successfully
     environment:
+      - HTTP_PROXY
+      - HTTPS_PROXY
+      - NO_PROXY
+      - http_proxy
+      - https_proxy
+      - no_proxy
       - PHP_FPM_PM_MAX_CHILDREN=${BATS_PHP_FPM_PM_MAX_CHILDREN}
       - PHP_MEMORY_LIMIT=${BATS_PHP_MEMORY_LIMIT}
       - VARNISH_ENABLED=false
@@ -37,6 +43,7 @@ services:
       - ./config/nginx/sites-enabled/00_logfmt.conf.tmpl:/opt/config/nginx/sites-enabled/00_logfmt.conf.tmpl:ro
       - shared-log:/var/log/shared:rw
       - shared-var-symfony:/app/var:rw
+      - ${CUSTOM_CA_BUNDLE:-/etc/ssl/certs/ca-certificates.crt:ro}:/etc/ssl/certs/ca-certificates.crt:ro
     tmpfs:
       - /opt/sbin:rw,exec,size=8m,mode=1777
       - /opt/etc:rw,noexec,size=8m,mode=1777
