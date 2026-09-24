@@ -106,6 +106,7 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-hooklock"
   container_clean "${BATS_WEB_CONTAINER}-hookenv"
   container_clean "${BATS_WEB_CONTAINER}-hookfn"
+  container_clean "${BATS_WEB_CONTAINER}-hookcleanup"
   container_clean "${BATS_WEB_CONTAINER}-hooktmpl"
   container_clean "${BATS_WEB_CONTAINER}-banner"
   container_clean "${BATS_WEB_CONTAINER}-port"
@@ -808,6 +809,34 @@ HOOK
   run ${BATS_CONTAINER_ENGINE} logs "${name}"
   assert_output --partial "hook: the parent helpers are available"
   refute_output --partial "is missing"
+}
+
+# A hook that hands variables to the application on its own -- elasticms renders
+# php-fpm env[] entries from its instance configuration -- runs before the
+# cleanup, so it would bring back the image's own settings, AWS credentials
+# included. It gets the list of what the cleanup removes, to leave them out; the
+# list itself stays out of the application.
+@test "[$TEST_FILE] A late hook receives the list of variables the image cleans" {
+  local -r name="${BATS_WEB_CONTAINER}-hookcleanup"
+  local -r hook="${BATS_TEST_TMPDIR}/10-cleanup-list.sh"
+  local port
+
+  cat >"${hook}" <<'HOOK'
+#!/bin/bash
+for var in PHP_MEMORY_LIMIT AWS_SECRET_ACCESS_KEY; do
+	[[ ":${CLEANUP_VAR_LIST}:" == *":${var}:"* ]] || { echo "hook: ${var} is not in CLEANUP_VAR_LIST"; exit 1; }
+done
+echo "hook: the cleanup list names the image settings"
+HOOK
+
+  port="$(web_container_start "${name}" \
+    --volume "${hook}:/opt/bin/container-entrypoint.d/10-cleanup-list.sh:ro")"
+
+  run ${BATS_CONTAINER_ENGINE} logs "${name}"
+  assert_output --partial "hook: the cleanup list names the image settings"
+
+  run web_php "${name}" "${port}" '<?php echo getenv("CLEANUP_VAR_LIST") === false ? "(absent)" : "present";'
+  assert_line "(absent)"
 }
 
 # apply-template is the gomplate wrapper this entrypoint renders its own
