@@ -5,6 +5,13 @@
 
 TEST_FILE=$(basename $BATS_TEST_FILENAME .bats)
 
+# Every URL these suites request from the host is on the loopback: a port the
+# image under test publishes, or the local Traefik. A corporate proxy set in the
+# calling shell must never intercept them, whatever its no_proxy says, so the
+# loopback is always exempted -- prepended to what the shell set, not replacing it.
+export no_proxy="localhost,127.0.0.1${no_proxy:+,${no_proxy}}"
+export NO_PROXY="localhost,127.0.0.1${NO_PROXY:+,${NO_PROXY}}"
+
 # stop all containers with the "bats-type" label (matching the optionally supplied value)
 #
 # $1 optional label value
