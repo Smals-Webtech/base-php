@@ -40,6 +40,14 @@ EXEC_DEMO		               = docker compose --env-file=../.env exec --user $(CURR
 
 BATS                           = bats -t -j 1
 
+DOCKER_PROXY_ARGS := \
+	--env HTTP_PROXY --env HTTPS_PROXY --env NO_PROXY \
+	--env http_proxy --env https_proxy --env no_proxy
+
+ifneq ($(strip $(CUSTOM_CA_BUNDLE)),)
+DOCKER_CA_ARGS := --volume $(CUSTOM_CA_BUNDLE):/etc/ssl/certs/ca-certificates.crt:ro
+endif
+
 # —— Load generation ——————————————————————————————————————————————————————————————————————————————————————————————————
 
 LOCUST_USERS                  ?= 10
@@ -128,8 +136,9 @@ composer-diagnose:
 		--env COMPOSER_ALLOW_SUPERUSER=1 \
 		--env COMPOSER_PROCESS_TIMEOUT=900 \
 		--env COMPOSER_MEMORY_LIMIT=-1 \
+		$(DOCKER_PROXY_ARGS) \
 		--user root \
-		--volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
+		$(DOCKER_CA_ARGS) \
 		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
 		--tmpfs /app/tmp:size=100m,mode=1777 \
 		--rm \
@@ -146,8 +155,9 @@ composer-update:
 		--env COMPOSER_ALLOW_SUPERUSER=1 \
 		--env COMPOSER_PROCESS_TIMEOUT=900 \
 		--env COMPOSER_MEMORY_LIMIT=-1 \
+		$(DOCKER_PROXY_ARGS) \
 		--user ${CURRENT_UID}:${CURRENT_GID} \
-		--volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
+		$(DOCKER_CA_ARGS) \
 		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
 		--volume ${DEMO_DIR}:${BUILDER_WORKING_DIR}:rw \
 		--tmpfs /app/tmp:size=100m,mode=1777 \
@@ -166,8 +176,9 @@ composer-install:
 		--env COMPOSER_ALLOW_SUPERUSER=1 \
 		--env COMPOSER_PROCESS_TIMEOUT=900 \
 		--env COMPOSER_MEMORY_LIMIT=-1 \
+		$(DOCKER_PROXY_ARGS) \
 		--user ${CURRENT_UID}:${CURRENT_GID} \
-		--volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
+		$(DOCKER_CA_ARGS) \
 		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
 		--volume ${DEMO_DIR}:${BUILDER_WORKING_DIR}:rw \
 		--tmpfs /app/tmp:size=100m,mode=1777 \
@@ -186,8 +197,9 @@ composer-selfupdate:
 		--env COMPOSER_ALLOW_SUPERUSER=1 \
 		--env COMPOSER_PROCESS_TIMEOUT=900 \
 		--env COMPOSER_MEMORY_LIMIT=-1 \
+		$(DOCKER_PROXY_ARGS) \
 		--user ${CURRENT_UID}:0 \
-		--volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
+		$(DOCKER_CA_ARGS) \
 		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
 		--tmpfs /app/tmp:size=100m,mode=1777 \
 		--rm \
@@ -202,8 +214,9 @@ npm-configure:
 		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \
 		--env HOME=${CURRENT_HOMEDIR} \
 		--env USER=${CURRENT_USERNAME} \
+		$(DOCKER_PROXY_ARGS) \
 		--user ${CURRENT_UID}:${CURRENT_GID} \
-		--volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
+		$(DOCKER_CA_ARGS) \
 		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
 		--volume ${DEMO_DIR}:${BUILDER_WORKING_DIR}:rw \
 		--tmpfs /app/tmp:size=100m,mode=1777 \
@@ -218,8 +231,9 @@ npm-install:
 		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \
 		--env HOME=${CURRENT_HOMEDIR} \
 		--env USER=${CURRENT_USERNAME} \
+		$(DOCKER_PROXY_ARGS) \
 		--user ${CURRENT_UID}:${CURRENT_GID} \
-		--volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
+		$(DOCKER_CA_ARGS) \
 		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
 		--volume ${DEMO_DIR}:${BUILDER_WORKING_DIR}:rw \
 		--tmpfs /app/tmp:size=100m,mode=1777 \
@@ -234,8 +248,9 @@ npm-build:
 		--env PHP_BYPASS_INI_DEFAULT_VALUES=true \
 		--env HOME=${CURRENT_HOMEDIR} \
 		--env USER=${CURRENT_USERNAME} \
+		$(DOCKER_PROXY_ARGS) \
 		--user ${CURRENT_UID}:${CURRENT_GID} \
-		--volume /etc/ssl/certs/ca-certificates.crt:/etc/ssl/certs/ca-certificates.crt \
+		$(DOCKER_CA_ARGS) \
 		--volume ${CURRENT_HOMEDIR}:${CURRENT_HOMEDIR}:rw \
 		--volume ${DEMO_DIR}:${BUILDER_WORKING_DIR}:rw \
 		--tmpfs /app/tmp:size=100m,mode=1777 \
