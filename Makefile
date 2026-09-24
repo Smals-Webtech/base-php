@@ -53,6 +53,13 @@ DOCKER_BUILD_PROXY_ARGS := \
 	--build-arg HTTP_PROXY --build-arg HTTPS_PROXY --build-arg NO_PROXY \
 	--build-arg http_proxy --build-arg https_proxy --build-arg no_proxy
 
+# Cache-less rebuild on the `docker buildx build` path is off by default; pass
+# NO_CACHE=true to force it. Leaving it cached is safe -- CA_BUNDLE_SHA already
+# busts the ca-bundle layer when the CA changes, so a cached build stays correct
+# behind a proxy while iterative builds stay fast.
+NO_CACHE                    ?= false
+DOCKER_BUILD_NO_CACHE       := $(if $(filter true,$(NO_CACHE)),--no-cache,)
+
 ifneq ($(strip $(CUSTOM_CA_BUNDLE)),)
 # The CA's checksum busts the ca-bundle stage cache when the CA changes (a secret
 # mount does not take part in the cache key, so a stale bundle would be reused).
@@ -112,11 +119,11 @@ build-cli/%: ## build-cli/(prd|dev) [ options ]
 
 _docker-build/%: ## docker-build/(prd|dev)
 	@echo "\n-- Running Docker buildx build --\n"
-	@docker buildx build --progress=plain --no-cache \
+	@docker buildx build --progress=plain $(DOCKER_BUILD_NO_CACHE) \
 		$(DOCKER_BUILD_PROXY_ARGS) \
 		$(DOCKER_BUILD_CA_ARGS) \
 		--target ${*} \
-		--tag ${DOCKER_IMAGE_NAME} .
+		--tag ${DOCKER_IMAGE_NAME}:$(patsubst %-prd,%,${*}) .
 
 # —— Docker bake ——————————————————————————————————————————————————————————————————————————————————————————————————————
 
