@@ -18,7 +18,7 @@ CURRENT_HOMEDIR               := $${HOME}
 CURRENT_DIR                   := $(shell pwd)
 
 DEMO_DIR                       = ${CURRENT_DIR}/src/demo
-DEMO_REPO                      = git@github.com:symfony/demo.git
+DEMO_REPO                      = https://github.com/symfony/demo.git
 DEMO_REF                       = v3.0.1
 
 BUILDER_WORKING_DIR            = /app
@@ -86,8 +86,12 @@ clone:
 		git clone $(DEMO_REPO) $(DEMO_DIR); \
 	fi
 
-update: 
+# The demo used to be cloned over SSH, which an HTTP(S) proxy cannot carry, and a
+# clone keeps the URL it was made with. Re-pointing origin every time moves an
+# existing clone to HTTPS too, so the fetch below goes through the proxy.
+update:
 	@$(MAKE) clone
+	@git -C $(DEMO_DIR) remote set-url origin $(DEMO_REPO)
 	@echo "Fetching $(DEMO_REF)..."
 	cd $(DEMO_DIR) && git fetch origin $(DEMO_REF) --depth 1
 
