@@ -54,8 +54,13 @@ DOCKER_BUILD_PROXY_ARGS := \
 	--build-arg http_proxy --build-arg https_proxy --build-arg no_proxy
 
 ifneq ($(strip $(CUSTOM_CA_BUNDLE)),)
+# The CA's checksum busts the ca-bundle stage cache when the CA changes (a secret
+# mount does not take part in the cache key, so a stale bundle would be reused).
+# Exported so `docker bake` reads it into the CA_BUNDLE_SHA variable, and passed
+# as a build-arg on the plain `docker build` path too.
+export CA_BUNDLE_SHA := $(shell sha256sum $(CUSTOM_CA_BUNDLE) | cut -d' ' -f1)
 DOCKER_CA_ARGS := --volume $(CUSTOM_CA_BUNDLE):/etc/ssl/certs/ca-certificates.crt:ro
-DOCKER_BUILD_CA_ARGS := --secret id=ca_bundle,src=$(CUSTOM_CA_BUNDLE)
+DOCKER_BUILD_CA_ARGS := --secret id=ca_bundle,src=$(CUSTOM_CA_BUNDLE) --build-arg CA_BUNDLE_SHA=$(CA_BUNDLE_SHA)
 DOCKER_BAKE_CA_ARGS := --allow=fs.read=$(CUSTOM_CA_BUNDLE)
 endif
 

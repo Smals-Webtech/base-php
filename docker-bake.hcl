@@ -84,8 +84,18 @@ variable "CUSTOM_CA_BUNDLE" {
   default = ""
 }
 
+# Checksum of the custom CA, read from the environment (the Makefile computes it).
+# It busts the ca-bundle stage cache when the CA changes -- a secret mount alone
+# does not, so a stale bundle without the CA would otherwise be reused.
+variable "CA_BUNDLE_SHA" {
+  default = ""
+}
+
 target "_ca" {
   secret = CUSTOM_CA_BUNDLE != "" ? ["id=ca_bundle,src=${CUSTOM_CA_BUNDLE}"] : []
+  args = {
+    CA_BUNDLE_SHA = CA_BUNDLE_SHA != "" ? CA_BUNDLE_SHA : null
+  }
 }
 
 function "tag" {

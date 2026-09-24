@@ -8,7 +8,15 @@ ARG GOMPLATE_VERSION_ARG=5.2.0
 
 FROM alpine:${ALPINE_VERSION_ARG} AS ca-bundle
 
+# CA_BUNDLE_SHA is the checksum of the custom CA, passed by the caller. A secret
+# mount does not take part in the build cache key, so without this an image built
+# once without the CA -- or with a different one -- silently reuses a stale
+# ca-bundle layer and the CA never reaches the bundle. Referencing the ARG in the
+# RUN ties this layer's cache to the CA's content: a changed or newly added CA
+# rebuilds it, and an empty value (no CA) keeps a stable cache.
+ARG CA_BUNDLE_SHA=""
 RUN --mount=type=secret,id=ca_bundle,required=false \
+    : "${CA_BUNDLE_SHA}" ; \
     cp /etc/ssl/certs/ca-certificates.crt /ca-bundle.pem ; \
     if [ -f /run/secrets/ca_bundle ]; then cat /run/secrets/ca_bundle >> /ca-bundle.pem ; fi
 
