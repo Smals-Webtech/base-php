@@ -16,6 +16,8 @@ services:
       - APP_SECRET=cREiW500NNpj9c6BzzD4KjqaVjEndpyJ
       - APP_LOG_DIR=/app/var/log
       - APP_CACHE_DIR=/app/var/cache
+      # On the writable volume, not in the code mount: see init-shared-var-permissions.
+      - DATABASE_URL=sqlite:////app/var/data/database.sqlite
       - LOGROTATE_DEFAULT_PATH=/var/log/shared/*.log
       - LOGROTATE_DEFAULT_SIZE_LIMIT=1M
       - LOGROTATE_DEFAULT_RETENTION=1

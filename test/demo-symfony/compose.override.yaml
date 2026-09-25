@@ -1,8 +1,29 @@
 ---
 services:
+  # Prepares the writable /app/var volume before symfony starts, and seeds the
+  # demo's SQLite database there. The database used to be read from the code
+  # mount (./src/demo/data), owned by whoever cloned it: nginx and php-fpm run as
+  # 1001:0 and could read it but not write it -- or create the journal SQLite
+  # needs next to it -- so every edit failed with "attempt to write a readonly
+  # database". symfony/demo ships its database already filled, so it is copied
+  # once; an existing copy is kept, with whatever the demo wrote into it.
+  #
+  # Group 0 gets write access: the web runs as 1001:0 and the console commands
+  # of the Makefile (EXEC_DEMO) as the caller's uid, which Docker puts in gid 0
+  # too. The setgid bit keeps the journal SQLite creates in that group.
   init-shared-var-permissions:
     profiles: [ "symfony" ]
     image: busybox
     volumes:
       - shared-var-symfony:/app/var
-    command: chmod 777 /app/var
+      - ./src/demo/data/database.sqlite:/seed/database.sqlite:ro
+    command:
+      - sh
+      - -ec
+      - |
+        chmod 777 /app/var
+        mkdir -p /app/var/data
+        [ -f /app/var/data/database.sqlite ] || cp /seed/database.sqlite /app/var/data/database.sqlite
+        chown -R 0:0 /app/var/data
+        chmod 2775 /app/var/data
+        chmod 664 /app/var/data/database.sqlite
