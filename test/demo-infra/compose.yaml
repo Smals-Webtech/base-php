@@ -313,37 +313,39 @@ services:
       retries: 3
       start_period: 20s
 
-  minio:
-    # Also in the grafana profile: Loki (grafana) depends_on minio, and Compose
-    # requires a depends_on target to share a profile with the dependent, so
-    # `make start/grafana` brings MinIO up alongside Loki.
+  seaweedfs:
+    # Loki's object store (S3 API on :8333). Also in the grafana profile: Loki
+    # (grafana) depends_on it, and Compose requires a depends_on target to share a
+    # profile with the dependent, so `make start/grafana` brings it up too.
+    #
+    # MinIO used to fill this role; its community edition is archived and its
+    # images are no longer published, so the stack moved to SeaweedFS -- a
+    # maintained S3 server (Apache-2.0). One `weed server` runs the master, a
+    # volume server, the filer and the S3 gateway. Identities and buckets are
+    # created by s3-init and kept in the filer, on the s3-data volume.
     profiles: [ "all","grafana" ]
-    # MinIO Inc. no longer publishes a community image: the repository is archived
-    # and source-only, the Docker Hub images were deleted, and quay.io/minio went
-    # private on 2026-09-25. pgsty/minio is Pigsty's community build of the same
-    # server (same CLI, health endpoints and :9001 WebUI) -- a stopgap until the
-    # stack moves to a maintained S3 server.
-    image: docker.io/pgsty/minio:RELEASE.2026-08-04T00-00-00Z
+    image: docker.io/chrislusf/seaweedfs:4.47
     restart: unless-stopped
-    env_file:
-      - ../.env
-    environment:
-      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
-      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
-    command: server /data --console-address ":9001"
+    command: server -dir=/data -s3 -ip.bind=0.0.0.0
     labels:
+      # The filer's file browser. It reads and writes every bucket WITHOUT the S3
+      # credentials, so it is published on the local Traefik only, like the rest
+      # of this demo stack.
       - "traefik.enable=true"
-      - "traefik.http.routers.minio.rule=Host(`minio.localhost`)"
-      - "traefik.http.routers.minio.entrypoints=web"
-      - "traefik.http.routers.minio.service=minio"
-      - "traefik.http.services.minio.loadbalancer.server.port=9001"
+      - "traefik.http.routers.seaweedfs.rule=Host(`s3.localhost`)"
+      - "traefik.http.routers.seaweedfs.entrypoints=web"
+      - "traefik.http.routers.seaweedfs.service=seaweedfs"
+      - "traefik.http.services.seaweedfs.loadbalancer.server.port=8888"
     volumes:
-      - minio-data:/data
+      - s3-data:/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+      # /status on the S3 port answers once the gateway serves requests. Not
+      # /healthz: the S3 handler reads it as a bucket name and answers 404.
+      test: ["CMD", "curl", "-sf", "-o", "/dev/null", "http://localhost:8333/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     mem_limit: 512m
 
   loki:
@@ -358,11 +360,9 @@ services:
       - LOKI_S3_SECRET_ACCESS_KEY=${LOKI_S3_SECRET_ACCESS_KEY}
     command: -config.file=/etc/loki/loki-config.yaml -config.expand-env=true
     depends_on:
-      minio:
+      seaweedfs:
         condition: service_healthy
-      minio-init:
-        condition: service_completed_successfully
-      loki-init-bucket:
+      s3-init:
         condition: service_completed_successfully
     labels:
       - "traefik.enable=true"
@@ -387,7 +387,7 @@ volumes:
   prometheus_data:
   grafana_data:
   shared-log:
-  minio-data:
+  s3-data:
   loki-data:
 
 networks:
