@@ -138,12 +138,17 @@ update:
 	@echo "Fetching $(DEMO_REF)..."
 	cd $(DEMO_DIR) && git fetch origin $(DEMO_REF) --depth 1
 
+# The build leaves the clone dirty -- composer update rewrites composer.lock, and
+# Symfony generates config/reference.php, which some demo releases track and
+# others do not -- and a plain checkout refused to move over either, so changing
+# DEMO_REF failed halfway. --force discards those changes, and clean removes the
+# untracked files the next build regenerates; ignored ones (vendor/) stay.
 reset: 
 	@$(MAKE) update
 	@echo "Resetting demo repo to $(DEMO_REF)"
 	cd $(DEMO_DIR) && \
-	git checkout FETCH_HEAD && \
-	git reset --hard FETCH_HEAD
+	git checkout --force --detach FETCH_HEAD && \
+	git clean -fd
 
 clean:
 	rm -rf $(DEMO_DIR) $(CURRENT_DIR)/.cache
