@@ -13,6 +13,15 @@ DOCKER_COMPOSE		           = docker compose --project-directory=. --env-file=../
 CURRENT_UID                   := $(shell id -u)
 CURRENT_GID                   := $(shell id -g)
 
+# The uid the symfony service runs under: the caller's, the same the console
+# commands (EXEC_DEMO) and composer use. With two identities -- the image's 1001
+# for the web, the caller's for the console -- whichever wrote a file in /app/var
+# first kept it: the runtime directories are sticky (1777), and the kernel's
+# protected_regular refuses to open another user's file there with O_CREAT, as
+# Monolog does. A `make configure` before the first web request left the log to
+# the caller, and every page answered 500. gid 0, as the image expects.
+export DEMO_UID               := $(CURRENT_UID)
+
 CURRENT_USERNAME              := $(shell id -u -n)
 CURRENT_HOMEDIR               := $${HOME}
 CURRENT_DIR                   := $(shell pwd)

@@ -8,14 +8,19 @@ services:
   # database". symfony/demo ships its database already filled, so it is copied
   # once; an existing copy is kept, with whatever the demo wrote into it.
   #
-  # Group 0 gets write access: the web runs as 1001:0 and the console commands
-  # of the Makefile (EXEC_DEMO) as the caller's uid, which Docker puts in gid 0
-  # too. The setgid bit keeps the journal SQLite creates in that group.
+  # The volume is handed to the uid symfony runs under (DEMO_UID, the caller's)
+  # on every start, so one left by an earlier run under another uid -- the image's
+  # 1001, before the demo ran as the caller -- does not lock the web out of its
+  # own log and cache. The same goes for the demo's own files on the shared log
+  # volume (symfony.*), which nginx and php-fpm refuse to start without. Group 0
+  # keeps write access to the database, and the setgid bit keeps the journal
+  # SQLite creates in that group.
   init-shared-var-permissions:
     profiles: [ "symfony" ]
     image: busybox
     volumes:
       - shared-var-symfony:/app/var
+      - shared-log:/var/log/shared
       - ./src/demo/data/database.sqlite:/seed/database.sqlite:ro
     command:
       - sh
@@ -24,6 +29,7 @@ services:
         chmod 777 /app/var
         mkdir -p /app/var/data
         [ -f /app/var/data/database.sqlite ] || cp /seed/database.sqlite /app/var/data/database.sqlite
-        chown -R 0:0 /app/var/data
+        chown -R "${DEMO_UID:-1001}:0" /app/var
+        find /var/log/shared -maxdepth 1 -name 'symfony.*' -exec chown "${DEMO_UID:-1001}:0" {} +
         chmod 2775 /app/var/data
         chmod 664 /app/var/data/database.sqlite
