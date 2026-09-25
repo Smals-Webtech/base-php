@@ -1,7 +1,7 @@
 ---
-# Single-binary Loki with its object store on the in-stack MinIO (S3 API).
+# Single-binary Loki with its object store on the in-stack SeaweedFS (S3 API).
 # Credentials are expanded from the environment at boot (-config.expand-env=true);
-# the single source of truth is the dedicated MinIO user created by minio-init.
+# the single source of truth is the dedicated S3 identity created by s3-init.
 auth_enabled: false
 
 server:
@@ -18,12 +18,15 @@ common:
       store: inmemory
   storage:
     s3:
-      endpoint: minio:9000
+      endpoint: seaweedfs:8333
       bucketnames: ${LOKI_S3_BUCKET_NAME}
       access_key_id: ${LOKI_S3_ACCESS_KEY_ID}
       secret_access_key: ${LOKI_S3_SECRET_ACCESS_KEY}
       s3forcepathstyle: true
-      insecure: true            # MinIO is reached over plain HTTP in-stack
+      # SeaweedFS ignores it; a stricter S3 server (Garage) rejects a signature
+      # made for Loki's default "dummy" region.
+      region: us-east-1
+      insecure: true            # reached over plain HTTP in-stack
 
 schema_config:
   configs:
