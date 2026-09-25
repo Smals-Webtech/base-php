@@ -318,10 +318,12 @@ services:
     # requires a depends_on target to share a profile with the dependent, so
     # `make start/grafana` brings MinIO up alongside Loki.
     profiles: [ "all","grafana" ]
-    # MinIO stopped publishing to Docker Hub; the image now lives on quay.io.
-    # Pinned to the last community release (the object browser was cut from later
-    # community builds, but this one still serves the WebUI on :9001).
-    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
+    # MinIO Inc. no longer publishes a community image: the repository is archived
+    # and source-only, the Docker Hub images were deleted, and quay.io/minio went
+    # private on 2026-09-25. pgsty/minio is Pigsty's community build of the same
+    # server (same CLI, health endpoints and :9001 WebUI) -- a stopgap until the
+    # stack moves to a maintained S3 server.
+    image: docker.io/pgsty/minio:RELEASE.2026-08-04T00-00-00Z
     restart: unless-stopped
     env_file:
       - ../.env
