@@ -28,7 +28,7 @@ CURRENT_DIR                   := $(shell pwd)
 
 DEMO_DIR                       = ${CURRENT_DIR}/src/demo
 DEMO_REPO                      = https://github.com/symfony/demo.git
-DEMO_REF                       = v3.0.1
+DEMO_REF                       = v3.1.0
 
 BUILDER_WORKING_DIR            = /app
 BUILDER_DOCKER_IMAGE_NAME     ?= docker.io/smalswebtech/base-php:cli-dev
