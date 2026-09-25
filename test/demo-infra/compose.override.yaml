@@ -107,7 +107,7 @@ services:
     # grafana profile too (see minio): Loki depends_on this init, so it must share
     # a profile with Loki for `make start/grafana` to run it.
     profiles: [ "all","grafana" ]
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    image: docker.io/pgsty/mc:RELEASE.2026-09-16T00-00-00Z
     env_file:
       - ../.env
     depends_on:
@@ -125,7 +125,7 @@ services:
   # Creates the dedicated Loki bucket (and nothing else), then exits.
   loki-init-bucket:
     profiles: [ "all","grafana" ]
-    image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+    image: docker.io/pgsty/mc:RELEASE.2026-09-16T00-00-00Z
     env_file:
       - ../.env
     depends_on:
