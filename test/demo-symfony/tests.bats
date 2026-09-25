@@ -63,3 +63,21 @@ export BATS_CONTAINER_COMPOSE_ENGINE="${BATS_CONTAINER_ENGINE} compose"
   assert_success
   assert_output --partial "1 rows affected"
 }
+
+# The web ran as the image's 1001 and the console commands as the caller. The
+# runtime directories are sticky, and the kernel's protected_regular refuses to
+# open another user's file there with O_CREAT, as Monolog does: a console command
+# that created the log before the first web request left every page answering
+# 500. Replays that order -- the log removed, then created by the caller -- and
+# expects the website to keep serving.
+@test "[$TEST_FILE] The website serves after a console command created its log" {
+  local compose="${BATS_CONTAINER_COMPOSE_ENGINE} --project-directory=${BATS_TEST_DIRNAME} --env-file=${BATS_TEST_DIRNAME}/../.env --profile=symfony"
+
+  run ${compose} exec -T --user 0 symfony rm -f /app/var/log/dev.log
+  assert_success
+  run ${compose} exec -T --user "$(id -u)" symfony php -r 'fclose(fopen("/app/var/log/dev.log", "a"));'
+  assert_success
+
+  run curl http://localhost/fr/blog/ -H "Host: demo.localhost" -s -w %{http_code} -o /dev/null
+  assert_output "200"
+}

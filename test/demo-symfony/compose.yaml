@@ -3,6 +3,9 @@ services:
   symfony:
     profiles: [ "symfony" ]
     image: smalswebtech/base-php:nginx
+    # The caller's uid, exported by the Makefile (see DEMO_UID there); the image's
+    # own user when compose runs without it.
+    user: "${DEMO_UID:-1001}:0"
     env_file:
       - ../.env
     depends_on:
