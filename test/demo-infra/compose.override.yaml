@@ -105,7 +105,10 @@ services:
   # exists is a no-op and `s3.configure` updates an identity in place, so a rerun
   # on an existing s3-data volume is harmless. `weed shell` reports a failed
   # command and exits 0, so the last step checks the bucket is listed and fails
-  # the init -- and with it Loki's start -- if it is not.
+  # the init -- and with it Loki's start -- if it is not. It waits for it: a
+  # bucket just created can take a few seconds to be listed (measured up to 6s
+  # on this SeaweedFS release), which failed a single check about half the time
+  # in the elasticms demo.
   s3-init:
     # grafana profile too (see seaweedfs): Loki depends_on this init, so it must
     # share a profile with Loki for `make start/grafana` to run it.
@@ -121,5 +124,10 @@ services:
         echo 's3.bucket.create -name ${LOKI_S3_BUCKET_NAME}' | weed_shell
         echo 's3.configure -user admin -access_key ${S3_ADMIN_ACCESS_KEY} -secret_key ${S3_ADMIN_SECRET_KEY} -actions Admin -apply' | weed_shell >/dev/null
         echo 's3.configure -user ${LOKI_S3_ACCESS_KEY_ID} -access_key ${LOKI_S3_ACCESS_KEY_ID} -secret_key ${LOKI_S3_SECRET_ACCESS_KEY} -actions Read,Write,List,Tagging -buckets ${LOKI_S3_BUCKET_NAME} -apply' | weed_shell >/dev/null
-        echo 's3.bucket.list' | weed_shell | awk -v b='${LOKI_S3_BUCKET_NAME}' '$$1 == b { found = 1 } END { exit !found }'
+        tries=0
+        until echo 's3.bucket.list' | weed_shell | awk -v b='${LOKI_S3_BUCKET_NAME}' '$$1 == b { found = 1 } END { exit !found }'; do
+          tries=$$((tries + 1))
+          [ "$$tries" -lt 60 ] || { echo 'bucket ${LOKI_S3_BUCKET_NAME} still not listed after 60s' >&2; exit 1; }
+          sleep 1
+        done
         echo '✅ SeaweedFS bucket ${LOKI_S3_BUCKET_NAME} and user ${LOKI_S3_ACCESS_KEY_ID} ready'
