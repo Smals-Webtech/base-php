@@ -184,6 +184,16 @@ target "default" {
     "be.smals.webtech.base.environment"    = tgt
     "be.smals.webtech.base.variant"        = variant
     "be.smals.webtech.base.schema-version" = "1.0"
+    # The OCI annotation keys, which registries, scanners and Renovate read to
+    # link an image back to its repository and its exact commit.
+    "org.opencontainers.image.created"     = "${timestamp()}"
+    "org.opencontainers.image.title"       = "Base PHP 8.4.x Docker Image"
+    "org.opencontainers.image.description" = "Docker base image is the basic image on which you add layers (which are basically filesystem changes) and create a final image containing your App."
+    "org.opencontainers.image.url"         = "https://www.smals.be"
+    "org.opencontainers.image.source"      = "https://github.com/Smals-Webtech/base-php"
+    "org.opencontainers.image.revision"    = GIT_HASH
+    "org.opencontainers.image.version"     = DOCKER_IMAGE_VERSION == "snapshot" ? PHP_VERSION : DOCKER_IMAGE_VERSION
+    "org.opencontainers.image.vendor"      = "Smals"
   }
 
   tags = distinct(flatten([
