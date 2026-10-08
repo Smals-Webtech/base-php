@@ -22,6 +22,18 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Added
+
+- **OCI labels.** The images carry the standard `org.opencontainers.image.*` keys — `created`,
+  `title`, `description`, `url`, `source`, `revision`, `version`, `vendor` — next to the
+  `be.smals.webtech.base.*` ones, which stay. Registries, scanners and Renovate read these to link an
+  image back to this repository and its exact commit.
+
+### Removed
+
+- **The empty `/app/var/run/supervisord.pid` shipped in the image.** supervisord creates and
+  rewrites its pidfile at every start; the copy baked into the image was never read.
+
 ## [8.5.11]
 
 PHP 8.5.11. Most of the image changes below first reached users by moving the `8.5.10` tag, before

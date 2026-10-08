@@ -5,9 +5,7 @@ log "INFO" "Configure runtime scripts ..."
 # /opt/config/sbin holds script templates, /opt/sbin the rendered executables.
 # This is the extension point of the image: mount a .tmpl there -- from a child
 # image or a compose file -- and it is rendered with the resolved environment and
-# made executable, exactly like the scripts the image ships itself. Nothing wired
-# it up until now; the two varnish scripts were rendered by name, so anything an
-# operator added was ignored.
+# made executable, exactly like the scripts the image ships itself.
 mkdir -p /opt/sbin
 
 apply-template /opt/config/sbin /opt/sbin
