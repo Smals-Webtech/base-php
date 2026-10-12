@@ -233,7 +233,8 @@ cleanup removes, secrets included:
 The list is in the late hooks' environment only; it never reaches the application.
 
 The `cli` variant runs neither boot nor late hooks: it has no Supervisor and a shorter entrypoint. A worker
-or cron image built from it has to invoke its initialization itself.
+or cron image built from it has to invoke its initialization itself. It does run the early hooks below,
+at every start, the same way the web variants do.
 
 **Early hooks** — `/opt/bin/container-entrypoint.d/entrypoint.d/*.sh`
 

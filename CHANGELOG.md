@@ -22,6 +22,14 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Fixed
+
+- **The `cli` variant runs a child image's early hooks.** `entrypoint.d/*.sh` under
+  `/opt/bin/container-entrypoint.d` was sourced by the web entrypoint only, so in a `cli` child a
+  `<VARIABLE>_WCMTECH_DEFAULT` did nothing, silently. The two known `cli` children worked around it by
+  sourcing this image's internal scripts by path, which is what stopped them when two of those
+  scripts were removed. The early hooks now run at the same point as in the web variants.
+
 ## [8.5.11]
 
 PHP 8.5.11. Most of the image changes below first reached users by moving the `8.5.10` tag, before
