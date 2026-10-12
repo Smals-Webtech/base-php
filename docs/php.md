@@ -63,8 +63,21 @@ default except `PHP_XDEBUG_ENABLED` and `PHP_OPENTELEMETRY_ENABLED`, which both 
 request. Setting a switch to `false` keeps the extension on disk and out of the process.
 
 A child image adds its own the ordinary way — `install-php-extensions <name>` in its `Dockerfile` —
-and enables it with `PHP_EXT_INSTALL_CUSTOM=<name>`. Its directives are then configurable like any
-other, and it loads from PHP's own extension directory.
+and enables it with `PHP_EXT_INSTALL_CUSTOM=<name>`. It loads from PHP's own extension directory.
+
+Its directives become configurable only once the child runs `update-ini-directives` after the
+install, as root. The list of directives is enumerated when the image is built, before any child
+extension exists; without that second run, `PHP_<DIRECTIVE>` for the new extension is ignored —
+the boot log says it matches no directive — and, being unknown, it is not removed from the
+application environment either. The script only adds names, so running it again is always safe.
+
+```dockerfile
+USER root
+ENV PHP_EXT_INSTALL_CUSTOM="sqlsrv"
+RUN install-php-extensions sqlsrv \
+ && update-ini-directives
+USER 1001
+```
 
 `PHP_EXTENSION_DIR` exists like every other directive, and setting it is a trap: PHP would look for
 its modules somewhere they are not.

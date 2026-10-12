@@ -28,6 +28,12 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
   `title`, `description`, `url`, `source`, `revision`, `version`, `vendor` — next to the
   `be.smals.webtech.base.*` ones, which stay. Registries, scanners and Renovate read these to link an
   image back to this repository and its exact commit.
+- **`update-ini-directives`, for a child image's own extensions.** The list of `php.ini` directives
+  the entrypoint knows is enumerated when this image is built, so the directives of an extension a
+  child image installed later were silently ignored — and, being unknown, their `PHP_*` variable
+  reached the application. A child image now runs `update-ini-directives` after its install; the
+  image builds its own list with the same script. Measured on a child installing `sqlsrv`:
+  `PHP_SQLSRV_LOGSEVERITY=4` was ignored before, applied and cleaned after.
 
 ### Removed
 

@@ -446,19 +446,25 @@ directive, a different setting.
 The parent image uses the `PHP_EXT_INSTALL` variable to define the default list of extensions to install.
 To allow child images to add their own extensions without modifying the parent image, an additional variable is provided: **`PHP_EXT_INSTALL_CUSTOM`**.
 
-This variable can be defined or overridden directly in the child image’s `Dockerfile`. Its content will be merged with `PHP_EXT_INSTALL` during the installation process, making it easy to include extra extensions without affecting the base configuration.
+The child image installs the extension itself and names it in `PHP_EXT_INSTALL_CUSTOM`, which gives it
+a `PHP_<EXT>_ENABLED` switch like the image's own. It then runs `update-ini-directives`, so that the
+extension's directives can be set through `PHP_*` variables and are removed from the application
+environment like every other one — see [docs/php.md](docs/php.md#extensions).
 
-This image uses **[mlocati/docker-php-extension-installer](https://github.com/mlocati/docker-php-extension-installer)** to install PHP extensions in a simple and reliable way.  
+This image uses **[mlocati/docker-php-extension-installer](https://github.com/mlocati/docker-php-extension-installer)** to install PHP extensions in a simple and reliable way.
 
 **Example in a child image:**
 
 ```Dockerfile
-ENV PHP_EXT_INSTALL_CUSTOM="xdebug-^3.5 redis-stable apcu gd"
+USER root
 
-RUN install-php-extensions ${PHP_EXT_INSTALL_CUSTOM}
+ENV PHP_EXT_INSTALL_CUSTOM="redis-stable apcu"
+
+RUN install-php-extensions ${PHP_EXT_INSTALL_CUSTOM} \
+ && update-ini-directives
+
+USER 1001
 ```
-
-These extensions will automatically be processed and installed along with the default ones defined in the parent image.
 
 ### Bringing your own vhost or php-fpm pool
 
