@@ -155,6 +155,37 @@ teardown_file() {
   assert_success
 }
 
+# A child image that installs an extension of its own reruns the script that
+# built the list, or the extension's directives are neither configurable nor
+# cleaned. On an image with nothing added, a rerun must change nothing -- and a
+# name already in the list is kept, since the list only ever grows.
+@test "[$TEST_FILE] update-ini-directives reproduces the shipped list and keeps its names" {
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --user root --entrypoint sh "${BATS_CLI_IMAGE}" -c '
+    list=/usr/local/share/base-php/ini-directives.list
+    cp "$list" /tmp/before
+    update-ini-directives >/dev/null
+    diff /tmp/before "$list" && echo unchanged
+    echo zz.child_directive >>"$list"
+    update-ini-directives >/dev/null
+    grep -x zz.child_directive "$list"'
+  assert_success
+  assert_line "unchanged"
+  assert_line "zz.child_directive"
+}
+
+# A php that cannot enumerate must fail the build that runs the script, and
+# leave the list as it was rather than ship a short one.
+@test "[$TEST_FILE] update-ini-directives fails without touching the list when php fails" {
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --user root --entrypoint sh "${BATS_CLI_IMAGE}" -c '
+    list=/usr/local/share/base-php/ini-directives.list
+    cp "$list" /tmp/before
+    mkdir /tmp/fake && printf "#!/bin/sh\nexit 1\n" >/tmp/fake/php && chmod +x /tmp/fake/php
+    PATH=/tmp/fake:$PATH update-ini-directives && exit 99
+    diff /tmp/before "$list" && echo untouched'
+  assert_success
+  assert_line "untouched"
+}
+
 # The banner is drawn with runs of spaces, and a web console that renders its
 # logs into HTML collapses every run to a single space: the art arrived as a
 # line of debris. Measured on the production OpenShift console -- the QA one
