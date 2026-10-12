@@ -9,6 +9,12 @@ export DEBUG=${DEBUG:-false}
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/00-functions.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/01-php.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/60-aws-config.sh
+# A child image's early hooks (/opt/bin/container-entrypoint.d/entrypoint.d),
+# at the point the web entrypoint loads them too: after the image's own
+# defaults, before unknown PHP_* variables are reported and the defaults are
+# resolved. Without it a <VARIABLE>_WCMTECH_DEFAULT set by a cli child did
+# nothing, and cli children took to sourcing this image's scripts themselves.
+source /usr/local/bin/container-entrypoint.d/entrypoint.d/90-app.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/98-unknown-vars.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/99-export-vars.sh
 

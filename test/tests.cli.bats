@@ -112,6 +112,29 @@ teardown_file() {
   assert_line "id=unset secret=unset token=unset"
 }
 
+# A child image's early hooks run in the cli variant too. They used not to: a
+# <VARIABLE>_WCMTECH_DEFAULT set there did nothing, and cli children sourced
+# this image's own scripts by path to get them run -- which broke them when
+# those scripts moved. The hook here sets a default for a directive the image
+# knows, a default of its own, and a plain export.
+@test "[$TEST_FILE] A child image's early hooks run in the cli variant" {
+  local -r hook="${BATS_TEST_TMPDIR}/10-child.sh"
+
+  printf '%s\n' \
+    'PHP_MEMORY_LIMIT_WCMTECH_DEFAULT=256M' \
+    'CHILD_SETTING_WCMTECH_DEFAULT=from-default' \
+    'export CHILD_EXPORT=exported' >"${hook}"
+  chmod a+r "${hook}"
+
+  run_cli \
+    -v "${hook}:/opt/bin/container-entrypoint.d/entrypoint.d/10-child.sh:ro" \
+    "${BATS_CLI_IMAGE}" php -r 'echo "memory=", ini_get("memory_limit"),
+      " setting=", var_export(getenv("CHILD_SETTING"), true),
+      " export=", getenv("CHILD_EXPORT"), PHP_EOL;'
+  assert_success
+  assert_line "memory=256M setting=false export=exported"
+}
+
 # Temporary credentials (STS, assume-role) are rejected without their session
 # token, and the credentials template rendered only the two long-term keys.
 @test "[$TEST_FILE] Temporary credentials are rendered with their session token" {
