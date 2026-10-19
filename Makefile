@@ -294,17 +294,18 @@ build-version: ## build-version VERSION=x.y.z : trigger a docker build via workf
 
 # —— CI cache —————————————————————————————————————————————————————————————————————————————————————————————————————————
 
-# Only a push to main writes the layer cache (see the bake step of docker.yml).
-# Entries written by other refs -- pull requests, tags, from before that rule --
-# can be read by nobody but the ref that wrote them, and still count against
-# the repository's 10 GB quota until GitHub evicts them. This removes them.
+# Only a push to main or to a version branch writes the layer cache (see the
+# bake step of docker.yml). Entries written by other refs -- pull requests, tags,
+# from before that rule -- can be read by nobody but the ref that wrote them, and
+# still count against the repository's 10 GB quota until GitHub evicts them.
+# This removes them.
 .PHONY: ci-cache-prune
 
-ci-cache-prune: ## ci-cache-prune [APPLY=1] : list (or delete) the Actions caches not written by main
+ci-cache-prune: ## ci-cache-prune [APPLY=1] : list (or delete) the Actions caches not written by main or a version branch
 	@t=$$(mktemp); trap 'rm -f "$$t"' EXIT; \
 	 gh api --paginate "repos/$(REPO)/actions/caches?per_page=100" \
-	   --jq '.actions_caches[] | select(.ref != "refs/heads/main") | [.id, .ref, .size_in_bytes] | @tsv' > "$$t" || exit 1; \
-	 awk -F'\t' '{ n++; s += $$3 } END { printf "%d caches not written by main, %.2f GB\n", n, s / 1e9 }' "$$t"; \
+	   --jq '.actions_caches[] | select(.ref != "refs/heads/main" and (.ref | test("^refs/heads/[0-9]+[.][0-9]+$$") | not)) | [.id, .ref, .size_in_bytes] | @tsv' > "$$t" || exit 1; \
+	 awk -F'\t' '{ n++; s += $$3 } END { printf "%d caches not written by main or a version branch, %.2f GB\n", n, s / 1e9 }' "$$t"; \
 	 if [ -z "$(APPLY)" ]; then \
 	   cut -f2 "$$t" | sed -E 's#/[0-9]+/merge$$#/N/merge#; s#tags/.*#tags/*#' | sort | uniq -c; \
 	   echo "dry run -- APPLY=1 deletes them"; \
