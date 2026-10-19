@@ -4,7 +4,7 @@ ARG PHP_VERSION_ARG=8.4.26
 ARG PHP_EXT_INSTALLER_VERSION_ARG=2.11.12
 ARG NODE_VERSION_ARG=22
 ARG COMPOSER_VERSION_ARG=2.10.3
-ARG GOMPLATE_VERSION_ARG=5.2.0
+ARG GOMPLATE_VERSION_ARG=5.3.0
 
 FROM alpine:${ALPINE_VERSION_ARG} AS ca-bundle
 
@@ -24,9 +24,9 @@ FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext
 
 # Build gomplate from source instead of copying the upstream prebuilt binary.
 # Same version, same recipe as upstream (their Dockerfile also uses
-# golang:1.26-alpine, plain `go build ./cmd/gomplate`, CGO disabled, no build
+# golang:1.27-alpine, plain `go build ./cmd/gomplate`, CGO disabled, no build
 # tags), so behaviour is identical — but recompiling here picks up the current
-# Go 1.26 patch release, which clears the Go stdlib CVEs. The upstream prebuilt
+# Go 1.27 patch release, which clears the Go stdlib CVEs. The upstream prebuilt
 # binary is frozen at whatever Go patch was current when it was released, so it
 # accumulates stdlib CVEs between gomplate releases; building from source is
 # self-healing on every rolling rebuild.
@@ -38,7 +38,7 @@ FROM mlocati/php-extension-installer:${PHP_EXT_INSTALLER_VERSION_ARG} AS php-ext
 # resulting /usr/bin/gomplate (e.g. `trivy rootfs`). Only if that scan shows
 # dependency CVEs that upstream has not yet fixed should a targeted bump be
 # added back.
-FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS gomplate
+FROM --platform=$BUILDPLATFORM golang:1.27-alpine AS gomplate
 ARG TARGETOS TARGETARCH GOMPLATE_VERSION_ARG
 WORKDIR /src
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
