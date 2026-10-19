@@ -291,3 +291,27 @@ notes: ## notes VERSION=x.y.z [SINCE=x.y.z] : regenerate GitHub release notes
 build-version: ## build-version VERSION=x.y.z : trigger a docker build via workflow_dispatch (main path)
 	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
 	@gh workflow run docker.yml --repo $(REPO) -f version=$(VERSION) && echo "workflow_dispatch sent for $(VERSION) (runs the 'main' path, not the 'tag' path)"
+
+# —— CI cache —————————————————————————————————————————————————————————————————————————————————————————————————————————
+
+# Only a push to main writes the layer cache (see the bake step of docker.yml).
+# Entries written by other refs -- pull requests, tags, from before that rule --
+# can be read by nobody but the ref that wrote them, and still count against
+# the repository's 10 GB quota until GitHub evicts them. This removes them.
+.PHONY: ci-cache-prune
+
+ci-cache-prune: ## ci-cache-prune [APPLY=1] : list (or delete) the Actions caches not written by main
+	@t=$$(mktemp); trap 'rm -f "$$t"' EXIT; \
+	 gh api --paginate "repos/$(REPO)/actions/caches?per_page=100" \
+	   --jq '.actions_caches[] | select(.ref != "refs/heads/main") | [.id, .ref, .size_in_bytes] | @tsv' > "$$t" || exit 1; \
+	 awk -F'\t' '{ n++; s += $$3 } END { printf "%d caches not written by main, %.2f GB\n", n, s / 1e9 }' "$$t"; \
+	 if [ -z "$(APPLY)" ]; then \
+	   cut -f2 "$$t" | sed -E 's#/[0-9]+/merge$$#/N/merge#; s#tags/.*#tags/*#' | sort | uniq -c; \
+	   echo "dry run -- APPLY=1 deletes them"; \
+	 else \
+	   n=0; f=0; \
+	   while IFS="$$(printf '\t')" read -r id ref size; do \
+	     if gh api -X DELETE "repos/$(REPO)/actions/caches/$$id" >/dev/null 2>&1; then n=$$((n + 1)); else f=$$((f + 1)); fi; \
+	   done < "$$t"; \
+	   echo "deleted $$n, failed $$f"; \
+	 fi
