@@ -21,6 +21,10 @@ on:
   push:
     branches:
       - main
+      # Version branches too: the build does not publish (push is false outside
+      # main, tags and workflow_dispatch), so it runs the image suites after a
+      # merge and writes the layer cache that pull requests into that branch read.
+      - "[0-9]+.[0-9]+"
     tags:
       - "[0-9]+.[0-9]+.[0-9]+*"
 
@@ -144,19 +148,21 @@ jobs:
           # [...] by digest" error. On the load path they are what gives the test
           # step an image to run, so they are kept.
           #
-          # The layer cache is main's, and only main writes it. A cache entry is
-          # readable from the ref that wrote it and from the default branch, so a
-          # pull request or a tag can reuse main's cache but nobody can reuse
-          # theirs: they used to write one per ref (7 GB of PR entries, 7 GB of
-          # tag entries) and push the repository past its 10 GB quota, evicting
-          # main's. Every build reads the one scope; a push to main refreshes it.
-          # workflow_dispatch builds an arbitrary version, so it reads but does
-          # not write.
+          # Only a push to a long-lived branch (main, a version branch) writes the
+          # layer cache, each into its own scope. A cache entry is readable from
+          # the ref that wrote it, from the default branch and, for a pull
+          # request, from its base branch -- so nobody could reuse what pull
+          # requests and tags used to write (7 GB of each), which pushed the
+          # repository past its 10 GB quota and evicted main's. Every build reads
+          # main's scope and, for a pull request or a branch push, the branch's
+          # own; a tag can read only main's. workflow_dispatch builds an
+          # arbitrary version, so it reads but does not write.
           set: |
             ${{ fromJson(needs.prepare.outputs.push) && '*.tags=' || '' }}
             *.platform=${{ matrix.platform }}
             ${{ matrix.variant }}-${{ matrix.target }}.cache-from=type=gha,scope=${{ matrix.variant }}-${{ matrix.target }}-refs/heads/main-${{ matrix.platform }}
-            ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && format('{0}-{1}.cache-to=type=gha,scope={0}-{1}-refs/heads/main-{2},ignore-error=true', matrix.variant, matrix.target, matrix.platform) || '' }}
+            ${{ (github.base_ref || (github.ref_type == 'branch' && github.ref_name)) && format('{0}-{1}.cache-from=type=gha,scope={0}-{1}-refs/heads/{2}-{3}', matrix.variant, matrix.target, github.base_ref || github.ref_name, matrix.platform) || '' }}
+            ${{ (github.event_name == 'push' && github.ref_type == 'branch') && format('{0}-{1}.cache-to=type=gha,scope={0}-{1}-refs/heads/{2}-{3},ignore-error=true', matrix.variant, matrix.target, github.ref_name, matrix.platform) || '' }}
             ${{ fromJson(needs.prepare.outputs.push) && format('*.output=type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.DOCKER_IMAGE_NAME) || '' }}
         env:
           GIT_HASH: ${{ github.sha }}
