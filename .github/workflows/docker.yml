@@ -47,8 +47,6 @@ jobs:
       # and only from the canonical repository. A fork that has Actions enabled would otherwise
       # publish under the upstream production image name.
       push: ${{ github.repository == 'Smals-Webtech/base-php' && ((github.event_name == 'workflow_dispatch' && inputs.version) || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')) && true || false }}
-      sbom: ${{ github.event_name != 'pull_request' }}
-      provenance: ${{ github.event_name != 'pull_request' }}
       ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.version) || '' }}
       platforms: ${{ steps.matrix.outputs.platforms }}
       targets: ${{ steps.matrix.outputs.targets }}
@@ -138,8 +136,12 @@ jobs:
           source: .
           pull: true
           load: ${{ !fromJson(needs.prepare.outputs.push) }}
-          sbom: ${{ fromJson(needs.prepare.outputs.sbom) }}
-          provenance: ${{ fromJson(needs.prepare.outputs.provenance) }}
+          # Attestations only on the push path. With them the result is a manifest
+          # list, which the docker exporter behind `load` refuses ("docker exporter
+          # does not currently support exporting manifest lists") -- what a push to
+          # a version branch, which builds without publishing, ran into.
+          sbom: ${{ fromJson(needs.prepare.outputs.push) }}
+          provenance: ${{ fromJson(needs.prepare.outputs.push) }}
           targets: |
             ${{ matrix.variant }}-${{ matrix.target }}
           files: |
