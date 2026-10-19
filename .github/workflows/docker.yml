@@ -143,12 +143,20 @@ jobs:
           # Tags are removed on the push path to prevent a "can't push tagged ref
           # [...] by digest" error. On the load path they are what gives the test
           # step an image to run, so they are kept.
+          #
+          # The layer cache is main's, and only main writes it. A cache entry is
+          # readable from the ref that wrote it and from the default branch, so a
+          # pull request or a tag can reuse main's cache but nobody can reuse
+          # theirs: they used to write one per ref (7 GB of PR entries, 7 GB of
+          # tag entries) and push the repository past its 10 GB quota, evicting
+          # main's. Every build reads the one scope; a push to main refreshes it.
+          # workflow_dispatch builds an arbitrary version, so it reads but does
+          # not write.
           set: |
             ${{ fromJson(needs.prepare.outputs.push) && '*.tags=' || '' }}
             *.platform=${{ matrix.platform }}
-            ${{ matrix.variant }}-${{ matrix.target }}.cache-from=type=gha,scope=${{ matrix.variant }}-${{ matrix.target }}-${{ needs.prepare.outputs.ref || github.ref }}-${{ matrix.platform }}
-            ${{ matrix.variant }}-${{ matrix.target }}.cache-from=type=gha,scope=refs/heads/main-${{ matrix.variant }}-${{ matrix.target }}-${{ matrix.platform }}
-            ${{ matrix.variant }}-${{ matrix.target }}.cache-to=type=gha,scope=${{ matrix.variant }}-${{ matrix.target }}-${{ needs.prepare.outputs.ref || github.ref }}-${{ matrix.platform }},ignore-error=true
+            ${{ matrix.variant }}-${{ matrix.target }}.cache-from=type=gha,scope=${{ matrix.variant }}-${{ matrix.target }}-refs/heads/main-${{ matrix.platform }}
+            ${{ (github.event_name == 'push' && github.ref == 'refs/heads/main') && format('{0}-{1}.cache-to=type=gha,scope={0}-{1}-refs/heads/main-{2},ignore-error=true', matrix.variant, matrix.target, matrix.platform) || '' }}
             ${{ fromJson(needs.prepare.outputs.push) && format('*.output=type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.DOCKER_IMAGE_NAME) || '' }}
         env:
           GIT_HASH: ${{ github.sha }}
