@@ -22,6 +22,18 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Changed
+
+- **gomplate 5.3.0, built with Go 1.27.** gomplate 5.2.0 carried dependency advisories published
+  after the VEX document was written — two HIGH (`golang.org/x/text` CVE-2026-56851,
+  `golang.org/x/net` CVE-2026-78669) and five lower — that the scan reported against
+  `/usr/bin/gomplate`. 5.3.0 ships fixed modules, and the builder follows upstream's move to
+  `golang:1.27-alpine`. Rendered configuration is byte-identical: the templates use none of what
+  5.3.0 changed (configuration-file merging, the TOML parser, new functions).
+- **The VEX document is down to one statement.** The go-git, gRPC and `x/crypto/ssh` findings are
+  fixed upstream, so their nine statements are gone; the `x/crypto/openpgp` one (GO-2026-5932, no
+  fix exists) still holds and now names `x/crypto` v0.58.0.
+
 ## [8.5.11]
 
 PHP 8.5.11. Most of the image changes below first reached users by moving the `8.5.10` tag, before

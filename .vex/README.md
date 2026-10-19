@@ -18,14 +18,14 @@ gomplate -f <template> -d <name>=env:/<VAR>?type=application/json -o <output>
 
 `env:` is the only datasource scheme used, and the templates use `if`, `range`, `{{ . }}` and
 `strings.ToLower`. Nothing reaches the network, and no repository, object store or secret store is
-ever opened. The three flagged modules arrive transitively behind datasource schemes that are not
-used:
+ever opened. The one flagged module is linked in, but not the vulnerable part of it:
 
 | module | reached through | used here |
 | --- | --- | --- |
-| `github.com/go-git/go-git/v5` | the `git://`, `git+https://`, `git+ssh://` datasources | no |
-| `golang.org/x/crypto` (`ssh`, `openpgp`) | go-git's SSH transport; `bcrypt` is the only part gomplate imports directly | no |
-| `google.golang.org/grpc` | the Google Cloud client libraries behind the `gs://` datasource | no |
+| `golang.org/x/crypto` (`openpgp`) | nothing: gomplate imports only `bcrypt`, and no dependency links `openpgp` | no |
+
+gomplate 5.3.0 fixed the go-git, gRPC and `x/crypto/ssh` findings that gomplate 5.2.0 carried
+upstream, so their statements were dropped rather than carried over.
 
 ## How it is applied
 
@@ -39,7 +39,7 @@ trivy image --vex .vex/gomplate.openvex.json --show-suppressed <image>
 
 ## When to revisit it
 
-- **A new gomplate release.** Subcomponents are pinned to the module versions gomplate 5.2.0 ships,
+- **A new gomplate release.** Subcomponents are pinned to the module versions gomplate 5.3.0 ships,
   so a bump makes the statements stop matching and the findings reappear — which is the intended
   failure mode, not a bug. Re-derive them against the new binary.
 - **A new datasource scheme, or a template that fetches anything.** The moment a call site uses
