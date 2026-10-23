@@ -122,6 +122,7 @@ mbstring.regex_retry_limit
 mbstring.regex_stack_limit
 mbstring.strict_detection
 mbstring.substitute_character
+memory_hard_limit_percent
 memory_limit
 mysqli.allow_local_infile
 mysqli.allow_persistent
