@@ -39,7 +39,7 @@ variable "AWS_CLI_VERSION" {
 }
 
 variable "GOMPLATE_VERSION" {
-  default = "5.3.0"
+  default = "5.3.1"
 }
 
 variable "DOCKER_IMAGE_NAME" {

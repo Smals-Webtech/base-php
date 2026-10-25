@@ -22,6 +22,15 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Changed
+
+- **gomplate 5.3.1.** A bugfix and performance release, with no advisory behind it. The fixes do not
+  touch what the templates use: the datasource cache mixed up two reads only when alias and
+  argument, joined, spelled the same key, and the templates read their `env:` datasources by alias
+  alone, without an argument. An output file over 4 KiB whose content is unchanged is no longer
+  rewritten, so a re-render on a persistent `/opt/etc` keeps its modification time. The VEX
+  statement still holds: the build links `x/crypto` v0.58.0, as 5.3.0 did.
+
 ## [8.4.27]
 
 PHP 8.4.27, a security release. **Upgrade and restart every container that serves PHP.**
