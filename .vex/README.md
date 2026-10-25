@@ -39,7 +39,7 @@ trivy image --vex .vex/gomplate.openvex.json --show-suppressed <image>
 
 ## When to revisit it
 
-- **A new gomplate release.** Subcomponents are pinned to the module versions gomplate 5.3.0 ships,
+- **A new gomplate release.** Subcomponents are pinned to the module versions gomplate 5.3.1 ships,
   so a bump makes the statements stop matching and the findings reappear — which is the intended
   failure mode, not a bug. Re-derive them against the new binary.
 - **A new datasource scheme, or a template that fetches anything.** The moment a call site uses
