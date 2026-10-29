@@ -275,6 +275,20 @@ FROM fpm-prd AS nginx-prd
 
 ENV NGINX_ENABLED=true
 
+USER root
+
+RUN mkdir -p \
+      /opt/etc/nginx/conf.d \
+      /opt/etc/nginx/sites-enabled \
+      /opt/etc/nginx/snippets \
+    && chmod 1777 \
+      /opt/etc/nginx \
+      /opt/etc/nginx/conf.d \
+      /opt/etc/nginx/sites-enabled \
+      /opt/etc/nginx/snippets
+
+USER 1001
+
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
 HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
@@ -287,6 +301,20 @@ HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
 FROM fpm-dev AS nginx-dev
 
 ENV NGINX_ENABLED=true
+
+USER root
+
+RUN mkdir -p \
+      /opt/etc/nginx/conf.d \
+      /opt/etc/nginx/sites-enabled \
+      /opt/etc/nginx/snippets \
+    && chmod 1777 \
+      /opt/etc/nginx \
+      /opt/etc/nginx/conf.d \
+      /opt/etc/nginx/sites-enabled \
+      /opt/etc/nginx/snippets
+
+USER 1001
 
 COPY --chmod=755 --chown=1001:0 src/ /var/www/html/
 
@@ -375,6 +403,12 @@ RUN update-ini-directives
 # 1777 is the /tmp semantics: anyone may create, only the owner may remove. It
 # stays confined to the runtime directories, which ship empty; the configuration
 # templates under /opt/config keep 775 and stay out of reach.
+# Prepare writable NGINX configuration directories before runtime
+# and before Kubernetes mounts individual ConfigMap files.
+RUN mkdir -p \
+      /opt/etc/nginx/conf.d \
+      /opt/etc/nginx/sites-enabled \
+      /opt/etc/nginx/snippets
 RUN find /opt/etc /opt/sbin /app/tmp /app/var -type d -exec chmod 1777 {} +
 
 ENV PYTHONWARNINGS="ignore" \
