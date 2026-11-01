@@ -58,7 +58,11 @@ USER root
 COPY config/ /rootfs/opt/config
 COPY bin/ /rootfs/usr/local/bin
 
+# /opt/config/nginx/http.d ships empty: it is a mount point for the operator's
+# own http-level templates, and a mount into a directory that exists creates no
+# root-owned parent.
 RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
+             /rootfs/opt/config/nginx/http.d \
              /rootfs/opt/sbin \
              /rootfs/opt/etc \
              /rootfs/app/var/lock \
