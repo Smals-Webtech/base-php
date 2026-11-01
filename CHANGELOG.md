@@ -22,6 +22,14 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Added
+
+- **`/opt/config/nginx/http.d`** for `http`-level directives of your own: a `map`, a `limit_req_zone`,
+  an `upstream`. Templates there are rendered at every start to `/opt/etc/nginx/http.d` and included
+  in the `http` block, before the vhosts, so a vhost of yours can use them without overriding
+  `nginx.conf`. `conf.d` stays the image's own: its files are rendered one by one and included by
+  name. See [docs/child-vhosts-and-pools.md](docs/child-vhosts-and-pools.md). (#148)
+
 ### Changed
 
 - **gomplate 5.3.1.** A bugfix and performance release, with no advisory behind it. The fixes do not

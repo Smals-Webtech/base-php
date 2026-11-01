@@ -243,6 +243,10 @@ http {
 
     }
 
+    # Operator-supplied http-level directives (/opt/config/nginx/http.d), before
+    # the vhosts that use them.
+    include /opt/etc/nginx/http.d/*.conf;
+
     include /opt/etc/nginx/sites-enabled/*.conf;
 
 }

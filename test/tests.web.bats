@@ -101,6 +101,7 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-etc2"
   container_clean "${BATS_WEB_CONTAINER}-ro"
   container_clean "${BATS_WEB_CONTAINER}-cfgmap"
+  container_clean "${BATS_WEB_CONTAINER}-httpd"
   container_clean "${BATS_WEB_CONTAINER}-plain"
   container_clean "${BATS_WEB_CONTAINER}-mounts"
   container_clean "${BATS_WEB_CONTAINER}-hook0"
@@ -744,6 +745,46 @@ count_429() {
 
   run ${BATS_CONTAINER_ENGINE} exec "${name}" curl -fsS http://127.0.0.1:9100/
   assert_output "extra"
+}
+
+# http.d carries what nginx only accepts in its http block: a vhost of the
+# operator's uses a map and a rate-limit zone declared there. The static file is
+# deliberate: `return` answers in the rewrite phase, before limit_req runs.
+@test "[$TEST_FILE] http-level templates in /opt/config/nginx/http.d are loaded" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "http.d is an nginx feature"
+  local -r name="${BATS_WEB_CONTAINER}-httpd"
+  local -r dir="${BATS_TEST_TMPDIR}/httpd"
+  mkdir -p "${dir}"
+  cat >"${dir}/limits.conf.tmpl" <<'CONF'
+map $http_user_agent $test_badbot { default 0; ~*badbot 1; }
+limit_req_zone $binary_remote_addr zone=test_zone:1m rate=1r/m;
+CONF
+  cat >"${dir}/app.conf.tmpl" <<'CONF'
+server {
+    listen 9100;
+    location / {
+        limit_req zone=test_zone burst=1 nodelay;
+        limit_req_status 429;
+        if ($test_badbot) { return 403; }
+        root /etc/nginx;
+        try_files /mime.types =404;
+    }
+}
+CONF
+  chmod 644 "${dir}"/*.tmpl
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only --user 12345:0 \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
+    --volume "${dir}/limits.conf.tmpl:/opt/config/nginx/http.d/limits.conf.tmpl:ro" \
+    --volume "${dir}/app.conf.tmpl:/opt/config/nginx/sites-enabled/app.conf.tmpl:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" curl -s -o /dev/null -w '%{http_code}' -A badbot http://127.0.0.1:9100/
+  assert_output "403"
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c \
+    'for i in 1 2 3; do curl -s -o /dev/null -w "%{http_code} " http://127.0.0.1:9100/; done'
+  assert_output "200 200 429 "
 }
 
 # /opt/sbin holds rendered scripts. A noexec mount reports nothing on its own:
