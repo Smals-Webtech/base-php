@@ -18,11 +18,12 @@ gomplate -f <template> -d <name>=env:/<VAR>?type=application/json -o <output>
 
 `env:` is the only datasource scheme used, and the templates use `if`, `range`, `{{ . }}` and
 `strings.ToLower`. Nothing reaches the network, and no repository, object store or secret store is
-ever opened. The one flagged module is linked in, but not the vulnerable part of it:
+ever opened. The flagged modules are linked in, but not the vulnerable part of them:
 
 | module | reached through | used here |
 | --- | --- | --- |
 | `golang.org/x/crypto` (`openpgp`) | nothing: gomplate imports only `bcrypt`, and no dependency links `openpgp` | no |
+| `github.com/go-jose/go-jose/v4` (JWK parsing, CVE-2026-116587) | `hashicorp/vault/api` (the `vault:` datasource) and `spiffe/go-spiffe` (SPIFFE bundles of the gRPC-based cloud datasources), per `go mod why` and `go list -deps` on gomplate 5.3.1 | no |
 
 gomplate 5.3.0 fixed the go-git, gRPC and `x/crypto/ssh` findings that gomplate 5.2.0 carried
 upstream, so their statements were dropped rather than carried over.
