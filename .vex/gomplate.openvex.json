@@ -2,8 +2,8 @@
   "@context": "https://openvex.dev/ns/v0.2.0",
   "@id": "https://github.com/Smals-Webtech/base-php/.vex/gomplate.openvex.json",
   "author": "Smals Webtech",
-  "timestamp": "2026-10-19T08:38:13Z",
-  "version": 2,
+  "timestamp": "2026-11-01T20:00:00Z",
+  "version": 3,
   "statements": [
     {
       "vulnerability": {
@@ -23,6 +23,25 @@
       "status": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
       "impact_statement": "The advisory affects the golang.org/x/crypto/openpgp package tree, which gomplate does not import. Its only use of golang.org/x/crypto is bcrypt, for the crypto.Bcrypt template function."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-116587",
+        "description": "go-jose: denial of service via crafted RSA parameters in JWKs"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [
+            {
+              "@id": "pkg:golang/github.com/go-jose/go-jose/v4@v4.1.4"
+            }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_in_execute_path",
+      "impact_statement": "go-jose parses JWKs only for the Vault client (the vault: datasource) and for SPIFFE trust bundles (gRPC-based cloud datasources). This image calls gomplate with env: datasources only, so no JWK is ever parsed."
     }
   ]
 }
