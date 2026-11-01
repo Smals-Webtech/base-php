@@ -6,8 +6,10 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
 	OUTDIR="/opt/etc/nginx/conf.d /opt/etc/nginx/sites-enabled /app/var/run/nginx ${NGINX_FASTCGI_CACHE_FOLDER_PATH} ${NGINX_PROXY_TEMP_FOLDER_PATH} ${NGINX_CLIENT_BODY_TEMP_PATH} ${NGINX_SCGI_TEMP_PATH} ${NGINX_FASTCGI_TEMP_FOLDER_PATH} ${NGINX_UWSGI_TEMP_PATH} /app/var/www/html"
 
+	# require-writable rather than a bare mkdir: it names the cause when a file
+	# mounted under /opt/etc left one of these directories root-owned.
 	for dir in $OUTDIR; do
-		mkdir -p "$dir"
+		require-writable "$dir" || exit 1
 	done
 
 	log "INFO" "- Setup Configuration File(s) ..."

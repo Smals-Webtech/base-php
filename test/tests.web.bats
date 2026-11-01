@@ -100,6 +100,7 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-etc1"
   container_clean "${BATS_WEB_CONTAINER}-etc2"
   container_clean "${BATS_WEB_CONTAINER}-ro"
+  container_clean "${BATS_WEB_CONTAINER}-cfgmap"
   container_clean "${BATS_WEB_CONTAINER}-plain"
   container_clean "${BATS_WEB_CONTAINER}-mounts"
   container_clean "${BATS_WEB_CONTAINER}-hook0"
@@ -699,6 +700,50 @@ count_429() {
 
   run ${BATS_CONTAINER_ENGINE} inspect -f '{{.State.Health.Status}}' "${name}"
   assert_output "healthy"
+}
+
+# To mount a single file (a Kubernetes subPath, a bind mount), the runtime
+# creates its missing parents as root before the entrypoint runs, so an
+# arbitrary uid cannot create the directories rendered next to them. The boot
+# used to stop on a bare mkdir error; it now names the cause and the way out.
+@test "[$TEST_FILE] A file mounted into /opt/etc is refused with the reason" {
+  local server
+  case "${BATS_VARIANT}" in
+    nginx)  server=nginx ;;
+    apache) server=apache2 ;;
+    *)      skip "no web server on the ${BATS_VARIANT} variant" ;;
+  esac
+  local -r conf="${BATS_TEST_TMPDIR}/extra.conf"
+  printf '# mounted\n' >"${conf}"
+  chmod 644 "${conf}"
+
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --read-only --user 12345:0 \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
+    --volume "${conf}:/opt/etc/${server}/sites-enabled/extra.conf:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "/opt/etc/${server}/conf.d is not writable"
+  assert_output --partial "A file mounted under /opt/etc makes its parent directories root-owned"
+  refute_output --partial "--tmpfs /opt/etc"
+}
+
+# The way out the message points to: the same file, mounted as a template under
+# /opt/config, under an arbitrary uid on a read-only root filesystem.
+@test "[$TEST_FILE] A vhost template mounted under /opt/config serves under an arbitrary uid" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "the vhost below is an nginx server block"
+  local -r name="${BATS_WEB_CONTAINER}-cfgmap"
+  local -r tmpl="${BATS_TEST_TMPDIR}/extra.conf.tmpl"
+  printf 'server {\n    listen 9100;\n    location / { return 200 "extra\\n"; }\n}\n' >"${tmpl}"
+  chmod 644 "${tmpl}"
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only --user 12345:0 \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
+    --volume "${tmpl}:/opt/config/nginx/sites-enabled/extra.conf.tmpl:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" curl -fsS http://127.0.0.1:9100/
+  assert_output "extra"
 }
 
 # /opt/sbin holds rendered scripts. A noexec mount reports nothing on its own:
