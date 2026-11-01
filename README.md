@@ -425,31 +425,34 @@ the extension on disk and out of the process.
 Do not confuse `PHP_APCU_ENABLED` with `PHP_APC_ENABLED`: the second is the `apc.enabled` ini
 directive, a different setting.
 
-| Environment Variable        | Extension       | Enabled (prd) | Enabled (dev) | Configuration                        | Documentation                                                               |
-|-----------------------------|-----------------|---------------|---------------|--------------------------------------|-----------------------------------------------------------------------------|
-| `PHP_APCU_ENABLED`          | `apcu`          | `true`        | `true`        | [Link](docs/php.md#apcu)             | [Link](https://www.php.net/manual/en/book.apcu.php)                         |
-| `PHP_BCMATH_ENABLED`        | `bcmath`        | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.bc.php)                           |
-| `PHP_BZ2_ENABLED`           | `bz2`           | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.bzip2.php)                        |
-| `PHP_CALENDAR_ENABLED`      | `calendar`      | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.calendar.php)                     |
-| `PHP_EXIF_ENABLED`          | `exif`          | `true`        | `true`        | [Link](docs/php.md#exif)             | [Link](https://www.php.net/manual/en/book.exif.php)                         |
-| `PHP_GD_ENABLED`            | `gd`            | `true`        | `true`        | [Link](docs/php.md#gd)               | [Link](https://www.php.net/manual/en/book.image.php)                        |
-| `PHP_GETTEXT_ENABLED`       | `gettext`       | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.gettext.php)                      |
-| `PHP_INTL_ENABLED`          | `intl`          | `true`        | `true`        | [Link](docs/php.md#intl)             | [Link](https://www.php.net/manual/en/book.intl.php)                         |
-| `PHP_LDAP_ENABLED`          | `ldap`          | `true`        | `true`        | [Link](docs/php.md#ldap)             | [Link](https://www.php.net/manual/en/book.ldap.php)                         |
-| `PHP_MYSQLI_ENABLED`        | `mysqli`        | `true`        | `true`        | [Link](docs/php.md#mysqli)           | [Link](https://www.php.net/manual/en/book.mysqli.php)                       |
-| `PHP_OPCACHE_ENABLED`       | `opcache`       | `true`        | `true`        | [Link](docs/php.md#opcache)          | [Link](https://www.php.net/manual/en/book.opcache.php)                      |
-| `PHP_OPENTELEMETRY_ENABLED` | `opentelemetry` | `false`       | `false`       | [Link](docs/php.md#opentelemetry)    | [Link](https://github.com/open-telemetry/opentelemetry-php-instrumentation) |
-| `PHP_PCNTL_ENABLED`         | `pcntl`         | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.pcntl.php)                        |
-| `PHP_PDO_MYSQL_ENABLED`     | `pdo_mysql`     | `true`        | `true`        | [Link](docs/php.md#mysql-pdo-driver) | [Link](https://www.php.net/manual/en/ref.pdo-mysql.php)                     |
-| `PHP_PDO_PGSQL_ENABLED`     | `pdo_pgsql`     | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/ref.pdo-pgsql.php)                     |
-| `PHP_PGSQL_ENABLED`         | `pgsql`         | `true`        | `true`        | [Link](docs/php.md#postgresql)       | [Link](https://www.php.net/manual/en/book.pgsql.php)                        |
-| `PHP_REDIS_ENABLED`         | `redis`         | `true`        | `true`        | [Link](docs/php.md#redis)            | [Link](https://github.com/phpredis/phpredis/)                               |
-| `PHP_SOAP_ENABLED`          | `soap`          | `true`        | `true`        | [Link](docs/php.md#soap)             | [Link](https://www.php.net/manual/en/book.soap.php)                         |
-| `PHP_SODIUM_ENABLED`        | `sodium`        | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.sodium.php)                       |
-| `PHP_TIDY_ENABLED`          | `tidy`          | `true`        | `true`        | [Link](docs/php.md#tidy)             | [Link](https://www.php.net/manual/en/book.tidy.php)                         |
-| `PHP_XDEBUG_ENABLED`        | `xdebug`        | `false`       | `true`        | [Link](docs/php.md#xdebug)           | [Link](https://xdebug.org/)                                                 |
-| `PHP_XSL_ENABLED`           | `xsl`           | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.xsl.php)                          |
-| `PHP_ZIP_ENABLED`           | `zip`           | `true`        | `true`        | No Configuration Yet                 | [Link](https://www.php.net/manual/en/book.zip.php)                          |
+An extension's own directives are set like any other: upper case, with `.` turned into `_`
+(`apc.shm_size` is `PHP_APC_SHM_SIZE`). See [How a directive is configured](docs/php.md#how-a-directive-is-configured).
+
+| Environment Variable        | Extension       | Enabled (prd) | Enabled (dev) | Documentation                                                               |
+|-----------------------------|-----------------|---------------|---------------|-----------------------------------------------------------------------------|
+| `PHP_APCU_ENABLED`          | `apcu`          | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.apcu.php)                         |
+| `PHP_BCMATH_ENABLED`        | `bcmath`        | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.bc.php)                           |
+| `PHP_BZ2_ENABLED`           | `bz2`           | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.bzip2.php)                        |
+| `PHP_CALENDAR_ENABLED`      | `calendar`      | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.calendar.php)                     |
+| `PHP_EXIF_ENABLED`          | `exif`          | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.exif.php)                         |
+| `PHP_GD_ENABLED`            | `gd`            | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.image.php)                        |
+| `PHP_GETTEXT_ENABLED`       | `gettext`       | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.gettext.php)                      |
+| `PHP_INTL_ENABLED`          | `intl`          | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.intl.php)                         |
+| `PHP_LDAP_ENABLED`          | `ldap`          | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.ldap.php)                         |
+| `PHP_MYSQLI_ENABLED`        | `mysqli`        | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.mysqli.php)                       |
+| `PHP_OPCACHE_ENABLED`       | `opcache`       | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.opcache.php)                      |
+| `PHP_OPENTELEMETRY_ENABLED` | `opentelemetry` | `false`       | `false`       | [Link](https://github.com/open-telemetry/opentelemetry-php-instrumentation) |
+| `PHP_PCNTL_ENABLED`         | `pcntl`         | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.pcntl.php)                        |
+| `PHP_PDO_MYSQL_ENABLED`     | `pdo_mysql`     | `true`        | `true`        | [Link](https://www.php.net/manual/en/ref.pdo-mysql.php)                     |
+| `PHP_PDO_PGSQL_ENABLED`     | `pdo_pgsql`     | `true`        | `true`        | [Link](https://www.php.net/manual/en/ref.pdo-pgsql.php)                     |
+| `PHP_PGSQL_ENABLED`         | `pgsql`         | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.pgsql.php)                        |
+| `PHP_REDIS_ENABLED`         | `redis`         | `true`        | `true`        | [Link](https://github.com/phpredis/phpredis/)                               |
+| `PHP_SOAP_ENABLED`          | `soap`          | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.soap.php)                         |
+| `PHP_SODIUM_ENABLED`        | `sodium`        | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.sodium.php)                       |
+| `PHP_TIDY_ENABLED`          | `tidy`          | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.tidy.php)                         |
+| `PHP_XDEBUG_ENABLED`        | `xdebug`        | `false`       | `true`        | [Link](https://xdebug.org/)                                                 |
+| `PHP_XSL_ENABLED`           | `xsl`           | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.xsl.php)                          |
+| `PHP_ZIP_ENABLED`           | `zip`           | `true`        | `true`        | [Link](https://www.php.net/manual/en/book.zip.php)                          |
 
 ### Adding Custom Extensions from a Child Image
 
