@@ -24,6 +24,38 @@ file rendered by your own code — one vhost per tenant, say — belongs in a bo
 per `/app/var` volume, and the file would then be missing whenever `/opt/etc` does not survive the
 restart.
 
+### Mounting them from a ConfigMap
+
+On Kubernetes and OpenShift, mount the file **as a template under `/opt/config`**, never into
+`/opt/etc`. `/opt/etc` is the output of the rendering, and it is an `emptyDir` you start empty. To
+mount a single file (`subPath`), the runtime first creates its missing parent directories, as root.
+An arbitrary uid then cannot create the directories the entrypoint renders into next to them, and the
+container refuses to start: `/opt/etc/nginx/conf.d is not writable`. `/opt/config` ships with the
+image, so a mount there creates no parent.
+
+A file without `{{ }}` is rendered unchanged, so a plain nginx file only needs the `.tmpl` suffix.
+Files that only need to be read, such as snippets your vhost includes, can stay where they are
+mounted. Mount the whole ConfigMap as a directory and include it from there:
+
+```yaml
+volumeMounts:
+  - name: nginx-vhost
+    mountPath: /opt/config/nginx/sites-enabled/myapp.conf.tmpl
+    subPath: myapp.conf
+  - name: nginx-snippets
+    mountPath: /opt/config/nginx/snippets
+```
+
+```nginx
+server {
+    # ...
+    include /opt/config/nginx/snippets/*.conf;
+}
+```
+
+Only the first level of `/opt/config/nginx/` and of its `sites-enabled/` is rendered, so a template in
+a subdirectory of your own, such as `snippets/`, is not.
+
 ## What applies to your vhost without effort
 
 Set at nginx's `http` level, inherited by every server block unless it sets its own value:

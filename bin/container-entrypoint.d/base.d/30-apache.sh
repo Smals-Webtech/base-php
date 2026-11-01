@@ -6,8 +6,10 @@ if [[ "${APACHE_ENABLED}" == "true" ]]; then
 
 	OUTDIR="/app/var/cache/apache2/mod_ssl /opt/etc/apache2/conf.d /opt/etc/apache2/sites-enabled /app/var/run/apache2 /app/var/www/html ${APACHE_MONITORING_DOCUMENT_ROOT}"
 
+	# require-writable rather than a bare mkdir: it names the cause when a file
+	# mounted under /opt/etc left one of these directories root-owned.
 	for dir in $OUTDIR; do
-		mkdir -p "$dir"
+		require-writable "$dir" || exit 1
 	done
 
 	log "INFO" "- Setup Configuration File(s) ..."
