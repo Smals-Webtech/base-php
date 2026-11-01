@@ -63,6 +63,17 @@ teardown_file() {
   assert_line "started"
 }
 
+# A hardened cluster (OpenShift's restricted-v2 SCC, the Pod Security "restricted"
+# profile) runs the container under an arbitrary uid, drops every capability and
+# forbids privilege escalation. Nothing on the cli path may need a capability, a
+# setuid binary or root.
+@test "[$TEST_FILE] PHP runs with every capability dropped under an arbitrary uid" {
+  run_cli --user 12345:0 --cap-drop=ALL --security-opt no-new-privileges \
+    "${BATS_CLI_IMAGE}" php -r 'echo "uid=", posix_getuid(), "\n";'
+  assert_success
+  assert_line "uid=12345"
+}
+
 # npm keeps its cache in ~/.npm. HOME was 2755 to uid 1001, so under any other
 # uid npm failed on the cache before doing anything -- with the bare uid Docker
 # puts in gid 0, as the elasticms demo runs it, as much as with a uid:gid pair.
