@@ -4,15 +4,20 @@ log "INFO" "Configure Nginx ..."
 
 if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
-	OUTDIR="/opt/etc/nginx/conf.d /opt/etc/nginx/sites-enabled /app/var/run/nginx ${NGINX_FASTCGI_CACHE_FOLDER_PATH} ${NGINX_PROXY_TEMP_FOLDER_PATH} ${NGINX_CLIENT_BODY_TEMP_PATH} ${NGINX_SCGI_TEMP_PATH} ${NGINX_FASTCGI_TEMP_FOLDER_PATH} ${NGINX_UWSGI_TEMP_PATH} /app/var/www/html"
+	OUTDIR="/opt/etc/nginx/conf.d /opt/etc/nginx/http.d /opt/etc/nginx/sites-enabled /app/var/run/nginx ${NGINX_FASTCGI_CACHE_FOLDER_PATH} ${NGINX_PROXY_TEMP_FOLDER_PATH} ${NGINX_CLIENT_BODY_TEMP_PATH} ${NGINX_SCGI_TEMP_PATH} ${NGINX_FASTCGI_TEMP_FOLDER_PATH} ${NGINX_UWSGI_TEMP_PATH} /app/var/www/html"
 
+	# require-writable rather than a bare mkdir: it names the cause when a file
+	# mounted under /opt/etc left one of these directories root-owned.
 	for dir in $OUTDIR; do
-		mkdir -p "$dir"
+		require-writable "$dir" || exit 1
 	done
 
 	log "INFO" "- Setup Configuration File(s) ..."
 
 	apply-template /opt/config/nginx /opt/etc/nginx
+	# http.d holds the operator's http-level directives (map, limit_req_zone, ...),
+	# rendered whole. conf.d is the image's own and is rendered file by file below.
+	apply-template /opt/config/nginx/http.d /opt/etc/nginx/http.d
 	apply-template /opt/config/nginx/sites-enabled /opt/etc/nginx/sites-enabled
 	apply-template /opt/config/supervisor.d/nginx.ini.tmpl /opt/etc/supervisor.d/nginx.ini
 

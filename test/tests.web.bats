@@ -100,6 +100,8 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-etc1"
   container_clean "${BATS_WEB_CONTAINER}-etc2"
   container_clean "${BATS_WEB_CONTAINER}-ro"
+  container_clean "${BATS_WEB_CONTAINER}-cfgmap"
+  container_clean "${BATS_WEB_CONTAINER}-httpd"
   container_clean "${BATS_WEB_CONTAINER}-plain"
   container_clean "${BATS_WEB_CONTAINER}-mounts"
   container_clean "${BATS_WEB_CONTAINER}-hook0"
@@ -699,6 +701,90 @@ count_429() {
 
   run ${BATS_CONTAINER_ENGINE} inspect -f '{{.State.Health.Status}}' "${name}"
   assert_output "healthy"
+}
+
+# To mount a single file (a Kubernetes subPath, a bind mount), the runtime
+# creates its missing parents as root before the entrypoint runs, so an
+# arbitrary uid cannot create the directories rendered next to them. The boot
+# used to stop on a bare mkdir error; it now names the cause and the way out.
+@test "[$TEST_FILE] A file mounted into /opt/etc is refused with the reason" {
+  local server
+  case "${BATS_VARIANT}" in
+    nginx)  server=nginx ;;
+    apache) server=apache2 ;;
+    *)      skip "no web server on the ${BATS_VARIANT} variant" ;;
+  esac
+  local -r conf="${BATS_TEST_TMPDIR}/extra.conf"
+  printf '# mounted\n' >"${conf}"
+  chmod 644 "${conf}"
+
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --read-only --user 12345:0 \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
+    --volume "${conf}:/opt/etc/${server}/sites-enabled/extra.conf:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "/opt/etc/${server}/conf.d is not writable"
+  assert_output --partial "A file mounted under /opt/etc makes its parent directories root-owned"
+  refute_output --partial "--tmpfs /opt/etc"
+}
+
+# The way out the message points to: the same file, mounted as a template under
+# /opt/config, under an arbitrary uid on a read-only root filesystem.
+@test "[$TEST_FILE] A vhost template mounted under /opt/config serves under an arbitrary uid" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "the vhost below is an nginx server block"
+  local -r name="${BATS_WEB_CONTAINER}-cfgmap"
+  local -r tmpl="${BATS_TEST_TMPDIR}/extra.conf.tmpl"
+  printf 'server {\n    listen 9100;\n    location / { return 200 "extra\\n"; }\n}\n' >"${tmpl}"
+  chmod 644 "${tmpl}"
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only --user 12345:0 \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
+    --volume "${tmpl}:/opt/config/nginx/sites-enabled/extra.conf.tmpl:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" curl -fsS http://127.0.0.1:9100/
+  assert_output "extra"
+}
+
+# http.d carries what nginx only accepts in its http block: a vhost of the
+# operator's uses a map and a rate-limit zone declared there. The static file is
+# deliberate: `return` answers in the rewrite phase, before limit_req runs.
+@test "[$TEST_FILE] http-level templates in /opt/config/nginx/http.d are loaded" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "http.d is an nginx feature"
+  local -r name="${BATS_WEB_CONTAINER}-httpd"
+  local -r dir="${BATS_TEST_TMPDIR}/httpd"
+  mkdir -p "${dir}"
+  cat >"${dir}/limits.conf.tmpl" <<'CONF'
+map $http_user_agent $test_badbot { default 0; ~*badbot 1; }
+limit_req_zone $binary_remote_addr zone=test_zone:1m rate=1r/m;
+CONF
+  cat >"${dir}/app.conf.tmpl" <<'CONF'
+server {
+    listen 9100;
+    location / {
+        limit_req zone=test_zone burst=1 nodelay;
+        limit_req_status 429;
+        if ($test_badbot) { return 403; }
+        root /etc/nginx;
+        try_files /mime.types =404;
+    }
+}
+CONF
+  chmod 644 "${dir}"/*.tmpl
+
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only --user 12345:0 \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
+    --volume "${dir}/limits.conf.tmpl:/opt/config/nginx/http.d/limits.conf.tmpl:ro" \
+    --volume "${dir}/app.conf.tmpl:/opt/config/nginx/sites-enabled/app.conf.tmpl:ro" \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
+  container_wait_for_healthy "${name}" 60 >/dev/null
+
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" curl -s -o /dev/null -w '%{http_code}' -A badbot http://127.0.0.1:9100/
+  assert_output "403"
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c \
+    'for i in 1 2 3; do curl -s -o /dev/null -w "%{http_code} " http://127.0.0.1:9100/; done'
+  assert_output "200 200 429 "
 }
 
 # /opt/sbin holds rendered scripts. A noexec mount reports nothing on its own:

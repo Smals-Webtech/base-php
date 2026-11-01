@@ -10,12 +10,18 @@ pool** does not, and you repeat it.
 
 ## Where the files go
 
-Both are rendered at every start, before Supervisor starts nginx and php-fpm:
+They are rendered at every start, before Supervisor starts nginx and php-fpm:
 
 | What | Template | Rendered to |
 |------|----------|-------------|
 | A vhost | `/opt/config/nginx/sites-enabled/<name>.conf.tmpl` | `/opt/etc/nginx/sites-enabled/<name>.conf` |
+| `http`-level directives | `/opt/config/nginx/http.d/<name>.conf.tmpl` | `/opt/etc/nginx/http.d/<name>.conf` |
 | A pool | `/opt/config/php/php-fpm.d/<name>.conf.tmpl` | `/opt/etc/php/php-fpm.d/<name>.conf` |
+
+`http.d` is for what nginx only accepts in its `http` block and your vhosts use: a `map`, a
+`limit_req_zone`, an `upstream`. It is included in the `http` block, before the vhosts. `conf.d`
+belongs to the image: its files are rendered one by one, some only when a feature is on, and
+included by name, so a template added there is not loaded.
 
 A template sees the resolved environment, so it can reuse the image's own settings
 (`{{ .Env.PHP_FPM_REQUEST_TERMINATE_TIMEOUT }}`) and follow them when an operator changes them. A
@@ -23,6 +29,45 @@ file rendered by your own code — one vhost per tenant, say — belongs in a bo
 (`/opt/bin/container-entrypoint.d/boot.d/`), which also runs at every start. A late hook runs once
 per `/app/var` volume, and the file would then be missing whenever `/opt/etc` does not survive the
 restart.
+
+### Mounting them from a ConfigMap
+
+On Kubernetes and OpenShift, mount the file **as a template under `/opt/config`**, never into
+`/opt/etc`. `/opt/etc` is the output of the rendering, and it is an `emptyDir` you start empty. To
+mount a single file (`subPath`), the runtime first creates its missing parent directories, as root.
+An arbitrary uid then cannot create the directories the entrypoint renders into next to them, and the
+container refuses to start: `/opt/etc/nginx/conf.d is not writable`. `/opt/config` ships with the
+image, so a mount there creates no parent.
+
+A file without `{{ }}` is rendered unchanged, so a plain nginx file only needs the `.tmpl` suffix.
+Files that only need to be read, such as snippets your vhost includes, can stay where they are
+mounted. Mount the whole ConfigMap as a directory and include it from there:
+
+```yaml
+volumeMounts:
+  - name: nginx-vhost
+    mountPath: /opt/config/nginx/sites-enabled/myapp.conf.tmpl
+    subPath: myapp.conf
+  - name: nginx-http
+    mountPath: /opt/config/nginx/http.d/myapp-limits.conf.tmpl
+    subPath: myapp-limits.conf
+  - name: nginx-snippets
+    mountPath: /opt/config/nginx/snippets
+```
+
+```nginx
+server {
+    # ...
+    include /opt/config/nginx/snippets/*.conf;
+}
+```
+
+Only the first level of `/opt/config/nginx/`, `http.d/` and `sites-enabled/` is rendered, so a
+template in a subdirectory of your own, such as `snippets/`, is not.
+
+A rate limit of your own is a zone in `http.d` and a `limit_req` in your vhost. nginx answers 503
+when it rejects a request unless the vhost sets `limit_req_status 429;`. The image's soft throttling
+(`NGINX_SOFT_THROTTLE_*`, see below) may already cover the need.
 
 ## What applies to your vhost without effort
 
