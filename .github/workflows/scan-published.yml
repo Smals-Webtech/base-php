@@ -98,6 +98,49 @@ jobs:
         env:
           TRIVY_VEX: ${{ github.workspace }}/.vex/gomplate.openvex.json
 
+      # What this image reports now that its previous weekly scan did not. Before the upload, so the
+      # latest analysis of the category is still last week's. The comparison is per image rather than
+      # by alert: an alert is one object for the whole repository, created when ANY scan first sees the
+      # advisory, and the build's scan creates it without telling anyone. Going by alert dates, a CVE
+      # the build saw first was never reported here.
+      #
+      # Without a previous analysis (the first scan, or one older than the last 100 analyses of the
+      # branch), every finding counts as new: a spurious report rather than a missed one.
+      - name: Compare with the previous scan of this image
+        id: diff
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REF: refs/heads/${{ matrix.branch }}
+          CATEGORY: published-${{ matrix.line }}-${{ matrix.variant }}
+        run: |
+          set -euo pipefail
+          keys='[.runs[].results[] | "\(.ruleId) \(.locations[0].physicalLocation.artifactLocation.uri)"] | unique | .[]'
+          jq -r "${keys}" trivy.sarif | sort >current.txt
+          id="$(gh api "repos/${REPO}/code-scanning/analyses?ref=${REF}&tool_name=Trivy&per_page=100" \
+            --jq "[.[] | select(.category == \"${CATEGORY}\")][0].id // empty")"
+          if [ -n "${id}" ]; then
+            gh api -H 'Accept: application/sarif+json' "repos/${REPO}/code-scanning/analyses/${id}" |
+              jq -r "${keys}" | sort >previous.txt
+          else
+            : >previous.txt
+          fi
+          comm -13 previous.txt current.txt >new.txt
+          echo "count=$(wc -l <new.txt)" >>"${GITHUB_OUTPUT}"
+          {
+            echo
+            if [ -s new.txt ]; then
+              echo "**New since the previous scan of this image** (analysis ${id:-none}):"
+              echo
+              echo "| Advisory | Path |"
+              echo "| --- | --- |"
+              sed -E 's/^([^ ]+) (.*)$/| \1 | \2 |/' new.txt
+            else
+              echo "Nothing new since the previous scan of this image (analysis ${id})."
+            fi
+          } >>"${GITHUB_STEP_SUMMARY}"
+
       # A category of its own: `trivy-<variant>` describes what the head of main builds, this one what
       # users pull. Sharing a category would make an alert open and close at every push and every week.
       #
@@ -126,50 +169,10 @@ jobs:
           TRIVY_VEX: ${{ github.workspace }}/.vex/gomplate.openvex.json
           TRIVY_SHOW_SUPPRESSED: "true"
 
-  # ── Fail on what is new, not on what is known ────────────────────────────────────────────────────
-  #
-  # The Security tab keeps every finding, but nobody is told about one. This job lists the alerts of
-  # the published-* categories that were opened by this run and fails when there is any: a failed
-  # scheduled workflow is mailed by GitHub. Alerts already open (findings waiting for an upstream
-  # fix, or dismissed) do not fail it again every week.
-  new-alerts:
-    runs-on: ubuntu-24.04
-
-    needs:
-      - scan
-
-    if: ${{ !cancelled() }}
-
-    permissions:
-      security-events: read
-      actions: read
-
-    steps:
-      - name: Report alerts opened by this run
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-          REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.run_id }}
+      # A failed scheduled run is mailed by GitHub: that is the signal. Last, so the SARIF and the
+      # table are there whatever happens.
+      - name: Fail on new findings
+        if: steps.diff.outputs.count != '0'
         run: |
-          set -euo pipefail
-          started="$(gh api "repos/${REPO}/actions/runs/${RUN_ID}" --jq .run_started_at)"
-          new="$(for ref in refs/heads/main refs/heads/8.4; do
-              gh api --paginate "repos/${REPO}/code-scanning/alerts?state=open&tool_name=Trivy&ref=${ref}&per_page=100" \
-                --jq ".[] | select(.created_at >= \"${started}\")
-                          | select(.most_recent_instance.category | startswith(\"published-\"))
-                          | \"| ${ref#refs/heads/} | \(.most_recent_instance.category) | \(.rule.id) | \(.rule.security_severity_level) | \(.most_recent_instance.location.path) | \(.html_url) |\""
-            done)"
-          if [ -z "${new}" ]; then
-            echo "No new alert on the published images since ${started}." >> "${GITHUB_STEP_SUMMARY}"
-            exit 0
-          fi
-          {
-            echo "### New alerts on the published images"
-            echo
-            echo "| Branch | Category | Advisory | Severity | Path | Alert |"
-            echo "| --- | --- | --- | --- | --- | --- |"
-            echo "${new}"
-          } >> "${GITHUB_STEP_SUMMARY}"
-          echo "::error::$(echo "${new}" | wc -l) new alert(s) on the published images, see the run summary"
+          echo "::error::${{ steps.diff.outputs.count }} new finding(s) on ${{ steps.image.outputs.tag }}, see the run summary"
           exit 1
