@@ -102,6 +102,7 @@ teardown_file() {
   container_clean "${BATS_WEB_CONTAINER}-ro"
   container_clean "${BATS_WEB_CONTAINER}-cfgmap"
   container_clean "${BATS_WEB_CONTAINER}-httpd"
+  container_clean "${BATS_WEB_CONTAINER}-nocaps"
   container_clean "${BATS_WEB_CONTAINER}-plain"
   container_clean "${BATS_WEB_CONTAINER}-mounts"
   container_clean "${BATS_WEB_CONTAINER}-hook0"
@@ -785,6 +786,28 @@ CONF
   run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c \
     'for i in 1 2 3; do curl -s -o /dev/null -w "%{http_code} " http://127.0.0.1:9100/; done'
   assert_output "200 200 429 "
+}
+
+# A hardened cluster (OpenShift's restricted-v2 SCC, the Pod Security "restricted"
+# profile) runs the container under an arbitrary uid, drops every capability and
+# forbids privilege escalation. Supervisor, the web server, php-fpm and the boot
+# must all do without a capability, a setuid binary or root.
+@test "[$TEST_FILE] A container with every capability dropped serves PHP under an arbitrary uid" {
+  local -r name="${BATS_WEB_CONTAINER}-nocaps"
+  local port
+
+  port="$(web_container_start "${name}" --read-only --user 12345:0 \
+    --cap-drop=ALL --security-opt no-new-privileges \
+    --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp)"
+
+  # The docroot is image content, read-only here, so the image's own index.php is
+  # what proves PHP ran: its text only exists once php-fpm has executed it.
+  run curl --silent --fail --max-time 20 "http://127.0.0.1:${port}/"
+  assert_success
+  assert_output --partial "Docker Base image - Default index.php page"
+
+  run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c 'ps -o user= -o comm= | sort -u'
+  refute_output --partial "root"
 }
 
 # /opt/sbin holds rendered scripts. A noexec mount reports nothing on its own:

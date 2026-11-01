@@ -58,6 +58,10 @@ On Kubernetes and OpenShift, mount an `emptyDir` at each path — `VOLUME` was n
 any case. The `cli` variant runs no supervisor and needs only `/opt/etc` and `/app/tmp`. Without
 `--read-only` nothing has to be mounted at all: the writes land in the container layer.
 
+Nothing in the image needs root, a capability or a setuid binary: every variant runs under an arbitrary
+uid with `--cap-drop=ALL` and `--security-opt no-new-privileges`, which is what OpenShift's
+`restricted-v2` SCC and the Pod Security `restricted` profile impose. The test suites assert it.
+
 ### Adding your own startup scripts
 
 `/opt/config/sbin` is the extension point. Mount a `.tmpl` there and the entrypoint renders it with
