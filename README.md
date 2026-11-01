@@ -78,8 +78,10 @@ Scripts that must exist in **every** variant — the `aws` wrapper, which shadow
 `PATH` shims.
 
 `/opt/etc` is regenerated from the templates on every start, so any file the image owns there is
-replaced; mount your own configuration under a name the image does not use (for PHP, anything other
-than `base-php-*.ini`) and it is preserved.
+replaced. Mount your own configuration as a template under `/opt/config` instead, and it is rendered
+next to the image's files. Do not mount a single file into `/opt/etc`: the runtime creates its parent
+directories as root, and an arbitrary uid can then no longer render the rest. See
+[Mounting them from a ConfigMap](docs/child-vhosts-and-pools.md#mounting-them-from-a-configmap).
 
 ### Replacing the startup banner
 

@@ -22,6 +22,14 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Added
+
+- **`/opt/config/nginx/http.d`** for `http`-level directives of your own: a `map`, a `limit_req_zone`,
+  an `upstream`. Templates there are rendered at every start to `/opt/etc/nginx/http.d` and included
+  in the `http` block, before the vhosts, so a vhost of yours can use them without overriding
+  `nginx.conf`. `conf.d` stays the image's own: its files are rendered one by one and included by
+  name. See [docs/child-vhosts-and-pools.md](docs/child-vhosts-and-pools.md). (#148)
+
 ### Changed
 
 - **gomplate 5.3.1.** A bugfix and performance release, with no advisory behind it. The fixes do not
@@ -30,6 +38,13 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
   alone, without an argument. An output file over 4 KiB whose content is unchanged is no longer
   rewritten, so a re-render on a persistent `/opt/etc` keeps its modification time. The VEX
   statement still holds: the build links `x/crypto` v0.58.0, as 5.3.0 did.
+- **A file mounted into `/opt/etc` is refused with its cause.** To mount a single file (a Kubernetes
+  `subPath`, a bind mount), the runtime creates its missing parent directories as root. An arbitrary
+  uid could then not create the nginx or apache directories rendered next to them, and the boot
+  stopped on a bare `mkdir: … Permission denied`. It now says that a file mounted under `/opt/etc`
+  made its parents root-owned, and points to `/opt/config`. The `README.md` no longer suggests mounting
+  configuration into `/opt/etc`, and [docs/child-vhosts-and-pools.md](docs/child-vhosts-and-pools.md)
+  shows how to mount a vhost and snippets from a ConfigMap. (#148)
 
 ## [8.5.12]
 

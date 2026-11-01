@@ -60,6 +60,17 @@ function require-writable {
 
 	if ! (: >"$probe") 2>/dev/null; then
 		log "ERROR" "! ${dir} is not writable."
+		# /opt/etc itself is writable, so a directory below it was created by
+		# someone else: a file mounted there (a Kubernetes subPath, a docker bind
+		# mount) makes the runtime create its missing parents as root, before the
+		# entrypoint runs. More mounts would not help; mounting elsewhere does.
+		if [[ "$dir" == /opt/etc/* ]] && (: >"/opt/etc/.wcmtech-writable-$$") 2>/dev/null; then
+			rm -f "/opt/etc/.wcmtech-writable-$$"
+			log "ERROR" "! A file mounted under /opt/etc makes its parent directories root-owned."
+			log "ERROR" "! /opt/etc is rendered at every start: mount configuration under /opt/config instead,"
+			log "ERROR" "! e.g. a vhost as /opt/config/nginx/sites-enabled/<name>.conf.tmpl (docs/child-vhosts-and-pools.md)."
+			return 1
+		fi
 		log "ERROR" "! This image renders its runtime state there and no longer declares a VOLUME for it."
 		_mount-hint
 		return 1
