@@ -14,6 +14,9 @@ This repository provides a **production-ready, multi-variant PHP base image** bu
 - 🔁 Advanced build tool using `docker buildx bake`
 - ⚙️ Mature Container startup design
 
+Building an image on top of this one? [docs/child-images.md](docs/child-images.md) lists what you can
+rely on, where your configuration goes, and what to leave alone.
+
 ## 🧱 Filesystem layout and read-only design
 
 The container is designed to run safely in **read-only mode**.
@@ -882,6 +885,9 @@ what was detected.
 | `make build-version VERSION=x.y.z` | Trigger a build via `workflow_dispatch` without moving a tag. |
 
 Destructive targets prompt for confirmation; pass `YES=1` to skip. Requires `git` and `gh`.
+
+When an advisory affects the image, [docs/cve-response.md](docs/cve-response.md) gives the order of
+things: triage, the fix on both lines, the release or retag, and how it reaches the child images.
 
 ## 📬 Contact
 
