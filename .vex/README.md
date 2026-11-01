@@ -31,7 +31,9 @@ upstream, so their statements were dropped rather than carried over.
 
 The `scan` job in `.github/workflows/docker.yml` passes it to Trivy as `TRIVY_VEX`, so the SARIF
 uploaded to the Security tab is already filtered, and prints the suppressed findings in the build log
-with `TRIVY_SHOW_SUPPRESSED`. Locally:
+with `TRIVY_SHOW_SUPPRESSED`. `.github/workflows/scan-published.yml` applies it the same way every
+week to the published `8.5-*` and `8.4-*` tags, each with the document of its own branch, so a line
+keeps the statements that match its image. Locally:
 
 ```bash
 trivy image --vex .vex/gomplate.openvex.json --show-suppressed <image>

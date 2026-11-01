@@ -1,0 +1,175 @@
+---
+name: Scan published images
+
+run-name: Scan published images by @${{ github.actor }}
+
+# The build scans an image once, when it is pushed. An advisory published after
+# that is never seen on the image people actually pull, which is how both
+# October 2026 advisories (PHP2Shell, HTTP2Shell) went unnoticed on released
+# tags. This workflow scans what is published, every week, and keeps the result
+# in the Security tab next to the build's.
+#
+# The cron runs the copy of this file on the default branch, so it scans both
+# lines from there: there is nothing to backport to 8.4.
+on:
+  schedule:
+    - cron: "0 5 * * 1"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  # ── One scan per published line and prd variant ──────────────────────────────────────────────────
+  #
+  # The floating `<line>-<variant>` tag is what child images and deployments pull. It is resolved to
+  # its digest first and the digest is scanned, so the result names the exact image it describes even
+  # if a retag moves the tag while the job runs.
+  #
+  # Only the prd images, as in docker.yml: the dev ones are not what runs in production.
+  scan:
+    runs-on: ubuntu-24.04
+
+    permissions:
+      contents: read
+      security-events: write
+
+    strategy:
+      fail-fast: false
+      matrix:
+        line: ["8.5", "8.4"]
+        variant: [cli, fpm, nginx, apache]
+        include:
+          - line: "8.5"
+            branch: main
+          - line: "8.4"
+            branch: "8.4"
+
+    steps:
+      # The line's own branch: its .vex/ document is the one that matches the image, and its head
+      # commit is what the analysis is filed under.
+      - name: Checkout source
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ matrix.branch }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Resolve the published image
+        id: image
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="smalswebtech/base-php:${{ matrix.line }}-${{ matrix.variant }}"
+          digest="$(docker buildx imagetools inspect "${tag}" --format '{{json .Manifest}}' | jq -r .digest)"
+          if [ -z "${digest}" ] || [ "${digest}" = "null" ]; then
+            echo "::error::no digest resolved for ${tag}" >&2
+            exit 1
+          fi
+          echo "resolved ${tag} -> ${digest}"
+          {
+            echo "tag=${tag}"
+            echo "ref=smalswebtech/base-php@${digest}"
+            echo "sha=$(git rev-parse HEAD)"
+          } >> "${GITHUB_OUTPUT}"
+          {
+            echo "| Scanned tag | Digest |"
+            echo "| --- | --- |"
+            echo "| \`${tag}\` | \`${digest}\` |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      # Same settings and VEX document as the build's scan (docker.yml), so the two only differ in
+      # what they scan.
+      - name: Run Trivy (SARIF)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          format: sarif
+          output: trivy.sarif
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          limit-severities-for-sarif: true
+          ignore-unfixed: true
+        env:
+          TRIVY_VEX: ${{ github.workspace }}/.vex/gomplate.openvex.json
+
+      # A category of its own: `trivy-<variant>` describes what the head of main builds, this one what
+      # users pull. Sharing a category would make an alert open and close at every push and every week.
+      #
+      # ref and sha file the analysis under the line's branch rather than under the default one, so the
+      # 8.4 line shows up under the 8.4 branch filter instead of only under its release tag. An alert
+      # closes by itself when a later scan of the same category no longer reports it, after a rebuild or
+      # a retag.
+      - name: Upload SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy.sarif
+          category: published-${{ matrix.line }}-${{ matrix.variant }}
+          ref: refs/heads/${{ matrix.branch }}
+          sha: ${{ steps.image.outputs.sha }}
+
+      - name: Trivy summary (table, non-blocking)
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          image-ref: ${{ steps.image.outputs.ref }}
+          format: table
+          scanners: vuln
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "0"
+        env:
+          TRIVY_VEX: ${{ github.workspace }}/.vex/gomplate.openvex.json
+          TRIVY_SHOW_SUPPRESSED: "true"
+
+  # ── Fail on what is new, not on what is known ────────────────────────────────────────────────────
+  #
+  # The Security tab keeps every finding, but nobody is told about one. This job lists the alerts of
+  # the published-* categories that were opened by this run and fails when there is any: a failed
+  # scheduled workflow is mailed by GitHub. Alerts already open (findings waiting for an upstream
+  # fix, or dismissed) do not fail it again every week.
+  new-alerts:
+    runs-on: ubuntu-24.04
+
+    needs:
+      - scan
+
+    if: ${{ !cancelled() }}
+
+    permissions:
+      security-events: read
+      actions: read
+
+    steps:
+      - name: Report alerts opened by this run
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_ID: ${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          started="$(gh api "repos/${REPO}/actions/runs/${RUN_ID}" --jq .run_started_at)"
+          new="$(for ref in refs/heads/main refs/heads/8.4; do
+              gh api --paginate "repos/${REPO}/code-scanning/alerts?state=open&tool_name=Trivy&ref=${ref}&per_page=100" \
+                --jq ".[] | select(.created_at >= \"${started}\")
+                          | select(.most_recent_instance.category | startswith(\"published-\"))
+                          | \"| ${ref#refs/heads/} | \(.most_recent_instance.category) | \(.rule.id) | \(.rule.security_severity_level) | \(.most_recent_instance.location.path) | \(.html_url) |\""
+            done)"
+          if [ -z "${new}" ]; then
+            echo "No new alert on the published images since ${started}." >> "${GITHUB_STEP_SUMMARY}"
+            exit 0
+          fi
+          {
+            echo "### New alerts on the published images"
+            echo
+            echo "| Branch | Category | Advisory | Severity | Path | Alert |"
+            echo "| --- | --- | --- | --- | --- | --- |"
+            echo "${new}"
+          } >> "${GITHUB_STEP_SUMMARY}"
+          echo "::error::$(echo "${new}" | wc -l) new alert(s) on the published images, see the run summary"
+          exit 1
