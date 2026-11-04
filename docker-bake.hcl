@@ -10,18 +10,22 @@ variable "VARIANTS" {
   default = ["fpm", "nginx", "apache", "cli"]
 }
 
+# renovate: datasource=docker depName=alpine versioning=docker
 variable "ALPINE_VERSION" {
   default = "3.24"
 }
 
+# renovate: datasource=docker depName=php versioning=semver extractVersion=^(?<version>\d+\.\d+\.\d+)-fpm-alpine3\.24$
 variable "PHP_VERSION" {
   default = "8.4.27"
 }
 
+# renovate: datasource=docker depName=mlocati/php-extension-installer versioning=semver
 variable "PHP_EXT_INSTALLER_VERSION" {
   default = "2.13.2"
 }
 
+# renovate: datasource=repology depName=alpine_3_24/nginx versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
 variable "NGINX_VERSION" {
   default = "1.30.6"
 }
@@ -30,30 +34,37 @@ variable "NODE_VERSION" {
   default = "22"
 }
 
+# renovate: datasource=github-releases depName=composer/composer versioning=semver
 variable "COMPOSER_VERSION" {
   default = "2.11.1"
 }
 
+# renovate: datasource=repology depName=alpine_3_24/aws-cli versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
 variable "AWS_CLI_VERSION" {
   default = "2.34.63"
 }
 
+# renovate: datasource=packagist depName=apcu/apcu versioning=semver extractVersion=^v?(?<version>.+)$
 variable "APCU_VERSION" {
   default = "5.1.28"
 }
 
+# renovate: datasource=packagist depName=phpredis/phpredis versioning=semver
 variable "REDIS_VERSION" {
   default = "6.3.0"
 }
 
+# renovate: datasource=packagist depName=xdebug/xdebug versioning=semver
 variable "XDEBUG_VERSION" {
   default = "3.5.3"
 }
 
+# renovate: datasource=packagist depName=open-telemetry/ext-opentelemetry versioning=semver
 variable "OPENTELEMETRY_VERSION" {
   default = "1.4.2"
 }
 
+# renovate: datasource=github-releases depName=hairyhenderson/gomplate versioning=semver extractVersion=^v(?<version>.+)$
 variable "GOMPLATE_VERSION" {
   default = "5.3.1"
 }
