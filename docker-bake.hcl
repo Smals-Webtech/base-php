@@ -19,7 +19,7 @@ variable "PHP_VERSION" {
 }
 
 variable "PHP_EXT_INSTALLER_VERSION" {
-  default = "2.11.12"
+  default = "2.13.2"
 }
 
 variable "NGINX_VERSION" {
@@ -31,11 +31,27 @@ variable "NODE_VERSION" {
 }
 
 variable "COMPOSER_VERSION" {
-  default = "2.10.3"
+  default = "2.11.1"
 }
 
 variable "AWS_CLI_VERSION" {
   default = "2.34.63"
+}
+
+variable "APCU_VERSION" {
+  default = "5.1.28"
+}
+
+variable "REDIS_VERSION" {
+  default = "6.3.0"
+}
+
+variable "XDEBUG_VERSION" {
+  default = "3.5.3"
+}
+
+variable "OPENTELEMETRY_VERSION" {
+  default = "1.4.2"
 }
 
 variable "GOMPLATE_VERSION" {
@@ -169,6 +185,10 @@ target "default" {
     AWS_CLI_VERSION_ARG = AWS_CLI_VERSION
     NGINX_VERSION_ARG = NGINX_VERSION
     GOMPLATE_VERSION_ARG = GOMPLATE_VERSION
+    APCU_VERSION_ARG = APCU_VERSION
+    REDIS_VERSION_ARG = REDIS_VERSION
+    XDEBUG_VERSION_ARG = XDEBUG_VERSION
+    OPENTELEMETRY_VERSION_ARG = OPENTELEMETRY_VERSION
   }
 
   labels = {

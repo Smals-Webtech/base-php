@@ -32,6 +32,19 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Changed
 
+- **Composer 2.11.1** in the `dev` variants, up from 2.10.3. Composer 2.11 fixes several security issues
+  (package names escaping `vendor/` through `installed.json`, repository HTTP headers written into
+  `composer.lock`, unescaped `@composer` script arguments, bin proxies) and rejects the distrusted eMudhra
+  intermediate certificates. Its one break: the `source-fallback` option, added in 2.10 as a stopgap, is
+  gone.
+- **install-php-extensions 2.13.2**, up from 2.11.12. Mostly support for other extensions and PHP 8.6; of note
+  for this image, an implicit function declaration is now a build error rather than a warning, and the
+  libraries some extensions build from source were updated. The extensions and their versions are
+  unchanged.
+- **The PECL extensions are pinned.** `apcu` 5.1.28, `opentelemetry` 1.4.2, `redis` 6.3.0 and `xdebug` 3.5.3,
+  the versions the image already shipped. Named without a version, each build took whatever PECL offered
+  that day, so a rebuild could change them silently. The versions live in `docker-bake.hcl` and the
+  `Dockerfile` ARG defaults, and a test checks that the image loads exactly those.
 - **gomplate 5.3.1.** A bugfix and performance release, with no advisory behind it. The fixes do not
   touch what the templates use: the datasource cache mixed up two reads only when alias and
   argument, joined, spelled the same key, and the templates read their `env:` datasources by alias

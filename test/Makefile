@@ -6,7 +6,7 @@
 # Pinned so a local run and a CI run load the same assertions. The CI job takes
 # the same versions through bats-core/bats-action.
 BATS_SUPPORT_VERSION           = v0.3.0
-BATS_ASSERT_VERSION            = v2.1.0
+BATS_ASSERT_VERSION            = v2.2.4
 
 help: ## Show help for each of the Makefile recipes.
 	@grep -E '(^\S*:.*?##.*$$)|(^##)' Makefile | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
