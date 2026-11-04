@@ -1,14 +1,23 @@
 # syntax=docker/dockerfile:1.15
+# renovate: datasource=docker depName=alpine versioning=docker
 ARG ALPINE_VERSION_ARG=3.24
+# renovate: datasource=docker depName=php versioning=semver extractVersion=^(?<version>\d+\.\d+\.\d+)-fpm-alpine3\.24$
 ARG PHP_VERSION_ARG=8.4.27
+# renovate: datasource=docker depName=mlocati/php-extension-installer versioning=semver
 ARG PHP_EXT_INSTALLER_VERSION_ARG=2.13.2
 ARG NODE_VERSION_ARG=22
+# renovate: datasource=github-releases depName=composer/composer versioning=semver
 ARG COMPOSER_VERSION_ARG=2.11.1
+# renovate: datasource=github-releases depName=hairyhenderson/gomplate versioning=semver extractVersion=^v(?<version>.+)$
 ARG GOMPLATE_VERSION_ARG=5.3.1
 # The four extensions that come from PECL, pinned (see the install step of fpm-prd).
+# renovate: datasource=packagist depName=apcu/apcu versioning=semver extractVersion=^v?(?<version>.+)$
 ARG APCU_VERSION_ARG=5.1.28
+# renovate: datasource=packagist depName=phpredis/phpredis versioning=semver
 ARG REDIS_VERSION_ARG=6.3.0
+# renovate: datasource=packagist depName=xdebug/xdebug versioning=semver
 ARG XDEBUG_VERSION_ARG=3.5.3
+# renovate: datasource=packagist depName=open-telemetry/ext-opentelemetry versioning=semver
 ARG OPENTELEMETRY_VERSION_ARG=1.4.2
 
 FROM alpine:${ALPINE_VERSION_ARG} AS ca-bundle
@@ -95,7 +104,9 @@ RUN mkdir -p /rootfs/opt/bin/container-entrypoint.d \
 
 FROM php:${PHP_VERSION_ARG}-fpm-alpine${ALPINE_VERSION_ARG} AS fpm-prd
 
+# renovate: datasource=repology depName=alpine_3_24/aws-cli versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
 ARG AWS_CLI_VERSION_ARG=2.34.63
+# renovate: datasource=repology depName=alpine_3_24/nginx versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
 ARG NGINX_VERSION_ARG=1.30.6
 
 USER root
@@ -226,6 +237,7 @@ CMD ["/usr/bin/supervisord", "-c", "/opt/etc/supervisord.conf"]
 
 FROM fpm-prd AS fpm-dev
 
+# renovate: datasource=github-releases depName=composer/composer versioning=semver
 ARG COMPOSER_VERSION_ARG=2.11.1
 ARG NODE_VERSION_ARG=22
 
@@ -324,6 +336,7 @@ HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
 
 FROM php:${PHP_VERSION_ARG}-cli-alpine${ALPINE_VERSION_ARG} AS cli-prd
 
+# renovate: datasource=repology depName=alpine_3_24/aws-cli versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
 ARG AWS_CLI_VERSION_ARG=2.34.63
 
 USER root
@@ -424,6 +437,7 @@ ENTRYPOINT ["dumb-init","--","container-entrypoint-cli"]
 
 FROM cli-prd AS cli-dev
 
+# renovate: datasource=github-releases depName=composer/composer versioning=semver
 ARG COMPOSER_VERSION_ARG=2.11.1
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
