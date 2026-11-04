@@ -1,0 +1,165 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Dependency updates for base-php. Runs from .github/workflows/renovate.yml; see .github/renovate/README.md.",
+  "extends": [
+    "config:recommended",
+    ":semanticCommits",
+    ":semanticCommitTypeAll(chore)",
+    "helpers:pinGitHubActionDigests"
+  ],
+  "baseBranchPatterns": [
+    "main",
+    "8.4"
+  ],
+  "timezone": "Europe/Brussels",
+  "schedule": [
+    "before 6am on monday"
+  ],
+  "automerge": false,
+  "prConcurrentLimit": 10,
+  "labels": [
+    "dependencies"
+  ],
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "schedule": [
+      "at any time"
+    ]
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Versions pinned twice: a Dockerfile ARG default and a docker-bake.hcl variable, each preceded by a `# renovate:` annotation. One PR updates both.",
+      "managerFilePatterns": [
+        "/(^|/)Dockerfile$/",
+        "/(^|/)docker-bake\\.hcl$/"
+      ],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(\\s+versioning=(?<versioning>\\S+))?(\\s+extractVersion=(?<extractVersion>\\S+))?\\s*\\nARG\\s+[A-Z_]+_ARG=(?<currentValue>\\S+)",
+        "#\\s*renovate:\\s*datasource=(?<datasource>\\S+)\\s+depName=(?<depName>\\S+)(\\s+versioning=(?<versioning>\\S+))?(\\s+extractVersion=(?<extractVersion>\\S+))?\\s*\\nvariable\\s+\"[A-Z_]+\"\\s*\\{\\s*\\n\\s*default\\s*=\\s*\"(?<currentValue>[^\"]+)\""
+      ]
+    },
+    {
+      "customType": "regex",
+      "description": "bats libraries fetched by `make -C test deps` (tag names keep their v prefix).",
+      "managerFilePatterns": [
+        "/(^|/)test/Makefile$/"
+      ],
+      "matchStrings": [
+        "BATS_(?<lib>SUPPORT|ASSERT)_VERSION\\s*=\\s*(?<currentValue>v\\S+)"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "bats-core/bats-{{{lowercase lib}}}",
+      "versioningTemplate": "semver"
+    },
+    {
+      "customType": "regex",
+      "description": "bats versions passed to bats-core/bats-action in CI (no v prefix).",
+      "managerFilePatterns": [
+        "/(^|/)\\.github/workflows/docker\\.yml$/"
+      ],
+      "matchStrings": [
+        "\\s(?<lib>bats|support|assert)-version:\\s*(?<currentValue>\\d+\\.\\d+\\.\\d+)"
+      ],
+      "datasourceTemplate": "github-tags",
+      "depNameTemplate": "bats-core/bats-{{#if (equals lib 'bats')}}core{{else}}{{{lib}}}{{/if}}",
+      "extractVersionTemplate": "^v?(?<version>.+)$",
+      "versioningTemplate": "semver"
+    }
+  ],
+  "packageRules": [
+    {
+      "description": "The FROM lines built on an ARG (php, alpine, node, install-php-extensions) are tracked through their `# renovate:` annotations, which also update docker-bake.hcl. The Dockerfile manager would propose the same updates without the bake: off for those. Node stays on the major each branch chose.",
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchDepNames": [
+        "php",
+        "alpine",
+        "node",
+        "mlocati/php-extension-installer"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "The demo stacks under test/ pin services the image does not ship (Elasticsearch, MariaDB, Grafana...): not tracked for now.",
+      "matchManagers": [
+        "docker-compose"
+      ],
+      "enabled": false
+    },
+    {
+      "description": "Each branch stays on its PHP minor: a new minor is a release decision, not an update.",
+      "matchDepNames": [
+        "php"
+      ],
+      "matchBaseBranches": [
+        "main"
+      ],
+      "allowedVersions": "/^8\\.5\\./"
+    },
+    {
+      "matchDepNames": [
+        "php"
+      ],
+      "matchBaseBranches": [
+        "8.4"
+      ],
+      "allowedVersions": "/^8\\.4\\./"
+    },
+    {
+      "description": "A new Alpine release moves every base image and the php/node stages with it: approve it from the Dependency Dashboard.",
+      "matchDepNames": [
+        "alpine"
+      ],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "Major versions wait for an approval on the Dependency Dashboard.",
+      "matchUpdateTypes": [
+        "major"
+      ],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "description": "CI and test tooling, grouped, no CHANGELOG entry (the image does not change).",
+      "matchManagers": [
+        "github-actions"
+      ],
+      "groupName": "GitHub Actions"
+    },
+    {
+      "matchDepNames": [
+        "bats-core/bats-core",
+        "bats-core/bats-support",
+        "bats-core/bats-assert"
+      ],
+      "groupName": "bats",
+      "semanticCommitType": "test"
+    },
+    {
+      "description": "What ships in the image gets a CHANGELOG line under [Unreleased].",
+      "matchManagers": [
+        "custom.regex",
+        "dockerfile"
+      ],
+      "matchFileNames": [
+        "Dockerfile",
+        "docker-bake.hcl"
+      ],
+      "postUpgradeTasks": {
+        "commands": [
+          "bash .github/renovate/changelog-entry.sh '{{{depName}}}' '{{{currentVersion}}}' '{{{newVersion}}}'"
+        ],
+        "fileFilters": [
+          "CHANGELOG.md"
+        ],
+        "executionMode": "update"
+      }
+    }
+  ],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/vendor/**"
+  ]
+}

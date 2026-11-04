@@ -1,0 +1,55 @@
+---
+name: Renovate
+
+run-name: Renovate by @${{ github.actor }}
+
+# Self-hosted Renovate, run from this public repository so its Actions minutes
+# cost nothing. It acts as the organisation's GitHub App (not GITHUB_TOKEN): pull
+# requests opened with GITHUB_TOKEN do not trigger workflows, so the image builds
+# and suites would never run on them, and commits made through the API are
+# signed by GitHub (platformCommit). What it tracks and the rules it follows are
+# in renovate.json; see .github/renovate/README.md.
+on:
+  schedule:
+    - cron: "30 4 * * 1"
+  # No inputs: a manual run behaves like the scheduled one. A dry run is set with
+  # the repository variable RENOVATE_DRY_RUN ("lookup" lists the updates without
+  # touching the repository); unset, the run is real.
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  renovate:
+    # Only the canonical repository holds the App's credentials.
+    if: github.repository == 'Smals-Webtech/base-php'
+
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Get a token for the Renovate GitHub App
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          app-id: ${{ vars.RENOVATE_APP_ID }}
+          private-key: ${{ secrets.RENOVATE_APP_PRIVATE_KEY }}
+
+      - name: Renovate
+        uses: renovatebot/github-action@v46.3.12
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          renovate-version: 44.216.0
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_ONBOARDING: "false"
+          RENOVATE_REQUIRE_CONFIG: "required"
+          RENOVATE_PLATFORM_COMMIT: "enabled"
+          # The only command a postUpgradeTask may run: the CHANGELOG line.
+          RENOVATE_ALLOWED_COMMANDS: '["^bash \\.github/renovate/changelog-entry\\.sh "]'
+          RENOVATE_DRY_RUN: ${{ vars.RENOVATE_DRY_RUN }}
+          LOG_LEVEL: info
