@@ -5,6 +5,11 @@ ARG PHP_EXT_INSTALLER_VERSION_ARG=2.11.12
 ARG NODE_VERSION_ARG=24
 ARG COMPOSER_VERSION_ARG=2.10.3
 ARG GOMPLATE_VERSION_ARG=5.3.1
+# The four extensions that come from PECL, pinned (see the install step of fpm-prd).
+ARG APCU_VERSION_ARG=5.1.28
+ARG REDIS_VERSION_ARG=6.3.0
+ARG XDEBUG_VERSION_ARG=3.5.3
+ARG OPENTELEMETRY_VERSION_ARG=1.4.2
 
 FROM alpine:${ALPINE_VERSION_ARG} AS ca-bundle
 
@@ -94,6 +99,7 @@ USER root
 
 ENV GOMAXPROCS=1
 ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli opcache opentelemetry pcntl pdo_mysql pdo_pgsql pgsql redis soap sodium tidy xdebug xsl zip"
+ARG APCU_VERSION_ARG REDIS_VERSION_ARG XDEBUG_VERSION_ARG OPENTELEMETRY_VERSION_ARG
 
 COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
 COPY --from=gomplate --chmod=775 --chown=root:root /out/gomplate /usr/bin/gomplate
@@ -153,8 +159,18 @@ RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs
                                                          nginx-mod-http-js=~${NGINX_VERSION_ARG} ; \
     adduser default nginx ;
 
+# apcu, opentelemetry, redis and xdebug come from PECL. Named without a version,
+# each build took whatever pecl.php.net offered that day, so a rebuild could
+# change them silently. They are pinned (the versions live in docker-bake.hcl
+# too). Coping with a PECL outage is the installer's job, not this image's.
+# PHP_EXT_INSTALL stays the full list of names: the entrypoint derives the
+# PHP_<EXT>_ENABLED switches from it.
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
-    install-php-extensions ${PHP_EXT_INSTALL}
+    install-php-extensions $(printf '%s\n' ${PHP_EXT_INSTALL} | grep -vxE 'apcu|opentelemetry|redis|xdebug') \
+                           "apcu-${APCU_VERSION_ARG}" \
+                           "opentelemetry-${OPENTELEMETRY_VERSION_ARG}" \
+                           "redis-${REDIS_VERSION_ARG}" \
+                           "xdebug-${XDEBUG_VERSION_ARG}"
 
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/
@@ -309,6 +325,7 @@ USER root
 
 ENV GOMAXPROCS=1
 ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli opcache opentelemetry pcntl pdo_mysql pdo_pgsql pgsql redis soap sodium tidy xdebug xsl zip"
+ARG APCU_VERSION_ARG REDIS_VERSION_ARG XDEBUG_VERSION_ARG OPENTELEMETRY_VERSION_ARG
 
 COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
 COPY --from=gomplate --chmod=775 --chown=root:root /out/gomplate /usr/bin/gomplate
@@ -357,8 +374,13 @@ RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs
     chmod 1777 /home/default ; \
     rm -rf /var/cache/apk/*
 
+# Same as fpm-prd: the PECL extensions pinned.
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
-    install-php-extensions ${PHP_EXT_INSTALL}
+    install-php-extensions $(printf '%s\n' ${PHP_EXT_INSTALL} | grep -vxE 'apcu|opentelemetry|redis|xdebug') \
+                           "apcu-${APCU_VERSION_ARG}" \
+                           "opentelemetry-${OPENTELEMETRY_VERSION_ARG}" \
+                           "redis-${REDIS_VERSION_ARG}" \
+                           "xdebug-${XDEBUG_VERSION_ARG}"
 
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/
