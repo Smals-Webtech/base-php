@@ -3,7 +3,7 @@ ARG ALPINE_VERSION_ARG=3.24
 ARG PHP_VERSION_ARG=8.5.12
 ARG PHP_EXT_INSTALLER_VERSION_ARG=2.13.2
 ARG NODE_VERSION_ARG=24
-ARG COMPOSER_VERSION_ARG=2.10.3
+ARG COMPOSER_VERSION_ARG=2.11.1
 ARG GOMPLATE_VERSION_ARG=5.3.1
 # The four extensions that come from PECL, pinned (see the install step of fpm-prd).
 ARG APCU_VERSION_ARG=5.1.28
@@ -222,7 +222,7 @@ CMD ["/usr/bin/supervisord", "-c", "/opt/etc/supervisord.conf"]
 
 FROM fpm-prd AS fpm-dev
 
-ARG COMPOSER_VERSION_ARG=2.10.3
+ARG COMPOSER_VERSION_ARG=2.11.1
 ARG NODE_VERSION_ARG=24
 
 ENV PHP_XDEBUG_ENABLED="true"
@@ -419,7 +419,7 @@ ENTRYPOINT ["dumb-init","--","container-entrypoint-cli"]
 
 FROM cli-prd AS cli-dev
 
-ARG COMPOSER_VERSION_ARG=2.10.3
+ARG COMPOSER_VERSION_ARG=2.11.1
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 

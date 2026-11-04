@@ -32,6 +32,11 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Changed
 
+- **Composer 2.11.1** in the `dev` variants, up from 2.10.3. Composer 2.11 fixes several security issues
+  (package names escaping `vendor/` through `installed.json`, repository HTTP headers written into
+  `composer.lock`, unescaped `@composer` script arguments, bin proxies) and rejects the distrusted eMudhra
+  intermediate certificates. Its one break: the `source-fallback` option, added in 2.10 as a stopgap, is
+  gone.
 - **install-php-extensions 2.13.2**, up from 2.11.12. Mostly support for other extensions and PHP 8.6; of note
   for this image, an implicit function declaration is now a build error rather than a warning, and the
   libraries some extensions build from source were updated. The extensions and their versions are
