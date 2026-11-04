@@ -32,6 +32,10 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Changed
 
+- **The PECL extensions are pinned.** `apcu` 5.1.28, `opentelemetry` 1.4.2, `redis` 6.3.0 and `xdebug` 3.5.3,
+  the versions the image already shipped. Named without a version, each build took whatever PECL offered
+  that day, so a rebuild could change them silently. The versions live in `docker-bake.hcl` and the
+  `Dockerfile` ARG defaults, and a test checks that the image loads exactly those.
 - **gomplate 5.3.1.** A bugfix and performance release, with no advisory behind it. The fixes do not
   touch what the templates use: the datasource cache mixed up two reads only when alias and
   argument, joined, spelled the same key, and the templates read their `env:` datasources by alias
