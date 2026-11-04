@@ -32,6 +32,10 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Changed
 
+- **install-php-extensions 2.13.2**, up from 2.11.12. Mostly support for other extensions and PHP 8.6; of note
+  for this image, an implicit function declaration is now a build error rather than a warning, and the
+  libraries some extensions build from source were updated. The extensions and their versions are
+  unchanged.
 - **The PECL extensions are pinned.** `apcu` 5.1.28, `opentelemetry` 1.4.2, `redis` 6.3.0 and `xdebug` 3.5.3,
   the versions the image already shipped. Named without a version, each build took whatever PECL offered
   that day, so a rebuild could change them silently. The versions live in `docker-bake.hcl` and the
