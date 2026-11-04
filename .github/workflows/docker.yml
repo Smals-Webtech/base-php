@@ -183,7 +183,7 @@ jobs:
           # same assertions; `make -C test deps` fetches these very tags.
           bats-version: 1.10.0
           support-version: 0.3.0
-          assert-version: 2.1.0
+          assert-version: 2.2.4
           detik-install: false
           file-install: false
 

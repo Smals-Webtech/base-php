@@ -88,6 +88,22 @@ teardown_file() {
   done
 }
 
+# apcu, opentelemetry, redis and xdebug come from PECL, pinned in docker-bake.hcl
+# (and in the Dockerfile ARG defaults). Unpinned, a rebuild took whatever PECL
+# offered that day. The expected versions are read from docker-bake.hcl, so the
+# pins live in two places, not three.
+@test "[$TEST_FILE] The PECL extensions are the pinned versions" {
+  local -r bake="${BATS_TEST_DIRNAME}/../docker-bake.hcl"
+  pin() { sed -nE "/^variable \"$1\"/,/}/s/.*default *= *\"([^\"]+)\".*/\1/p" "${bake}"; }
+
+  run_cli -e PHP_XDEBUG_ENABLED=true -e PHP_OPENTELEMETRY_ENABLED=true "${BATS_CLI_IMAGE}" \
+    php -r 'foreach (["apcu", "opentelemetry", "redis", "xdebug"] as $e) { echo $e, "=", phpversion($e), "\n"; }'
+  assert_line "apcu=$(pin APCU_VERSION)"
+  assert_line "opentelemetry=$(pin OPENTELEMETRY_VERSION)"
+  assert_line "redis=$(pin REDIS_VERSION)"
+  assert_line "xdebug=$(pin XDEBUG_VERSION)"
+}
+
 @test "[$TEST_FILE] Test aws cli version" {
   run_cli "${BATS_CLI_IMAGE}" aws --version
   assert_line --regexp "^aws-cli/${BATS_AWS_CLI_VERSION} Python/.* .*$"
