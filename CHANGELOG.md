@@ -22,8 +22,38 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+## [8.4.27]
+
+PHP 8.4.27, a security release. **Upgrade and restart every container that serves PHP.**
+
+First published on 2026-10-21 with PHP 8.4.27 alone, then re-published on 2026-10-23 with nginx
+1.30.6 and this entry, and on 2026-11-06 with the curl fix below and everything merged since. Each
+re-publish moved the `8.4.27` tag to a newer commit. PHP itself is unchanged.
+
+### Security
+
+- **PHP2Shell (CVE-2026-109618, CVE-2026-109619), CVSS 9.2.** Two flaws in PHP itself let a single
+  unauthenticated HTTP request execute code, before any application code runs: request state left
+  half-built when memory runs out during request start-up, and request state that outlives its memory
+  and is reused by the next request on the same worker. Every SAPI that serves the web is affected —
+  php-fpm in the `fpm` and `nginx` variants, mod_php in `apache`. No `php.ini` setting mitigates it.
+  Exploitation was reported in the wild before the coordinated release. A running container keeps
+  the vulnerable PHP until it is recreated from the new image, and a child image pinned by digest
+  keeps it until the pin is bumped.
+- **nginx 1.30.6.** Alpine 3.24 replaced 1.30.4, which no longer installs, and the update clears
+  three HIGH findings Trivy reported against the nginx packages (CVE-2026-15176, CVE-2026-93479,
+  CVE-2026-97205).
+- **curl 8.23.0**, up from 8.22.0, for CVE-2026-92392 (HIGH). The fix came with the rebuild of the
+  upstream `php:*-alpine` images, so a rebuild of this image picks it up.
+- **go-jose CVE-2026-116587 is covered by a VEX statement.** Trivy reports it in `/usr/bin/gomplate`,
+  which links the module only for the `vault:` datasource and the SPIFFE bundles of its cloud
+  datasources, and this image uses neither. See [.vex/README.md](.vex/README.md).
+
 ### Added
 
+- **`memory_hard_limit_percent`.** This PHP release adds the directive, so the image configures it
+  like any other through `PHP_MEMORY_HARD_LIMIT_PERCENT`, which is then removed from the
+  environment the application sees.
 - **`/opt/config/nginx/http.d`** for `http`-level directives of your own: a `map`, a `limit_req_zone`,
   an `upstream`. Templates there are rendered at every start to `/opt/etc/nginx/http.d` and included
   in the `http` block, before the vhosts, so a vhost of yours can use them without overriding
@@ -58,33 +88,6 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
   made its parents root-owned, and points to `/opt/config`. The `README.md` no longer suggests mounting
   configuration into `/opt/etc`, and [docs/child-vhosts-and-pools.md](docs/child-vhosts-and-pools.md)
   shows how to mount a vhost and snippets from a ConfigMap. (#148)
-
-## [8.4.27]
-
-PHP 8.4.27, a security release. **Upgrade and restart every container that serves PHP.**
-
-First published on 2026-10-21 with PHP 8.4.27 alone, then re-published on 2026-10-23 with nginx
-1.30.6 and this entry. The re-publish moved the `8.4.27` tag to a newer commit.
-
-### Security
-
-- **PHP2Shell (CVE-2026-109618, CVE-2026-109619), CVSS 9.2.** Two flaws in PHP itself let a single
-  unauthenticated HTTP request execute code, before any application code runs: request state left
-  half-built when memory runs out during request start-up, and request state that outlives its memory
-  and is reused by the next request on the same worker. Every SAPI that serves the web is affected —
-  php-fpm in the `fpm` and `nginx` variants, mod_php in `apache`. No `php.ini` setting mitigates it.
-  Exploitation was reported in the wild before the coordinated release. A running container keeps
-  the vulnerable PHP until it is recreated from the new image, and a child image pinned by digest
-  keeps it until the pin is bumped.
-- **nginx 1.30.6.** Alpine 3.24 replaced 1.30.4, which no longer installs, and the update clears
-  three HIGH findings Trivy reported against the nginx packages (CVE-2026-15176, CVE-2026-93479,
-  CVE-2026-97205).
-
-### Added
-
-- **`memory_hard_limit_percent`.** This PHP release adds the directive, so the image configures it
-  like any other through `PHP_MEMORY_HARD_LIMIT_PERCENT`, which is then removed from the
-  environment the application sees.
 
 ## [8.4.26]
 
