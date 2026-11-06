@@ -1,7 +1,7 @@
 # Renovate
 
 Renovate opens the dependency-update pull requests for this repository. It runs from
-`.github/workflows/renovate.yml` every Monday at 04:30 UTC, and on demand from the Actions tab. Setting
+`.github/workflows/renovate.yml` every Monday at 03:30 UTC, and on demand from the Actions tab. Setting
 the repository variable `RENOVATE_DRY_RUN` to `lookup` turns every run into a dry run that lists what it
 would update without touching anything; delete the variable to go live.
 
