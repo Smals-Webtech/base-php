@@ -22,20 +22,12 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
-### Fixed
-
-- **The `apache` and `nginx` variants refused to start again on the same `/app/var` with a read-only root
-  filesystem.** The re-publication of 2026-11-06 stopped such a restart on
-  `/app/var/www/html is not writable`: the boot checked a link to a directory of the image. An `emptyDir`
-  survives a container restart, so a pod restarted in place stayed down. Symbolic links are no longer
-  checked, and a test covers the restart.
-
 ## [8.4.27]
 
 PHP 8.4.27, a security release. **Upgrade and restart every container that serves PHP.**
 
 First published on 2026-10-21 with PHP 8.4.27 alone, then re-published on 2026-10-23 with nginx
-1.30.6 and this entry, and on 2026-11-06 with the curl fix below and everything merged since. Each
+1.30.6 and this entry, and twice on 2026-11-06, with the curl fix below and everything merged since. Each
 re-publish moved the `8.4.27` tag to a newer commit. PHP itself is unchanged.
 
 ### Security
@@ -56,6 +48,14 @@ re-publish moved the `8.4.27` tag to a newer commit. PHP itself is unchanged.
 - **go-jose CVE-2026-116587 is covered by a VEX statement.** Trivy reports it in `/usr/bin/gomplate`,
   which links the module only for the `vault:` datasource and the SPIFFE bundles of its cloud
   datasources, and this image uses neither. See [.vex/README.md](.vex/README.md).
+
+### Fixed
+
+- **The `apache` and `nginx` variants refused to start again on the same `/app/var` with a read-only root
+  filesystem.** The re-publication of 2026-11-06 stopped such a restart on
+  `/app/var/www/html is not writable`: the boot checked a link to a directory of the image. An `emptyDir`
+  survives a container restart, so a pod restarted in place stayed down. Symbolic links are no longer
+  checked, and a test covers the restart.
 
 ### Added
 
