@@ -22,6 +22,14 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Fixed
+
+- **The `apache` and `nginx` variants refused to start again on the same `/app/var` with a read-only root
+  filesystem.** The re-publication of 2026-11-06 stopped such a restart on
+  `/app/var/www/html is not writable`: the boot checked a link to a directory of the image. An `emptyDir`
+  survives a container restart, so a pod restarted in place stayed down. Symbolic links are no longer
+  checked, and a test covers the restart.
+
 ## [8.4.27]
 
 PHP 8.4.27, a security release. **Upgrade and restart every container that serves PHP.**

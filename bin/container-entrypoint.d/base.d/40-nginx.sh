@@ -8,7 +8,12 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 
 	# require-writable rather than a bare mkdir: it names the cause when a file
 	# mounted under /opt/etc left one of these directories root-owned.
+	#
+	# A symbolic link is skipped: /app/var/www/html is linked to /var/www/html below,
+	# so on a restart that keeps /app/var (an emptyDir survives a container restart)
+	# the check would land on the image's directory, read-only on a read-only root.
 	for dir in $OUTDIR; do
+		[ -L "$dir" ] && continue
 		require-writable "$dir" || exit 1
 	done
 

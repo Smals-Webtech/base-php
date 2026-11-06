@@ -704,6 +704,28 @@ count_429() {
   assert_output "healthy"
 }
 
+# An emptyDir survives a container restart: the second start finds what the first
+# left in /app/var, including /app/var/www/html, a link into the read-only image.
+@test "[$TEST_FILE] A read-only container restarts on the same /app/var" {
+  local -r name="${BATS_WEB_CONTAINER}-ro-restart"
+  local -r volume="${name}-app-var"
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  local run
+
+  ${BATS_CONTAINER_ENGINE} volume create "${volume}" >/dev/null
+  for run in 1 2; do
+    ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only --user 12345:0 \
+      --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/tmp --volume "${volume}:/app/var" \
+      "${image}" >/dev/null
+    container_wait_for_healthy "${name}" 60 >/dev/null || true
+    run ${BATS_CONTAINER_ENGINE} inspect -f '{{.State.Health.Status}}' "${name}"
+    ${BATS_CONTAINER_ENGINE} rm -f "${name}" >/dev/null
+    [ "${output}" = "healthy" ] || break
+  done
+  ${BATS_CONTAINER_ENGINE} volume rm "${volume}" >/dev/null
+  assert_output "healthy"
+}
+
 # To mount a single file (a Kubernetes subPath, a bind mount), the runtime
 # creates its missing parents as root before the entrypoint runs, so an
 # arbitrary uid cannot create the directories rendered next to them. The boot
