@@ -26,7 +26,7 @@ would update without touching anything; delete the variable to go live.
 
 ## How it runs
 
-The workflow acts as the organisation's Renovate GitHub App. It needs the variable `RENOVATE_APP_ID` and
+The workflow acts as the organisation's Renovate GitHub App. It needs the variable `RENOVATE_CLIENT_ID` and
 the secret `RENOVATE_APP_PRIVATE_KEY`. Pull requests opened with `GITHUB_TOKEN` would not trigger the
 image builds, and commits made through the App are signed by GitHub. It runs from this public repository,
 so its Actions minutes cost nothing.
