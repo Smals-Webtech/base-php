@@ -11,7 +11,10 @@ run-name: Renovate by @${{ github.actor }}
 # in renovate.json; see .github/renovate/README.md.
 on:
   schedule:
-    - cron: "30 4 * * 1"
+    # 03:30 UTC is 04:30 or 05:30 in Brussels: always inside the "before 6am on
+    # monday" window of renovate.json. At 04:30 UTC, summer time would put the run
+    # at 06:30, outside it, and no regular update would come out, without an error.
+    - cron: "30 3 * * 1"
   # No inputs: a manual run behaves like the scheduled one. A dry run is set with
   # the repository variable RENOVATE_DRY_RUN ("lookup" lists the updates without
   # touching the repository); unset, the run is real.
