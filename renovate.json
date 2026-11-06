@@ -98,6 +98,13 @@
       "groupName": "GitHub Actions"
     },
     {
+      "description": "Except the majors: each gets its own pull request, so a red run names its cause. super-linter, the runner image and actions/checkout change very different things.",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["major"],
+      "groupName": null,
+      "groupSlug": null
+    },
+    {
       "matchDepNames": [
         "bats-core/bats-core",
         "bats-core/bats-support",
