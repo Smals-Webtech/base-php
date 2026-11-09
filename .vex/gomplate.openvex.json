@@ -2,8 +2,8 @@
   "@context": "https://openvex.dev/ns/v0.2.0",
   "@id": "https://github.com/Smals-Webtech/base-php/.vex/gomplate.openvex.json",
   "author": "Smals Webtech",
-  "timestamp": "2026-11-01T20:00:00Z",
-  "version": 3,
+  "timestamp": "2026-11-09T18:00:00Z",
+  "version": 4,
   "statements": [
     {
       "vulnerability": {
@@ -42,6 +42,25 @@
       "status": "not_affected",
       "justification": "vulnerable_code_not_in_execute_path",
       "impact_statement": "go-jose parses JWKs only for the Vault client (the vault: datasource) and for SPIFFE trust bundles (gRPC-based cloud datasources). This image calls gomplate with env: datasources only, so no JWK is ever parsed."
+    },
+    {
+      "vulnerability": {
+        "name": "CVE-2026-78661",
+        "description": "golang.org/x/net/html: denial of service via crafted HTML input"
+      },
+      "products": [
+        {
+          "@id": "pkg:golang/github.com/hairyhenderson/gomplate/v5",
+          "subcomponents": [
+            {
+              "@id": "pkg:golang/golang.org/x/net@v0.61.0"
+            }
+          ]
+        }
+      ],
+      "status": "not_affected",
+      "justification": "vulnerable_code_not_present",
+      "impact_statement": "The golang.org/x/net/html package is not compiled into gomplate: go list -deps ./cmd/gomplate does not include it, on linux/amd64 or linux/arm64. The module is listed because other x/net packages are linked."
     }
   ]
 }
