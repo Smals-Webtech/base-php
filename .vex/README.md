@@ -24,6 +24,7 @@ ever opened. The flagged modules are linked in, but not the vulnerable part of t
 | --- | --- | --- |
 | `golang.org/x/crypto` (`openpgp`) | nothing: gomplate imports only `bcrypt`, and no dependency links `openpgp` | no |
 | `github.com/go-jose/go-jose/v4` (JWK parsing, CVE-2026-116587) | `hashicorp/vault/api` (the `vault:` datasource) and `spiffe/go-spiffe` (SPIFFE bundles of the gRPC-based cloud datasources), per `go mod why` and `go list -deps` on gomplate 5.3.1 | no |
+| `golang.org/x/net` (`html`, CVE-2026-78661) | nothing: `go list -deps ./cmd/gomplate` does not include `golang.org/x/net/html` | no |
 
 gomplate 5.3.0 fixed the go-git, gRPC and `x/crypto/ssh` findings that gomplate 5.2.0 carried
 upstream, so their statements were dropped rather than carried over.
