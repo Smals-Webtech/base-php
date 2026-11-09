@@ -53,12 +53,12 @@ jobs:
       # The line's own branch: its .vex/ document is the one that matches the image, and its head
       # commit is what the analysis is filed under.
       - name: Checkout source
-        uses: actions/checkout@v6
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
           ref: ${{ matrix.branch }}
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
+        uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
       - name: Resolve the published image
         id: image
@@ -149,7 +149,7 @@ jobs:
       # closes by itself when a later scan of the same category no longer reports it, after a rebuild or
       # a retag.
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
         with:
           sarif_file: trivy.sarif
           category: published-${{ matrix.line }}-${{ matrix.variant }}
