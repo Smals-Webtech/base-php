@@ -11,13 +11,13 @@ ARG COMPOSER_VERSION_ARG=2.11.1
 # renovate: datasource=github-releases depName=hairyhenderson/gomplate versioning=semver extractVersion=^v(?<version>.+)$
 ARG GOMPLATE_VERSION_ARG=5.3.1
 # The four extensions that come from PECL, pinned (see the install step of fpm-prd).
-# renovate: datasource=packagist depName=apcu/apcu versioning=semver extractVersion=^v?(?<version>.+)$
+# renovate: datasource=custom.pecl depName=apcu
 ARG APCU_VERSION_ARG=5.1.28
-# renovate: datasource=packagist depName=phpredis/phpredis versioning=semver
+# renovate: datasource=custom.pecl depName=redis
 ARG REDIS_VERSION_ARG=6.3.0
-# renovate: datasource=packagist depName=xdebug/xdebug versioning=semver
+# renovate: datasource=custom.pecl depName=xdebug
 ARG XDEBUG_VERSION_ARG=3.5.3
-# renovate: datasource=packagist depName=open-telemetry/ext-opentelemetry versioning=semver
+# renovate: datasource=custom.pecl depName=opentelemetry
 ARG OPENTELEMETRY_VERSION_ARG=1.4.2
 
 FROM alpine:${ALPINE_VERSION_ARG} AS ca-bundle

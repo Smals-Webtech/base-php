@@ -11,11 +11,19 @@
   "timezone": "Europe/Brussels",
   "schedule": ["before 6am on monday"],
   "automerge": false,
+  "prHourlyLimit": 0,
   "prConcurrentLimit": 10,
   "labels": ["dependencies"],
   "osvVulnerabilityAlerts": true,
   "vulnerabilityAlerts": {
     "schedule": ["at any time"]
+  },
+  "customDatasources": {
+    "pecl": {
+      "description": "The extensions are installed from PECL, whose releases can lag behind Packagist and GitHub. One line of the file per release.",
+      "defaultRegistryUrlTemplate": "https://pecl.php.net/rest/r/{{packageName}}/allreleases.xml",
+      "format": "plain"
+    }
   },
   "customManagers": [
     {
@@ -55,6 +63,12 @@
     }
   ],
   "packageRules": [
+    {
+      "description": "Keep the stable PECL releases, the only ones the build installs without a stability suffix.",
+      "matchDatasources": ["custom.pecl"],
+      "extractVersion": "^<r><v>(?<version>[^<]+)</v><s>stable</s></r>$",
+      "versioning": "semver"
+    },
     {
       "description": "The FROM lines built on an ARG (php, alpine, node, install-php-extensions) are tracked through their `# renovate:` annotations, which also update docker-bake.hcl. The Dockerfile manager would propose the same updates without the bake: off for those. Node stays on the major each branch chose.",
       "matchManagers": ["dockerfile"],
