@@ -7,7 +7,7 @@
     ":semanticCommitTypeAll(chore)",
     "helpers:pinGitHubActionDigests"
   ],
-  "baseBranches": ["main", "8.4"],
+  "baseBranchPatterns": ["main", "8.4"],
   "timezone": "Europe/Brussels",
   "schedule": ["before 6am on monday"],
   "automerge": false,
