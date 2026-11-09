@@ -42,4 +42,15 @@ jobs:
           VALIDATE_PYTHON_PYLINT: false
           # Conflicts with MARKDOWN
           VALIDATE_MARKDOWN_PRETTIER: false
+          # New in super-linter v9. Formatters only: BIOME_FORMAT would rewrite the
+          # VEX documents, and the Python scripts are shared verbatim with base-nginx.
+          VALIDATE_BIOME_FORMAT: false
+          VALIDATE_PYTHON_BLACK: false
+          VALIDATE_PYTHON_RUFF: false
+          VALIDATE_PYTHON_RUFF_FORMAT: false
+          # shfmt cannot parse an associative array key ending in ".enabled".
+          VALIDATE_SHELL_SHFMT: false
+          # TODO: enable again once its template-injection and excessive-permissions
+          # findings are reviewed. The Actions are pinned by commit in the meantime.
+          VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
           FILTER_REGEX_EXCLUDE: .*test.*

@@ -86,7 +86,7 @@ jobs:
       # Same settings and VEX document as the build's scan (docker.yml), so the two only differ in
       # what they scan.
       - name: Run Trivy (SARIF)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ steps.image.outputs.ref }}
           format: sarif
@@ -157,7 +157,7 @@ jobs:
           sha: ${{ steps.image.outputs.sha }}
 
       - name: Trivy summary (table, non-blocking)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ steps.image.outputs.ref }}
           format: table
