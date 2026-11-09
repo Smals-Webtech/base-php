@@ -111,7 +111,7 @@ This layout cleanly separates static and dynamic concerns:
 
 The container implements a deterministic initialization flow to ensure consistent runtime configuration.  
 A Bash entrypoint script prepares the environment by exporting all required variables, resolving user-defined values or falling back to predefined defaults.  
-Configuration files (e.g., PHP and Supervisor .ini, Apache .conf, Varnish .vcl) and dynamic scripts (e.g. Varnish statup scripts) are rendered from gomplate templates using these variables.  
+Configuration files (e.g., PHP and Supervisor .ini, Apache .conf, Varnish .vcl) and dynamic scripts (e.g. Varnish startup scripts) are rendered from gomplate templates using these variables.  
 After successful generation, the script sanitizes the environment by unsetting all non-essential variables (except a defined whitelist required by runtime services).  
 Supervisor is then launched as PID 1 to manage all application processes.  
 
