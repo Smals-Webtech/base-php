@@ -22,6 +22,10 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Changed
+
+- **open-telemetry/ext-opentelemetry 1.5.0**, up from 1.4.2 (dependency update).
+
 ## [8.5.12]
 
 PHP 8.5.12, a security release. **Upgrade and restart every container that serves PHP.**

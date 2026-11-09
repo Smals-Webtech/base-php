@@ -18,7 +18,7 @@ ARG REDIS_VERSION_ARG=6.3.0
 # renovate: datasource=packagist depName=xdebug/xdebug versioning=semver
 ARG XDEBUG_VERSION_ARG=3.5.3
 # renovate: datasource=packagist depName=open-telemetry/ext-opentelemetry versioning=semver
-ARG OPENTELEMETRY_VERSION_ARG=1.4.2
+ARG OPENTELEMETRY_VERSION_ARG=1.5.0
 
 FROM alpine:${ALPINE_VERSION_ARG} AS ca-bundle
 

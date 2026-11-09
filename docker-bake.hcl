@@ -61,7 +61,7 @@ variable "XDEBUG_VERSION" {
 
 # renovate: datasource=packagist depName=open-telemetry/ext-opentelemetry versioning=semver
 variable "OPENTELEMETRY_VERSION" {
-  default = "1.4.2"
+  default = "1.5.0"
 }
 
 # renovate: datasource=github-releases depName=hairyhenderson/gomplate versioning=semver extractVersion=^v(?<version>.+)$
