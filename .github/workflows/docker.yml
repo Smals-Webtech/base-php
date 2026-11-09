@@ -333,7 +333,7 @@ jobs:
       # gomplate findings this image does not reach; see .vex/README.md for what it claims and when
       # it must be revisited.
       - name: Run Trivy (SARIF)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ steps.image.outputs.ref }}
           format: sarif
@@ -358,7 +358,7 @@ jobs:
       # TRIVY_SHOW_SUPPRESSED prints what the VEX filtered out, and which statement did it, so the
       # suppression is visible in the build log rather than only in a file nobody opens.
       - name: Trivy summary (table, non-blocking)
-        uses: aquasecurity/trivy-action@v0.36.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ steps.image.outputs.ref }}
           format: table
