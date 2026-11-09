@@ -24,14 +24,14 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Changed
 
-- **docker/dockerfile 1.28**, up from 1.15 (dependency update).
+- **`docker/dockerfile` 1.28**, up from 1.15 (dependency update).
 
 ## [8.4.27]
 
 PHP 8.4.27, a security release. **Upgrade and restart every container that serves PHP.**
 
 First published on 2026-10-21 with PHP 8.4.27 alone, then re-published on 2026-10-23 with nginx
-1.30.6 and this entry, and twice on 2026-11-06, with the curl fix below and everything merged since. Each
+1.30.6 and this entry, and twice on 2026-11-06, with the `curl` fix below and everything merged since. Each
 re-publish moved the `8.4.27` tag to a newer commit. PHP itself is unchanged.
 
 ### Security
@@ -47,7 +47,7 @@ re-publish moved the `8.4.27` tag to a newer commit. PHP itself is unchanged.
 - **nginx 1.30.6.** Alpine 3.24 replaced 1.30.4, which no longer installs, and the update clears
   three HIGH findings Trivy reported against the nginx packages (CVE-2026-15176, CVE-2026-93479,
   CVE-2026-97205).
-- **curl 8.23.0**, up from 8.22.0, for CVE-2026-92392 (HIGH). The fix came with the rebuild of the
+- **`curl` 8.23.0**, up from 8.22.0, for CVE-2026-92392 (HIGH). The fix came with the rebuild of the
   upstream `php:*-alpine` images, so a rebuild of this image picks it up.
 - **go-jose CVE-2026-116587 is covered by a VEX statement.** Trivy reports it in `/usr/bin/gomplate`,
   which links the module only for the `vault:` datasource and the SPIFFE bundles of its cloud
