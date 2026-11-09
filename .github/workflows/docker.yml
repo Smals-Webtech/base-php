@@ -181,7 +181,7 @@ jobs:
         with:
           # Pinned so a local run and a CI run exercise the same bats and the
           # same assertions; `make -C test deps` fetches these very tags.
-          bats-version: 1.10.0
+          bats-version: 1.14.0
           support-version: 0.3.0
           assert-version: 2.2.4
           detik-install: false
