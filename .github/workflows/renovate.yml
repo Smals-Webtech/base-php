@@ -32,7 +32,7 @@ jobs:
     # Only the canonical repository holds the App's credentials.
     if: github.repository == 'Smals-Webtech/base-php'
 
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     steps:
       - name: Get a token for the Renovate GitHub App

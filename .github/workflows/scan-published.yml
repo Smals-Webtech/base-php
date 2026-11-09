@@ -32,7 +32,7 @@ jobs:
   #
   # Only the prd images, as in docker.yml: the dev ones are not what runs in production.
   scan:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     permissions:
       contents: read

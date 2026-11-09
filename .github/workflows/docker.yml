@@ -40,7 +40,7 @@ env:
 
 jobs:
   prepare:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     outputs:
       # Push if it's a tag, a workflow_dispatch with version, or a commit to the main branch --
@@ -226,7 +226,7 @@ jobs:
 
   # Adapted from https://docs.docker.com/build/ci/github-actions/multi-platform/
   push:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     permissions:
       id-token: write
@@ -292,7 +292,7 @@ jobs:
   # `:<variant>` tag, `last` is the versioned one (`8.5.10-cli`, or `snapshot-cli` from main), so a
   # result in the Security tab is attributable to a release instead of to a tag that moves.
   scan:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
 
     permissions:
       contents: read
