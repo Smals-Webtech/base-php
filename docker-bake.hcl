@@ -44,22 +44,22 @@ variable "AWS_CLI_VERSION" {
   default = "2.34.63"
 }
 
-# renovate: datasource=packagist depName=apcu/apcu versioning=semver extractVersion=^v?(?<version>.+)$
+# renovate: datasource=custom.pecl depName=apcu
 variable "APCU_VERSION" {
   default = "5.1.28"
 }
 
-# renovate: datasource=packagist depName=phpredis/phpredis versioning=semver
+# renovate: datasource=custom.pecl depName=redis
 variable "REDIS_VERSION" {
   default = "6.3.0"
 }
 
-# renovate: datasource=packagist depName=xdebug/xdebug versioning=semver
+# renovate: datasource=custom.pecl depName=xdebug
 variable "XDEBUG_VERSION" {
   default = "3.5.3"
 }
 
-# renovate: datasource=packagist depName=open-telemetry/ext-opentelemetry versioning=semver
+# renovate: datasource=custom.pecl depName=opentelemetry
 variable "OPENTELEMETRY_VERSION" {
   default = "1.4.2"
 }
