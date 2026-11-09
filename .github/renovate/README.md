@@ -11,6 +11,8 @@ would update without touching anything; delete the variable to go live.
   gomplate, install-php-extensions, the Alpine packages (aws-cli, nginx) and Alpine itself. Each one
   lives in both files, under a `# renovate:` annotation that names its source. One pull request updates
   both places. To track a new pin, add the same annotation above the `ARG` and above the bake variable.
+  The four extensions built from PECL read PECL's own release list (`custom.pecl`): Packagist can publish
+  a version that PECL does not have yet, and the build would fail on it.
 - **The `FROM` images** written out in full (`golang`), and the **GitHub Actions**, which it pins by commit.
 - **The bats libraries** used by the tests, in `test/Makefile` and in the CI.
 
