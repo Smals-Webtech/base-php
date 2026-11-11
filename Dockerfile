@@ -7,7 +7,7 @@ ARG PHP_VERSION_ARG=8.4.27
 ARG PHP_EXT_INSTALLER_VERSION_ARG=2.13.2
 ARG NODE_VERSION_ARG=22
 # renovate: datasource=github-releases depName=composer/composer versioning=semver
-ARG COMPOSER_VERSION_ARG=2.11.1
+ARG COMPOSER_VERSION_ARG=2.11.2
 # renovate: datasource=github-releases depName=hairyhenderson/gomplate versioning=semver extractVersion=^v(?<version>.+)$
 ARG GOMPLATE_VERSION_ARG=5.3.1
 # The four extensions that come from PECL, pinned (see the install step of fpm-prd).
@@ -238,7 +238,7 @@ CMD ["/usr/bin/supervisord", "-c", "/opt/etc/supervisord.conf"]
 FROM fpm-prd AS fpm-dev
 
 # renovate: datasource=github-releases depName=composer/composer versioning=semver
-ARG COMPOSER_VERSION_ARG=2.11.1
+ARG COMPOSER_VERSION_ARG=2.11.2
 ARG NODE_VERSION_ARG=22
 
 ENV PHP_XDEBUG_ENABLED="true" \
@@ -438,7 +438,7 @@ ENTRYPOINT ["dumb-init","--","container-entrypoint-cli"]
 FROM cli-prd AS cli-dev
 
 # renovate: datasource=github-releases depName=composer/composer versioning=semver
-ARG COMPOSER_VERSION_ARG=2.11.1
+ARG COMPOSER_VERSION_ARG=2.11.2
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 

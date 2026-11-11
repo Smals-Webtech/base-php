@@ -36,7 +36,7 @@ variable "NODE_VERSION" {
 
 # renovate: datasource=github-releases depName=composer/composer versioning=semver
 variable "COMPOSER_VERSION" {
-  default = "2.11.1"
+  default = "2.11.2"
 }
 
 # renovate: datasource=repology depName=alpine_3_24/aws-cli versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
