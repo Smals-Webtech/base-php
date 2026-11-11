@@ -24,6 +24,7 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ### Changed
 
+- **`composer/composer` 2.11.2**, up from 2.11.1 (dependency update).
 - **`docker/dockerfile` 1.28**, up from 1.15 (dependency update).
 
 ## [8.4.27]
