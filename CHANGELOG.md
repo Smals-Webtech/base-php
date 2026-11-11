@@ -22,11 +22,6 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
-### Changed
-
-- **`composer/composer` 2.11.2**, up from 2.11.1 (dependency update).
-- **`docker/dockerfile` 1.28**, up from 1.15 (dependency update).
-
 ## [8.5.12]
 
 PHP 8.5.12, a security release. **Upgrade and restart every container that serves PHP.**
@@ -34,8 +29,13 @@ PHP 8.5.12, a security release. **Upgrade and restart every container that serve
 Re-published twice on 2026-11-06: with the `curl` fix below and everything merged since, then with the
 restart fix. Each moved the `8.5.12` tag to a newer commit. PHP itself is unchanged.
 
+Re-published on 2026-11-11 on the upstream rebuild with Alpine 3.24.4, with Composer 2.11.2 and the
+Dockerfile frontend 1.28 (see _Security_ and _Changed_). PHP itself is unchanged.
+
 ### Security
 
+- **Alpine 3.24.4.** The upstream `php` images were rebuilt on 2026-11-10 on this Alpine security release,
+  which fixes among others a crash in apk-tools.
 - **PHP2Shell (CVE-2026-109618, CVE-2026-109619), CVSS 9.2.** Two flaws in PHP itself let a single
   unauthenticated HTTP request execute code, before any application code runs: request state left
   half-built when memory runs out during request start-up, and request state that outlives its memory
@@ -74,6 +74,8 @@ restart fix. Each moved the `8.5.12` tag to a newer commit. PHP itself is unchan
 
 ### Changed
 
+- **`composer/composer` 2.11.2**, up from 2.11.1 (dependency update).
+- **`docker/dockerfile` 1.28**, up from 1.15 (dependency update).
 - **Composer 2.11.1** in the `dev` variants, up from 2.10.3. Composer 2.11 fixes several security issues
   (package names escaping `vendor/` through `installed.json`, repository HTTP headers written into
   `composer.lock`, unescaped `@composer` script arguments, bin proxies) and rejects the distrusted eMudhra
