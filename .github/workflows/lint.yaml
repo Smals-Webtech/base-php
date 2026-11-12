@@ -25,6 +25,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           fetch-depth: 0
 
       - name: Lint Code Base
@@ -50,7 +51,4 @@ jobs:
           VALIDATE_PYTHON_RUFF_FORMAT: false
           # shfmt cannot parse an associative array key ending in ".enabled".
           VALIDATE_SHELL_SHFMT: false
-          # TODO: enable again once its template-injection and excessive-permissions
-          # findings are reviewed. The Actions are pinned by commit in the meantime.
-          VALIDATE_GITHUB_ACTIONS_ZIZMOR: false
           FILTER_REGEX_EXCLUDE: .*test.*

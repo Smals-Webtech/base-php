@@ -35,6 +35,10 @@ on:
         required: false
         type: string
 
+# Each job asks for what it needs; everything else is read-only.
+permissions:
+  contents: read
+
 env:
   DOCKER_IMAGE_NAME: ${{ github.repository == 'Smals-Webtech/base-php' && ((github.event_name == 'workflow_dispatch' && inputs.version) || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request')) && 'smalswebtech/base-php' || 'smalswebtech/base-php-dev' }}
 
@@ -56,6 +60,8 @@ jobs:
     steps:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
@@ -103,12 +109,14 @@ jobs:
       - name: Prepare
         id: prepare
         run: |
-          platform=${{ matrix.platform }}
-          echo "sanitized_platform=${platform//\//-}" >> "${GITHUB_OUTPUT}"
+          echo "sanitized_platform=${PLATFORM//\//-}" >> "${GITHUB_OUTPUT}"
+        env:
+          PLATFORM: ${{ matrix.platform }}
 
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           ref: ${{ needs.prepare.outputs.ref }}
           fetch-depth: 1
 
@@ -209,11 +217,12 @@ jobs:
         name: Export metadata
         if: fromJson(needs.prepare.outputs.push)
         run: |
-          mkdir -p "/tmp/metadata/${{ matrix.variant }}-${{ matrix.target }}"
-          digest=$(jq -r '."${{ matrix.variant }}-${{ matrix.target }}"."containerimage.digest"' <<< "${METADATA}")
-          touch "/tmp/metadata/${{ matrix.variant }}-${{ matrix.target }}/${digest#sha256:}"
+          mkdir -p "/tmp/metadata/${TARGET}"
+          digest=$(jq -r --arg t "${TARGET}" '.[$t]."containerimage.digest"' <<< "${METADATA}")
+          touch "/tmp/metadata/${TARGET}/${digest#sha256:}"
         env:
           METADATA: ${{ steps.build.outputs.metadata }}
+          TARGET: ${{ matrix.variant }}-${{ matrix.target }}
 
       - name: Upload ${{ matrix.variant }}-${{ matrix.target }} metadata
         if: fromJson(needs.prepare.outputs.push)
@@ -270,18 +279,20 @@ jobs:
         run: |
           set -x
           # shellcheck disable=SC2046,SC2086
-          docker buildx imagetools create $(jq -cr '.target."${{ matrix.variant }}-${{ matrix.target }}".tags | map("-t " + .) | join(" ")' <<< ${METADATA}) \
+          docker buildx imagetools create $(jq -cr --arg t "${TARGET}" '.target[$t].tags | map("-t " + .) | join(" ")' <<< ${METADATA}) \
             $(printf "${DOCKER_IMAGE_NAME}@sha256:%s " *)
         env:
           METADATA: ${{ needs.prepare.outputs.metadata }}
+          TARGET: ${{ matrix.variant }}-${{ matrix.target }}
 
       - name: Inspect image
         run: |
           set -x
           # shellcheck disable=SC2046,SC2086
-          docker buildx imagetools inspect $(jq -cr '.target."${{ matrix.variant }}-${{ matrix.target }}".tags | first' <<< ${METADATA})
+          docker buildx imagetools inspect $(jq -cr --arg t "${TARGET}" '.target[$t].tags | first' <<< ${METADATA})
         env:
           METADATA: ${{ needs.prepare.outputs.metadata }}
+          TARGET: ${{ matrix.variant }}-${{ matrix.target }}
 
   # ── Vulnerability scan of the published prd images (Trivy → Security tab) ────────────────────────
   #
@@ -313,21 +324,24 @@ jobs:
       # Only for .vex/: the VEX document has to be on disk before Trivy runs.
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Resolve the published image
         id: image
         shell: bash
         run: |
           set -e
-          ref="$(jq -cr '.target."${{ matrix.variant }}-prd".tags | last' <<< "${METADATA}")"
+          ref="$(jq -cr --arg t "${VARIANT}-prd" '.target[$t].tags | last' <<< "${METADATA}")"
           if [ -z "${ref}" ] || [ "${ref}" = "null" ]; then
-            echo "::error::no tag resolved for ${{ matrix.variant }}-prd" >&2
+            echo "::error::no tag resolved for ${VARIANT}-prd" >&2
             exit 1
           fi
-          echo "resolved ${{ matrix.variant }}-prd -> ${ref}"
+          echo "resolved ${VARIANT}-prd -> ${ref}"
           echo "ref=${ref}" >> "${GITHUB_OUTPUT}"
         env:
           METADATA: ${{ needs.prepare.outputs.metadata }}
+          VARIANT: ${{ matrix.variant }}
 
       # TRIVY_VEX, not a `with:` input: the action exposes no flag for it. The document declares the
       # gomplate findings this image does not reach; see .vex/README.md for what it claims and when
