@@ -55,6 +55,7 @@ jobs:
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           ref: ${{ matrix.branch }}
 
       - name: Set up Docker Buildx
@@ -174,5 +175,8 @@ jobs:
       - name: Fail on new findings
         if: steps.diff.outputs.count != '0'
         run: |
-          echo "::error::${{ steps.diff.outputs.count }} new finding(s) on ${{ steps.image.outputs.tag }}, see the run summary"
+          echo "::error::${COUNT} new finding(s) on ${IMAGE_TAG}, see the run summary"
           exit 1
+        env:
+          COUNT: ${{ steps.diff.outputs.count }}
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
