@@ -892,6 +892,14 @@ Destructive targets prompt for confirmation; pass `YES=1` to skip. Requires `git
 When an advisory affects the image, [docs/cve-response.md](docs/cve-response.md) gives the order of
 things: triage, the fix on both lines, the release or retag, and how it reaches the child images.
 
+## 📄 License
+
+This repository (Dockerfile, scripts and configuration) is licensed under the
+[GNU Lesser General Public License v3.0 or later](LICENSE) (`LGPL-3.0-or-later`).
+
+The images also contain third-party software under its own licenses, such as PHP, Alpine packages, nginx,
+Apache, Node.js, the AWS CLI and gomplate. The SBOM published with each image lists them.
+
 ## 📬 Contact
 
 Questions or improvements? [Open an issue](https://github.com/Smals-Webtech/base-php/issues) or reach out directly.

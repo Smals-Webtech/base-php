@@ -22,6 +22,11 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Added
+
+- **A license.** The repository is now under `LGPL-3.0-or-later`, in `LICENSE` and in `README.md`, and the
+  images carry the `org.opencontainers.image.licenses` label.
+
 ## [8.5.12]
 
 PHP 8.5.12, a security release. **Upgrade and restart every container that serves PHP.**
