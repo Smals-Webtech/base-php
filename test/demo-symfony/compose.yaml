@@ -2,7 +2,8 @@
 services:
   symfony:
     profiles: [ "symfony" ]
-    image: smalswebtech/base-php:nginx
+    # The image this checkout built (bake tags a local build snapshot-<variant>).
+    image: ${DOCKER_IMAGE_NAME:-smalswebtech/base-php}:${DOCKER_IMAGE_VERSION:-snapshot}-nginx
     # The caller's uid, exported by the Makefile (see DEMO_UID there); the image's
     # own user when compose runs without it.
     user: "${DEMO_UID:-1001}:0"
