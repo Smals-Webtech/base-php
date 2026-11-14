@@ -2,7 +2,8 @@
 services:
   origin:
     profiles: [ "origin" ]
-    image: smalswebtech/base-php:nginx
+    # The image this checkout built (bake tags a local build snapshot-<variant>).
+    image: ${DOCKER_IMAGE_NAME:-smalswebtech/base-php}:${DOCKER_IMAGE_VERSION:-snapshot}-nginx
     env_file:
       - ../.env
     depends_on:

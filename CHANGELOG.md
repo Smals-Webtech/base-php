@@ -22,6 +22,13 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Fixed
+
+- **`8-<variant>` pointed to this line.** Every release build published the major tag, on both lines,
+  so the line released or re-published last owned it: after the 8.4.27 re-publication of 2026-11-11,
+  `8-nginx` was an 8.4 image. The 8.4 line no longer publishes `8-<variant>`, nor the unversioned
+  `<variant>`: both follow the 8.5 line. Pin `8.4-<variant>` (or a digest) to stay on PHP 8.4.
+
 ## [8.4.27]
 
 PHP 8.4.27, a security release. **Upgrade and restart every container that serves PHP.**

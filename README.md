@@ -54,7 +54,7 @@ refuses to start, naming each unusable path, rather than failing halfway through
 ```bash
 docker run --read-only \
   --tmpfs /opt/etc --tmpfs /opt/sbin:exec --tmpfs /app/var --tmpfs /app/tmp \
-  smalswebtech/base-php:latest-nginx
+  smalswebtech/base-php:8.4-nginx
 ```
 
 On Kubernetes and OpenShift, mount an `emptyDir` at each path — `VOLUME` was never honoured there in
@@ -822,14 +822,15 @@ whose writable mounts are `noexec`.
 
 ## 📦 Available Docker Image Variants
 
-| Tag                                            | Description            | Platform(s)      |
-|------------------------------------------------|------------------------|------------------|
-| `smalswebtech/base-php:${PHP_VERSION}$-cli`    | PHP CLI only           | `amd64`, `arm64` |
-| `smalswebtech/base-php:${PHP_VERSION}$-fpm`    | PHP-FPM engine         | `amd64`, `arm64` |
-| `smalswebtech/base-php:${PHP_VERSION}$-apache` | Apache + PHP-FPM setup | `amd64`, `arm64` |
-| `smalswebtech/base-php:${PHP_VERSION}$-nginx`  | Nginx + PHP-FPM setup  | `amd64`, `arm64` |
+| Variant  | Description            | Platform(s)      |
+|----------|------------------------|------------------|
+| `cli`    | PHP CLI only           | `amd64`, `arm64` |
+| `fpm`    | PHP-FPM engine         | `amd64`, `arm64` |
+| `apache` | Apache + PHP-FPM setup | `amd64`, `arm64` |
+| `nginx`  | Nginx + PHP-FPM setup  | `amd64`, `arm64` |
 
-> Variants are defined in the `docker-bake.hcl` using the `VARIANTS` list.
+Each variant comes as a production image and a `-dev` one (Composer, Node, Git, Xdebug enabled), for
+example `8.5-nginx` and `8.5-nginx-dev`. The tags are described under _Tags_ below.
 
 ## 🛠️ How to Build
 
@@ -896,16 +897,28 @@ RUN composer install
 CMD ["php-fpm"]
 ```
 
-## 🏷️ Tags Generated
+## 🏷️ Tags
 
-These are generated dynamically based on Git metadata and bake target.
+Each tag below exists for every variant, with `-dev` appended for the development image
+(`8.5-cli-dev`). Two PHP lines are maintained: 8.5 is built from `main`, 8.4 from the `8.4` branch.
 
-- `smalswebtech/base-php:${PHP_VERSION}$-cli`
-- `smalswebtech/base-php:${PHP_VERSION}$-fpm`
-- `smalswebtech/base-php:${PHP_VERSION}$-apache`
-- `smalswebtech/base-php:${PHP_VERSION}$-nginx`
+| Tag | Example | Points to | Moves |
+| --- | --- | --- | --- |
+| `<x.y.z>-<variant>` | `8.5.12-nginx` | that PHP release | when the release is re-published (see below) |
+| `<x.y>-<variant>` | `8.5-nginx` | the latest release of that PHP line | at every release or re-publication of the line |
+| `<x>-<variant>` | `8-nginx` | the latest release of the **highest** line only | idem, 8.5 today |
+| `<variant>` | `nginx` | idem | idem |
+| `<x.y.z>-<variant>-<sha>` | `8.5.12-nginx-85ad1de` | one build of a release, by commit | never |
+| `<x.y.z>-rcN-<variant>` | `8.5.13-rc1-nginx` | a prerelease, for trying a version before it is released | never moves a floating tag |
+| `snapshot-<variant>` | `snapshot-nginx` | the head of `main`, unreleased | at every merge on `main` |
 
-> Optionally with `-dev` suffix (e.g. `:8.4.10-cli-dev`)
+**A release tag is re-published.** A non-PHP change (a security fix in a system package, an image
+change) ships by building the same PHP version again, so `8.5.12-nginx` can point to a new image. The
+`-<sha>` tags and the digests never move: to know exactly what runs, or to build reproducibly, pin by
+digest (`smalswebtech/base-php:8.5-nginx@sha256:…`) and let Renovate propose the new digest.
+
+The major and unversioned tags follow the highest PHP line, and only its releases: an 8.4 release
+never moves `8-nginx`, and neither does a merge on `main` or a prerelease.
 
 ## 🚀 Releasing
 
