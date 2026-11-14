@@ -22,6 +22,18 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Fixed
+
+- **`8-<variant>` pointed to PHP 8.4.** Every release build published the major tag, on both lines, so
+  the line released or re-published last owned it: after the 8.4.27 re-publication of 2026-11-11,
+  `8-nginx` was an 8.4 image. Only the 8.5 line publishes it now.
+- **The unversioned tag (`nginx`, `cli-dev`, ...) was the head of `main`.** Every merge on `main`
+  moved it to an unreleased snapshot, and a prerelease would have moved it too. It now follows the
+  releases of the 8.5 line, like `8-<variant>`; `snapshot-<variant>` stays the head of `main`.
+
+  Both tags are corrected at the next release or re-publication of 8.5. If you pull `<variant>` or
+  `8-<variant>` expecting the head of `main`, use `snapshot-<variant>`.
+
 ## [8.5.12]
 
 PHP 8.5.12, a security release. **Upgrade and restart every container that serves PHP.**

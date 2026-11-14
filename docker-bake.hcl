@@ -77,8 +77,21 @@ variable "DOCKER_IMAGE_VERSION" {
   default = "snapshot"
 }
 
+# Whether this branch builds the highest PHP line (main today, 8.5). Only that line
+# publishes the major tag (`8-<variant>`) and the unversioned one (`<variant>`):
+# both builds used to push them, so whichever line was tagged last owned them, and
+# `8-nginx` ended up on 8.4 after a retag of 8.4.27. Set to false on every older
+# version branch -- and on the old line's branch when a new minor moves to main.
 variable "DOCKER_IMAGE_LATEST" {
   default = true
+}
+
+# A stable release: x.y.z from a git tag or a dispatch, no prerelease, no snapshot.
+# The unversioned tag follows releases only. It used to come from every build,
+# so a push to main moved `<variant>` to an untagged snapshot, and a prerelease
+# (8.5.13-rc1) would have moved it too.
+variable "STABLE_RELEASE" {
+  default = length(regexall("^v?[0-9]+\\.[0-9]+\\.[0-9]+$", DOCKER_IMAGE_VERSION)) > 0
 }
 
 variable "GIT_HASH" {}
@@ -154,7 +167,8 @@ function "_semver" {
 
 function "__semver" {
     params = [v]
-    result = v == {} ? [clean_tag(DOCKER_IMAGE_VERSION)] : v.prerelease == null ? [v.major, "${v.major}.${v.minor}", "${v.major}.${v.minor}.${v.patch}"] : ["${v.major}.${v.minor}.${v.patch}-${v.prerelease}"]
+    # The major tag only from the highest line (see DOCKER_IMAGE_LATEST).
+    result = v == {} ? [clean_tag(DOCKER_IMAGE_VERSION)] : v.prerelease == null ? concat(DOCKER_IMAGE_LATEST ? [v.major] : [], ["${v.major}.${v.minor}", "${v.major}.${v.minor}.${v.patch}"]) : ["${v.major}.${v.minor}.${v.patch}-${v.prerelease}"]
 }
 
 target "_proxy" {
@@ -228,7 +242,7 @@ target "default" {
   }
 
   tags = distinct(flatten([
-      DOCKER_IMAGE_LATEST ? tag("latest", tgt, variant, "") : [],
+      DOCKER_IMAGE_LATEST && STABLE_RELEASE ? tag("latest", tgt, variant, "") : [],
       GIT_HASH != "" && DOCKER_IMAGE_VERSION != "snapshot" ? tag("${DOCKER_IMAGE_VERSION}", tgt, variant, "${substr(GIT_HASH, 0, 7)}") : [],     
       DOCKER_IMAGE_VERSION == "snapshot"
         ? [tag("snapshot", tgt, variant, "")]

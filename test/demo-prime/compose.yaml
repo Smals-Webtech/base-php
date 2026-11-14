@@ -2,7 +2,8 @@
 services:
   prime:
     profiles: [ "prime" ]
-    image: smalswebtech/base-php:apache
+    # The image this checkout built (bake tags a local build snapshot-<variant>).
+    image: ${DOCKER_IMAGE_NAME:-smalswebtech/base-php}:${DOCKER_IMAGE_VERSION:-snapshot}-apache
     env_file:
       - ../.env
     depends_on:
