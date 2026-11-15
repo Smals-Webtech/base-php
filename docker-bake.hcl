@@ -239,6 +239,7 @@ target "default" {
     "org.opencontainers.image.revision"    = GIT_HASH
     "org.opencontainers.image.version"     = DOCKER_IMAGE_VERSION == "snapshot" ? PHP_VERSION : DOCKER_IMAGE_VERSION
     "org.opencontainers.image.vendor"      = "Smals"
+    "org.opencontainers.image.licenses"    = "LGPL-3.0-or-later"
   }
 
   tags = distinct(flatten([
