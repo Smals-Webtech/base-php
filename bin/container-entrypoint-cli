@@ -4,7 +4,15 @@ set -eo pipefail
 umask 002
 
 export DEBUG=${DEBUG:-false}
-[[ "${DEBUG}" == "true" ]] && set -x
+
+# DEBUG raises log levels. It used to switch on `set -x` as well, and the trace
+# printed every value the entrypoint handles -- the AWS keys, every password --
+# into the container log, which is collected and kept. The trace is a switch of
+# its own now, for a diagnosis on a workstation; it still prints those values.
+if [[ "${DEBUG_XTRACE:-false}" == "true" ]]; then
+	echo "[WARN] DEBUG_XTRACE=true: the startup trace prints every value, secrets included. Never in production." >&2
+	set -x
+fi
 
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/00-functions.sh
 source /usr/local/bin/container-entrypoint.d/entrypoint.d/01-php.sh
