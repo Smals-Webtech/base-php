@@ -22,6 +22,11 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Added
+
+- **A license.** The repository is now under `LGPL-3.0-or-later`, in `LICENSE` and in `README.md`, and the
+  images carry the `org.opencontainers.image.licenses` label.
+
 ### Fixed
 
 - **`8-<variant>` pointed to PHP 8.4.** Every release build published the major tag, on both lines, so
