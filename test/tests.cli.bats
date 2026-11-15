@@ -1,4 +1,7 @@
 #!/usr/bin/env bats
+# `run --separate-stderr` (the stdout assertion below) needs bats 1.5.
+bats_require_minimum_version 1.5.0
+
 load "helpers/tests"
 load "helpers/containers"
 
@@ -278,4 +281,54 @@ teardown_file() {
   assert_success
   assert_output --partial "started"
   refute_output --partial "Smals WebAgency"
+}
+
+# Composer is what a dev image is for, and its install step chained commands
+# with `;` and no `set -e`: a failed install was masked by the commands after
+# it, and the build still produced an image.
+@test "[$TEST_FILE] Composer is the pinned version (dev only)" {
+  [ "${BATS_TARGET}" = "dev" ] || skip "Composer ships in the dev images only"
+
+  local -r bake="${BATS_TEST_DIRNAME%/}/../docker-bake.hcl"
+  local -r version="$(sed -nE '/^variable "COMPOSER_VERSION"/,/}/s/.*default *= *"([^"]+)".*/\1/p' "${bake}")"
+
+  run_cli "${BATS_CLI_IMAGE}" composer --version --no-ansi
+  assert_success
+  assert_line --regexp "^Composer version ${version//./\\.} "
+}
+
+# The entrypoint's log lines and its banner went to stdout, so `$(docker run
+# ... php script.php)` or a pipe received them along with the script's output.
+@test "[$TEST_FILE] stdout carries the command's output only" {
+  run --separate-stderr ${BATS_CONTAINER_ENGINE} run --pull=never --read-only --rm \
+    -v php_cli_app_tmp:/app/tmp \
+    -v php_cli_opt_etc:/opt/etc \
+    "${BATS_CLI_IMAGE}" php -r 'echo "only this";'
+  assert_success
+  assert_output "only this"
+
+  # The lines are still there, on stderr.
+  [[ "${stderr}" == *"PHP Container configured successfully"* ]]
+}
+
+# DEBUG=true switched on `set -x`: the trace, and the DEBUG lines of the
+# cleanup, printed every credential the entrypoint handled into the log.
+@test "[$TEST_FILE] DEBUG=true prints no credential" {
+  run_cli -e DEBUG=true \
+    -e AWS_ACCESS_KEY_ID=AKIABATSDEBUGKEY \
+    -e AWS_SECRET_ACCESS_KEY=bats-debug-secret \
+    "${BATS_CLI_IMAGE}" php -r 'echo "ok";'
+  assert_success
+  assert_line --partial "[DEBUG] Unsetting AWS_SECRET_ACCESS_KEY"
+  refute_output --partial "bats-debug-secret"
+  refute_output --partial "AKIABATSDEBUGKEY"
+}
+
+# The trace is still available, under a switch of its own that says what it
+# prints.
+@test "[$TEST_FILE] DEBUG_XTRACE=true traces the startup and warns" {
+  run_cli -e DEBUG_XTRACE=true "${BATS_CLI_IMAGE}" php -r 'echo "ok";'
+  assert_success
+  assert_line --partial "DEBUG_XTRACE=true: the startup trace prints every value"
+  assert_line --regexp '^\++ '
 }

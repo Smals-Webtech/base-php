@@ -115,12 +115,15 @@ Configuration files (e.g., PHP and Supervisor .ini, Apache .conf, Varnish .vcl) 
 After successful generation, the script sanitizes the environment by unsetting all non-essential variables (except a defined whitelist required by runtime services).  
 Supervisor is then launched as PID 1 to manage all application processes.  
 
-A debug mode (`DEBUG=true`) enables shell tracing (`set -x`) and extended logging to facilitate startup diagnostics.  
+A debug mode (`DEBUG=true`) raises the log levels to facilitate startup diagnostics.  
+The entrypoint writes its own lines and the banner to **stderr**: stdout belongs to the command the
+container runs, so `$(docker run ... php script.php)` receives the script's output alone.  
 This approach ensures idempotent initialization, predictable config state, and no residual secrets or transient data in the container’s environment.  
 
 | Environment Variable | Default | Description |
 |----------------------|---------|-------------|
-| `DEBUG` | `false` | Set to `true` to enable `set -x` shell tracing throughout the entire startup sequence. Useful for diagnosing template rendering failures or unexpected variable values. |
+| `DEBUG` | `false` | Set to `true` for debug-level logs: the entrypoint names each variable it removes, Apache logs at `debug`, nginx runs its debug binary. No value is printed. |
+| `DEBUG_XTRACE` | `false` | Set to `true` to trace the whole startup sequence with `set -x`, for diagnosing a template or an unexpected value. **The trace prints every value, credentials included**, into the container log: on a workstation only, never on a deployment whose logs are collected. |
 
 ### Application startup hooks
 
@@ -183,7 +186,7 @@ not change:
 
 | Function | Signature | What it does |
 |----------|-----------|--------------|
-| `log` | `log LEVEL MESSAGE` | Writes a line in the container's own format. `LEVEL` is `INFO`, `WARN`, `ERROR` or `DEBUG`. |
+| `log` | `log LEVEL MESSAGE` | Writes a line in the container's own format, on stderr. `LEVEL` is `INFO`, `WARN`, `ERROR` or `DEBUG`. |
 | `require-writable` | `require-writable DIR` | Creates `DIR` and proves it writable with a real write. On failure, logs the reason and the exact mount to add. |
 | `require-executable` | `require-executable DIR` | The same plus an execution probe, for a path you render scripts into. Catches a `noexec` mount, which otherwise fails silently. |
 | `apply-template` | `apply-template SRC DEST` | Renders a gomplate template, or every `*.tmpl` in a directory. This is what the entrypoint renders its own configuration with. |

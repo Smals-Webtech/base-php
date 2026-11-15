@@ -32,7 +32,11 @@ function log {
 		;;
 	esac
 
-	echo -e "${color}[${timestamp}] [${level}] ${message}${color_reset}"
+	# stderr, like any diagnostic: stdout belongs to the command the container
+	# runs. On the cli variant these lines and the banner landed in the output of
+	# `docker run ... php script.php`, so `$(...)` or a pipe got them along with
+	# the result.
+	echo -e "${color}[${timestamp}] [${level}] ${message}${color_reset}" >&2
 
 }
 
@@ -218,7 +222,8 @@ function print-banner {
 	[ -n "$content" ] || return 0
 
 	# Raw UTF-8 bytes rather than \u escapes, so this does not depend on the locale.
-	printf '\033[32m%s\033[0m\n\n' "${content//  /$' \xc2\xa0'}"
+	# stderr, like the log lines (see log).
+	printf '\033[32m%s\033[0m\n\n' "${content//  /$' \xc2\xa0'}" >&2
 
 }
 
