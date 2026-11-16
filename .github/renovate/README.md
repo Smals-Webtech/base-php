@@ -22,8 +22,11 @@ would update without touching anything; delete the variable to go live.
 - **Each branch keeps its PHP minor**: `main` stays on 8.5.x, `8.4` on 8.4.x. A new minor is a release
   decision.
 - **A new Alpine release, and any major version, wait for an approval** on the Dependency Dashboard issue.
-- **An update that ships in the image adds a line under `[Unreleased]`** in `CHANGELOG.md`
-  (`changelog-entry.sh`). Rewrite it if the change deserves more than a version number.
+- **The pull requests do not touch `CHANGELOG.md`.** When each one added its own line under
+  `[Unreleased]`, every merge put the others in conflict, and each conflict cost a rebase and a full
+  build. The lines are written at release time instead: `make changelog` lists the pins that changed
+  since the last tag, and `make changelog APPLY=1` writes them. Rewrite a line if the change deserves
+  more than a version number.
 - **Merging is not releasing.** As before, what is merged reaches users with the next release or retag.
 
 ## How it runs
