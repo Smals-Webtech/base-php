@@ -60,7 +60,5 @@ jobs:
           RENOVATE_ONBOARDING: "false"
           RENOVATE_REQUIRE_CONFIG: "required"
           RENOVATE_PLATFORM_COMMIT: "enabled"
-          # The only command a postUpgradeTask may run: the CHANGELOG line.
-          RENOVATE_ALLOWED_COMMANDS: '["^bash \\.github/renovate/changelog-entry\\.sh "]'
           RENOVATE_DRY_RUN: ${{ vars.RENOVATE_DRY_RUN }}
           LOG_LEVEL: info

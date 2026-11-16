@@ -107,7 +107,7 @@
       "dependencyDashboardApproval": true
     },
     {
-      "description": "CI and test tooling, grouped, no CHANGELOG entry (the image does not change).",
+      "description": "CI and test tooling, grouped (the image does not change).",
       "matchManagers": ["github-actions"],
       "groupName": "GitHub Actions"
     },
@@ -126,18 +126,6 @@
       ],
       "groupName": "bats",
       "semanticCommitType": "test"
-    },
-    {
-      "description": "What ships in the image gets a CHANGELOG line under [Unreleased].",
-      "matchManagers": ["custom.regex", "dockerfile"],
-      "matchFileNames": ["Dockerfile", "docker-bake.hcl"],
-      "postUpgradeTasks": {
-        "commands": [
-          "bash .github/renovate/changelog-entry.sh '{{{depName}}}' '{{{currentVersion}}}' '{{{newVersion}}}'"
-        ],
-        "fileFilters": ["CHANGELOG.md"],
-        "executionMode": "update"
-      }
     }
   ],
   "ignorePaths": ["**/node_modules/**", "**/vendor/**"]

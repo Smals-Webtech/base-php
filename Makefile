@@ -282,6 +282,9 @@ tag-restore: ## tag-restore VERSION=x.y.z : force-push the LOCAL tag to the cano
 	@git push --force $(RELEASE_REMOTE) refs/tags/$(VERSION)
 	@echo "restored (note: a single tag push may NOT rebuild if that commit was already built -> use 'make build-version VERSION=$(VERSION)')"
 
+changelog: ## changelog [SINCE=x.y.z] [APPLY=1] : list (or write under [Unreleased]) the pinned dependencies changed since the last tag
+	@bash .github/changelog-deps.sh $(SINCE) $(if $(APPLY),--apply)
+
 notes: ## notes VERSION=x.y.z [SINCE=x.y.z] : regenerate GitHub release notes
 	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
 	@prev="$(SINCE)"; [ -n "$$prev" ] || prev=$$( $(PREV_TAG) ); \
