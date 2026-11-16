@@ -1,0 +1,53 @@
+---
+name: Refresh the build cache
+
+run-name: Refresh the build cache by @${{ github.actor }}
+
+# Merges and pull requests build from the layer cache, which is keyed on the
+# instruction, not on what it installs: an `apk add` layer keeps its packages
+# until the base image changes. Once a week, this rebuilds main and each
+# version branch without the cache (docker.yml, input `refresh`), runs their
+# suites and writes the cache again. Pull requests, and the snapshot a merge
+# builds, then carry packages at most a week old. Releases do not depend on
+# it: a tag is always built without the cache.
+#
+# Sunday evening, before Renovate (Monday 03:30 UTC) and the scan of the
+# published images (Monday 05:00 UTC). The cron runs the copy of this file on
+# the default branch; each dispatched build runs its branch's own docker.yml.
+on:
+  schedule:
+    - cron: "0 20 * * 0"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-24.04
+
+    permissions:
+      # Required to dispatch docker.yml. A workflow_dispatch event created
+      # with GITHUB_TOKEN does start a run, unlike a push.
+      actions: write
+
+    steps:
+      - name: Dispatch a refresh build per long-lived branch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          # main, plus every version branch (8.4, 8.5, ...): a new line is
+          # picked up without editing this file.
+          branches=$(gh api --paginate "repos/${REPOSITORY}/branches" --jq '.[].name' |
+            grep -E '^(main|[0-9]+\.[0-9]+)$')
+          for branch in ${branches}; do
+            echo "refresh ${branch}"
+            gh workflow run docker.yml --repo "${REPOSITORY}" --ref "${branch}" -f refresh=true
+          done
