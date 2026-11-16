@@ -22,35 +22,6 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
-### Added
-
-- **A license.** The repository is now under `LGPL-3.0-or-later`, in `LICENSE` and in `README.md`, and the
-  images carry the `org.opencontainers.image.licenses` label.
-
-### Changed
-
-- **The entrypoint writes to stderr.** Its log lines, the banner, and the `log` helper that hooks
-  use went to stdout, so on the `cli` variant `$(docker run ... php script.php)` or a pipe received
-  them along with the script's output. stdout now carries the command's output alone. A log
-  collector that keeps both streams sees the same lines, now marked as stderr; a tool that read the
-  entrypoint's lines from stdout has to read stderr.
-- **`DEBUG=true` no longer turns on `set -x`.** The trace printed every value the entrypoint handles
-  into the container log, the AWS keys and every password included, and the cleanup logged each
-  value it removed. `DEBUG` now raises the log levels only, and names the variables it removes
-  without their value. The trace is `DEBUG_XTRACE=true`, which warns that it prints credentials.
-
-### Fixed
-
-- **A failed install in the dev images went unnoticed.** The step that installs Composer, Git and
-  the other dev tools chained its commands with `;` and no `set -e`, so a failure was masked by the
-  commands after it and the build still produced an image. It now stops the build. A test asserts
-  the pinned Composer version in every dev image.
-
-- **`8-<variant>` pointed to this line.** Every release build published the major tag, on both lines,
-  so the line released or re-published last owned it: after the 8.4.27 re-publication of 2026-11-11,
-  `8-nginx` was an 8.4 image. The 8.4 line no longer publishes `8-<variant>`, nor the unversioned
-  `<variant>`: both follow the 8.5 line. Pin `8.4-<variant>` (or a digest) to stay on PHP 8.4.
-
 ## [8.4.27]
 
 PHP 8.4.27, a security release. **Upgrade and restart every container that serves PHP.**
@@ -62,8 +33,20 @@ re-publish moved the `8.4.27` tag to a newer commit. PHP itself is unchanged.
 Re-published on 2026-11-11 on the upstream rebuild with Alpine 3.24.4, with Composer 2.11.2 and the
 Dockerfile frontend 1.28 (see _Security_ and _Changed_). PHP itself is unchanged.
 
+Re-published on 2026-11-16, built from scratch: PostgreSQL client 18.7 and apache 2.4.71, the license,
+and the fixes merged since (see _Security_, _Added_, _Changed_ and _Fixed_). PHP itself is unchanged.
+**Read _Changed_ before upgrading:** the entrypoint now writes to stderr, and `DEBUG=true` no longer
+traces the startup.
+
 ### Security
 
+- **PostgreSQL client 18.7.** `libpq`, `libecpg` and `postgresql18-client` move from 18.6-r0 to 18.7-r0, a
+  PostgreSQL security release with several HIGH fixes, among them code execution through a crafted
+  archive in `pg_restore` and privilege escalation through an untrusted search path in `vacuumdb`. The
+  packages come from this image's own installation, not from the upstream `php` image.
+- **apache 2.4.71**, up from 2.4.69, for CVE-2026-119618 (CRITICAL, mod_http2), CVE-2026-106023 (mod_md)
+  and CVE-2026-109163 (mod_vhost_alias). The image was not exposed to the first two, which concern modules
+  it does not install, and loads no `mod_vhost_alias`; the update clears the findings.
 - **Alpine 3.24.4.** The upstream `php` images were rebuilt on 2026-11-10 on this Alpine security release,
   which fixes among others a crash in apk-tools.
 - **PHP2Shell (CVE-2026-109618, CVE-2026-109619), CVSS 9.2.** Two flaws in PHP itself let a single
@@ -85,6 +68,14 @@ Dockerfile frontend 1.28 (see _Security_ and _Changed_). PHP itself is unchanged
 
 ### Fixed
 
+- **A failed install in the dev images went unnoticed.** The step that installs Composer, Git and
+  the other dev tools chained its commands with `;` and no `set -e`, so a failure was masked by the
+  commands after it and the build still produced an image. It now stops the build. A test asserts
+  the pinned Composer version in every dev image.
+- **`8-<variant>` pointed to this line.** Every release build published the major tag, on both lines,
+  so the line released or re-published last owned it: after the 8.4.27 re-publication of 2026-11-11,
+  `8-nginx` was an 8.4 image. The 8.4 line no longer publishes `8-<variant>`, nor the unversioned
+  `<variant>`: both follow the 8.5 line. Pin `8.4-<variant>` (or a digest) to stay on PHP 8.4.
 - **The `apache` and `nginx` variants refused to start again on the same `/app/var` with a read-only root
   filesystem.** The re-publication of 2026-11-06 stopped such a restart on
   `/app/var/www/html is not writable`: the boot checked a link to a directory of the image. An `emptyDir`
@@ -93,6 +84,8 @@ Dockerfile frontend 1.28 (see _Security_ and _Changed_). PHP itself is unchanged
 
 ### Added
 
+- **A license.** The repository is now under `LGPL-3.0-or-later`, in `LICENSE` and in `README.md`, and the
+  images carry the `org.opencontainers.image.licenses` label.
 - **`memory_hard_limit_percent`.** This PHP release adds the directive, so the image configures it
   like any other through `PHP_MEMORY_HARD_LIMIT_PERCENT`, which is then removed from the
   environment the application sees.
@@ -104,6 +97,15 @@ Dockerfile frontend 1.28 (see _Security_ and _Changed_). PHP itself is unchanged
 
 ### Changed
 
+- **The entrypoint writes to stderr.** Its log lines, the banner, and the `log` helper that hooks
+  use went to stdout, so on the `cli` variant `$(docker run ... php script.php)` or a pipe received
+  them along with the script's output. stdout now carries the command's output alone. A log
+  collector that keeps both streams sees the same lines, now marked as stderr; a tool that read the
+  entrypoint's lines from stdout has to read stderr.
+- **`DEBUG=true` no longer turns on `set -x`.** The trace printed every value the entrypoint handles
+  into the container log, the AWS keys and every password included, and the cleanup logged each
+  value it removed. `DEBUG` now raises the log levels only, and names the variables it removes
+  without their value. The trace is `DEBUG_XTRACE=true`, which warns that it prints credentials.
 - **`composer/composer` 2.11.2**, up from 2.11.1 (dependency update).
 - **`docker/dockerfile` 1.28**, up from 1.15 (dependency update).
 - **Composer 2.11.1** in the `dev` variants, up from 2.10.3. Composer 2.11 fixes several security issues
