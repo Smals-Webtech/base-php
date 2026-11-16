@@ -8,8 +8,9 @@ run-name: Refresh the build cache by @${{ github.actor }}
 # until the base image changes. Once a week, this rebuilds main and each
 # version branch without the cache (docker.yml, input `refresh`), runs their
 # suites and writes the cache again. Pull requests, and the snapshot a merge
-# builds, then carry packages at most a week old. Releases do not depend on
-# it: a tag is always built without the cache.
+# builds, then carry packages at most a week old. A refresh publishes
+# nothing, not even snapshot-* on main. Releases do not depend on it: a tag
+# is always built without the cache.
 #
 # Sunday evening, before Renovate (Monday 03:30 UTC) and the scan of the
 # published images (Monday 05:00 UTC). The cron runs the copy of this file on
