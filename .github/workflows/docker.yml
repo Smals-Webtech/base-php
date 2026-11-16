@@ -143,6 +143,13 @@ jobs:
         with:
           source: .
           pull: true
+          # A release is built from scratch. The layer cache is keyed on the
+          # instruction, not on what it installs: an `apk add` layer stays valid
+          # until the base image changes, so a re-publication meant to ship an
+          # Alpine fix (PostgreSQL 18.7, apache 2.4.71 in 2026-11) reused the old
+          # packages from main's cache and published them again, without a word.
+          # Pull requests and branch pushes keep the cache.
+          no-cache: ${{ github.ref_type == 'tag' || needs.prepare.outputs.ref != '' }}
           load: ${{ !fromJson(needs.prepare.outputs.push) }}
           # Attestations only on the push path. With them the result is a manifest
           # list, which the docker exporter behind `load` refuses ("docker exporter
@@ -178,13 +185,31 @@ jobs:
           GIT_HASH: ${{ github.sha }}
           DOCKER_IMAGE_VERSION: ${{ (github.ref_type == 'tag' && github.ref_name) || needs.prepare.outputs.ref || 'snapshot' }}
 
-      # Only the load path has an image to run, and one architecture is enough to
-      # exercise the configuration the suites assert on. A published build is
-      # made of the same commits, each of which came through a pull request that
-      # ran this step.
+      # The suites run on both paths, on one architecture, which is enough to
+      # exercise the configuration they assert on.
+      #
+      # On the push path they are the release gate. A release is built without
+      # the cache, so it installs that day's Alpine packages and compiles the
+      # PECL extensions again: an image no pull request has run. The image was
+      # just pushed by digest, untagged; it is pulled back and tested here, and
+      # the push job, which creates every tag, needs every build job to pass.
+      # A failure leaves the published tags where they were.
+      - name: Pull the pushed image for the suites
+        if: matrix.platform == 'linux/amd64' && fromJson(needs.prepare.outputs.push)
+        run: |
+          digest=$(jq -r --arg t "${TARGET}" '.[$t]."containerimage.digest"' <<< "${METADATA}")
+          docker pull --platform linux/amd64 "${DOCKER_IMAGE_NAME}@${digest}"
+          # A local name only: nothing is pushed under it.
+          docker tag "${DOCKER_IMAGE_NAME}@${digest}" "base-php-under-test:release-${VARIANT}${SUFFIX}"
+        env:
+          METADATA: ${{ steps.build.outputs.metadata }}
+          TARGET: ${{ matrix.variant }}-${{ matrix.target }}
+          VARIANT: ${{ matrix.variant }}
+          SUFFIX: ${{ matrix.target == 'dev' && '-dev' || '' }}
+
       - name: Set up bats
         id: bats
-        if: matrix.platform == 'linux/amd64' && !fromJson(needs.prepare.outputs.push)
+        if: matrix.platform == 'linux/amd64'
         uses: bats-core/bats-action@3566550e0f594451ac0f58fcbfdeca93aa29a45e # 4.1.0
         with:
           # Pinned so a local run and a CI run exercise the same bats and the
@@ -196,10 +221,13 @@ jobs:
           file-install: false
 
       - name: Test image
-        if: matrix.platform == 'linux/amd64' && !fromJson(needs.prepare.outputs.push)
+        if: matrix.platform == 'linux/amd64'
         working-directory: test
         env:
-          DOCKER_IMAGE_VERSION: snapshot
+          # The loaded snapshot on the load path, the image pulled back above on
+          # the push path (see test/helpers/containers.bash image_tag).
+          DOCKER_IMAGE_NAME: ${{ fromJson(needs.prepare.outputs.push) && 'base-php-under-test' || env.DOCKER_IMAGE_NAME }}
+          DOCKER_IMAGE_VERSION: ${{ fromJson(needs.prepare.outputs.push) && 'release' || 'snapshot' }}
           BATS_VARIANT: ${{ matrix.variant }}
           BATS_TARGET: ${{ matrix.target }}
           # The action exposes the install location as a step output rather than
