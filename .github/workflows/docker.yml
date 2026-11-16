@@ -26,6 +26,7 @@ on:
       - ".github/renovate/**"
       - ".github/changelog-deps.sh"
       - ".github/workflows/lint.yaml"
+      - ".github/workflows/cache-refresh.yml"
       - ".github/workflows/renovate.yml"
       - ".github/workflows/scan-published.yml"
 
@@ -45,6 +46,7 @@ on:
       - ".github/renovate/**"
       - ".github/changelog-deps.sh"
       - ".github/workflows/lint.yaml"
+      - ".github/workflows/cache-refresh.yml"
       - ".github/workflows/renovate.yml"
       - ".github/workflows/scan-published.yml"
     tags:
@@ -56,6 +58,11 @@ on:
         description: "Docker Image Version"
         required: false
         type: string
+      refresh:
+        description: "Rebuild the branch without the cache and write it again (cache-refresh.yml, weekly)"
+        required: false
+        type: boolean
+        default: false
 
 # Each job asks for what it needs; everything else is read-only.
 permissions:
@@ -165,19 +172,19 @@ jobs:
         with:
           source: .
           pull: true
-          # Every push -- a release tag, a merge on main or on a version branch
-          # -- is built from scratch. The layer cache is keyed on the instruction,
-          # not on what it installs: an `apk add` layer stays valid until the base
-          # image changes, so a re-publication meant to ship an Alpine fix
-          # (PostgreSQL 18.7, apache 2.4.71 in 2026-11) reused the old packages
-          # from main's cache and published them again, without a word, and every
-          # merge on main rebuilt the snapshot with them and reopened their alerts.
+          # A release (a tag, or a dispatch with a version) is built from scratch.
+          # The layer cache is keyed on the instruction, not on what it installs:
+          # an `apk add` layer stays valid until the base image changes, so a
+          # re-publication meant to ship an Alpine fix (PostgreSQL 18.7, apache
+          # 2.4.71 in 2026-11) reused the old packages from main's cache and
+          # published them again, without a word.
           #
-          # no-cache only stops the build from reading the cache: a branch push
-          # still writes it (cache-to below), so each merge refreshes the layers
-          # that pull requests into that branch read. Pull requests keep the
-          # cache, with packages as recent as the last merge.
-          no-cache: ${{ github.event_name == 'push' || needs.prepare.outputs.ref != '' }}
+          # Merges and pull requests read the cache: building every merge from
+          # scratch cost a full build each time (2026-11). The weekly refresh
+          # (cache-refresh.yml) instead rebuilds main and each version branch
+          # without it and writes it again (cache-to below), so the cache, and
+          # the snapshot a merge builds from it, is never more than a week behind.
+          no-cache: ${{ github.ref_type == 'tag' || needs.prepare.outputs.ref != '' || inputs.refresh == true }}
           load: ${{ !fromJson(needs.prepare.outputs.push) }}
           # Attestations only on the push path. With them the result is a manifest
           # list, which the docker exporter behind `load` refuses ("docker exporter
@@ -193,8 +200,8 @@ jobs:
           # [...] by digest" error. On the load path they are what gives the test
           # step an image to run, so they are kept.
           #
-          # Only a push to a long-lived branch (main, a version branch) writes the
-          # layer cache, each into its own scope. A cache entry is readable from
+          # Only a push to a long-lived branch (main, a version branch), or its
+          # weekly refresh, writes the layer cache, each into its own scope. A cache entry is readable from
           # the ref that wrote it, from the default branch and, for a pull
           # request, from its base branch -- so nobody could reuse what pull
           # requests and tags used to write (7 GB of each), which pushed the
@@ -207,7 +214,7 @@ jobs:
             *.platform=${{ matrix.platform }}
             ${{ matrix.variant }}-${{ matrix.target }}.cache-from=type=gha,scope=${{ matrix.variant }}-${{ matrix.target }}-refs/heads/main-${{ matrix.platform }}
             ${{ (github.base_ref || (github.ref_type == 'branch' && github.ref_name)) && format('{0}-{1}.cache-from=type=gha,scope={0}-{1}-refs/heads/{2}-{3}', matrix.variant, matrix.target, github.base_ref || github.ref_name, matrix.platform) || '' }}
-            ${{ (github.event_name == 'push' && github.ref_type == 'branch') && format('{0}-{1}.cache-to=type=gha,scope={0}-{1}-refs/heads/{2}-{3},ignore-error=true', matrix.variant, matrix.target, github.ref_name, matrix.platform) || '' }}
+            ${{ ((github.event_name == 'push' || inputs.refresh == true) && github.ref_type == 'branch') && format('{0}-{1}.cache-to=type=gha,scope={0}-{1}-refs/heads/{2}-{3},ignore-error=true', matrix.variant, matrix.target, github.ref_name, matrix.platform) || '' }}
             ${{ fromJson(needs.prepare.outputs.push) && format('*.output=type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.DOCKER_IMAGE_NAME) || '' }}
         env:
           GIT_HASH: ${{ github.sha }}
