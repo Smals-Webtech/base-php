@@ -1395,3 +1395,43 @@ TMPL
   assert_output --partial "options-applied"
   assert_output --partial "considering log /app/var/log/myapp/x.log"
 }
+
+# Composer is what a dev image is for, and its install step chained commands
+# with `;` and no `set -e`: a failed install still produced an image.
+@test "[$TEST_FILE] Composer is the pinned version (dev only)" {
+  [ "${BATS_TARGET}" = "dev" ] || skip "Composer ships in the dev images only"
+
+  local -r bake="${BATS_TEST_DIRNAME%/}/../docker-bake.hcl"
+  local -r version="$(sed -nE '/^variable "COMPOSER_VERSION"/,/}/s/.*default *= *"([^"]+)".*/\1/p' "${bake}")"
+
+  run ${BATS_CONTAINER_ENGINE} exec "${BATS_WEB_CONTAINER}" composer --version --no-ansi
+  assert_success
+  assert_line --regexp "^Composer version ${version//./\\.} "
+}
+
+# DEBUG=true switched on `set -x`: the trace printed every password the
+# entrypoint handled -- the supervisor RPC one, the basic auth one passed to
+# htpasswd -- and the cleanup logged each value it removed.
+@test "[$TEST_FILE] DEBUG=true prints no credential" {
+  local -r container="bats-web-debug-$$"
+  container_clean "${container}"
+
+  web_container_start "${container}" \
+    -e DEBUG=true \
+    -e NGINX_BASIC_AUTH_ENABLED=true \
+    -e NGINX_BASIC_AUTH_PASSWORD=bats-debug-basic-auth \
+    -e SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD=bats-debug-rpc \
+    -e AWS_SECRET_ACCESS_KEY=bats-debug-secret >/dev/null
+
+  # Read before the clean-up: container_clean uses `run` too, which would replace
+  # the output under test.
+  local logs
+  logs="$(${BATS_CONTAINER_ENGINE} logs "${container}" 2>&1)"
+  container_clean "${container}"
+
+  run printf '%s\n' "${logs}"
+  assert_line --partial "[DEBUG] Unsetting SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD"
+  refute_output --partial "bats-debug-basic-auth"
+  refute_output --partial "bats-debug-rpc"
+  refute_output --partial "bats-debug-secret"
+}

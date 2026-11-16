@@ -27,7 +27,24 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 - **A license.** The repository is now under `LGPL-3.0-or-later`, in `LICENSE` and in `README.md`, and the
   images carry the `org.opencontainers.image.licenses` label.
 
+### Changed
+
+- **The entrypoint writes to stderr.** Its log lines, the banner, and the `log` helper that hooks
+  use went to stdout, so on the `cli` variant `$(docker run ... php script.php)` or a pipe received
+  them along with the script's output. stdout now carries the command's output alone. A log
+  collector that keeps both streams sees the same lines, now marked as stderr; a tool that read the
+  entrypoint's lines from stdout has to read stderr.
+- **`DEBUG=true` no longer turns on `set -x`.** The trace printed every value the entrypoint handles
+  into the container log, the AWS keys and every password included, and the cleanup logged each
+  value it removed. `DEBUG` now raises the log levels only, and names the variables it removes
+  without their value. The trace is `DEBUG_XTRACE=true`, which warns that it prints credentials.
+
 ### Fixed
+
+- **A failed install in the dev images went unnoticed.** The step that installs Composer, Git and
+  the other dev tools chained its commands with `;` and no `set -e`, so a failure was masked by the
+  commands after it and the build still produced an image. It now stops the build. A test asserts
+  the pinned Composer version in every dev image.
 
 - **`8-<variant>` pointed to PHP 8.4.** Every release build published the major tag, on both lines, so
   the line released or re-published last owned it: after the 8.4.27 re-publication of 2026-11-11,

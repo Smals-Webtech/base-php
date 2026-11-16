@@ -256,7 +256,11 @@ COPY --from=node /usr/local/lib/node_modules /usr/local/lib/node_modules
 COPY --from=node /usr/local/include/node /usr/local/include/node
 COPY --from=node /opt/yarn-v*/ /usr/local/lib/yarn/
 
+# set -e: these commands are chained with `;`, so without it a failed Composer
+# install or apk add was masked by whatever ran last, and the build succeeded
+# with an image missing what the dev variant exists for.
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    set -eux ; \
     install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps git patch libstdc++ libgcc ; \
     ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm ; \
@@ -441,7 +445,11 @@ ENV PHP_XDEBUG_ENABLED="true"
 
 USER root
 
+# set -e: these commands are chained with `;`, so without it a failed Composer
+# install or apk add was masked by whatever ran last, and the build succeeded
+# with an image missing what the dev variant exists for.
 RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs/ca-certificates.crt \
+    set -eux ; \
     install-php-extensions @composer-${COMPOSER_VERSION_ARG} ; \
     apk add --no-cache --virtual .base-php-dev-rundeps zsh ripgrep git patch make g++ github-cli ; \
     cp "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini" ; \

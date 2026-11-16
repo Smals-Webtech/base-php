@@ -4,7 +4,8 @@ IFS=':' read -r -a VARS <<<"$CLEANUP_VAR_LIST"
 
 for VAR in "${VARS[@]}"; do
 
-	[[ "${DEBUG}" == "true" ]] && log "DEBUG" "Unsetting $VAR (was '${!VAR}')"
+	# The name only: these are the variables that carry the credentials.
+	[[ "${DEBUG}" == "true" ]] && log "DEBUG" "Unsetting $VAR"
 	unset "$VAR"
 
 done
