@@ -15,8 +15,19 @@ on:
       # runs the linter only, so the change reaches its release tag having never
       # been built -- which is how the php-fpm memory cap shipped on 8.4.
       - "[0-9]+.[0-9]+"
+    # What cannot change the image: a change made of these files only builds
+    # nothing, and its merge rebuilds nothing. A change that also touches
+    # anything else still runs everything. Same list under push below
+    # (actionlint rejects a YAML anchor here).
     paths-ignore:
       - "docs/**"
+      - "*.md"
+      - "renovate.json"
+      - ".github/renovate/**"
+      - ".github/changelog-deps.sh"
+      - ".github/workflows/lint.yaml"
+      - ".github/workflows/renovate.yml"
+      - ".github/workflows/scan-published.yml"
 
   push:
     branches:
@@ -25,6 +36,17 @@ on:
       # main, tags and workflow_dispatch), so it runs the image suites after a
       # merge and writes the layer cache that pull requests into that branch read.
       - "[0-9]+.[0-9]+"
+    # Branch pushes only: GitHub does not apply path filters to tags, so a
+    # release or retag always builds.
+    paths-ignore:
+      - "docs/**"
+      - "*.md"
+      - "renovate.json"
+      - ".github/renovate/**"
+      - ".github/changelog-deps.sh"
+      - ".github/workflows/lint.yaml"
+      - ".github/workflows/renovate.yml"
+      - ".github/workflows/scan-published.yml"
     tags:
       - "[0-9]+.[0-9]+.[0-9]+*"
 
