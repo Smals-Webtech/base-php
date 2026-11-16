@@ -143,6 +143,13 @@ jobs:
         with:
           source: .
           pull: true
+          # A release is built from scratch. The layer cache is keyed on the
+          # instruction, not on what it installs: an `apk add` layer stays valid
+          # until the base image changes, so a re-publication meant to ship an
+          # Alpine fix (PostgreSQL 18.7, apache 2.4.71 in 2026-11) reused the old
+          # packages from main's cache and published them again, without a word.
+          # Pull requests and branch pushes keep the cache.
+          no-cache: ${{ github.ref_type == 'tag' || needs.prepare.outputs.ref != '' }}
           load: ${{ !fromJson(needs.prepare.outputs.push) }}
           # Attestations only on the push path. With them the result is a manifest
           # list, which the docker exporter behind `load` refuses ("docker exporter
