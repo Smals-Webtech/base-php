@@ -194,6 +194,11 @@ YES                         ?=
 # Shell snippet: print the semver tag immediately below VERSION (works whether or not VERSION is already a tag).
 PREV_TAG = (git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$$'; echo $(VERSION)) | sort -rV | uniq | awk -v v=$(VERSION) '$$0==v{p=1;next} p{print;exit}'
 
+# Shell snippet: print true when VERSION is the highest semver tag, else false. GitHub's "Latest"
+# release must follow it. Left to GitHub, creating or re-publishing a release marks it Latest
+# whatever its version: the 8.4.27 retag of 2026-11-16 took Latest from 8.5.12.
+IS_LATEST = [ "$$( (git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$$'; echo $(VERSION)) | sort -V | tail -1)" = "$(VERSION)" ] && echo true || echo false
+
 ##
 ## Release & Tag (VERSION=x.y.z, REF=HEAD, SINCE=x.y.z, YES=1 to skip prompts; remote auto-detected):
 ##
@@ -246,8 +251,8 @@ release: ## release VERSION=x.y.z : prepare commit + signed tag + push + GitHub 
 	 git push $(RELEASE_REMOTE) refs/tags/$(VERSION); \
 	 [ "$(FORK_REMOTE)" != "$(RELEASE_REMOTE)" ] && git push $(FORK_REMOTE) $$b || true
 	@prev=$$( $(PREV_TAG) ); \
-	 latest=""; [ "$$(git rev-parse --abbrev-ref HEAD)" = "main" ] && latest="--latest"; \
-	 gh release create $(VERSION) --repo $(REPO) --generate-notes $$latest $${prev:+--notes-start-tag $$prev} --verify-tag && echo "release $(VERSION) created"
+	 latest=$$( $(IS_LATEST) ); \
+	 gh release create $(VERSION) --repo $(REPO) --generate-notes --latest=$$latest $${prev:+--notes-start-tag $$prev} --verify-tag && echo "release $(VERSION) created"
 
 retag: ## retag VERSION=x.y.z [REF=HEAD] : move an existing tag, fire the tag build, refresh the release
 	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
@@ -266,7 +271,7 @@ retag: ## retag VERSION=x.y.z [REF=HEAD] : move an existing tag, fire the tag bu
 	@git push $(RELEASE_REMOTE) refs/tags/$(VERSION)
 	@echo "tag $(VERSION) pushed -> tag build triggered"
 	@if gh release view $(VERSION) --repo $(REPO) >/dev/null 2>&1; then \
-	   gh release edit $(VERSION) --repo $(REPO) --draft=false >/dev/null; \
+	   gh release edit $(VERSION) --repo $(REPO) --draft=false --latest=$$( $(IS_LATEST) ) >/dev/null; \
 	   prev=$$( $(PREV_TAG) ); \
 	   if [ -n "$$prev" ]; then \
 	     gh api repos/$(REPO)/releases/generate-notes -f tag_name=$(VERSION) -f previous_tag_name=$$prev --jq .body | gh release edit $(VERSION) --repo $(REPO) --notes-file - >/dev/null && echo "release $(VERSION) re-published, notes regenerated from $$prev"; \
