@@ -913,7 +913,9 @@ Each tag below exists for every variant, with `-dev` appended for the developmen
 | `<variant>` | `nginx` | idem | idem |
 | `<x.y.z>-<variant>-<sha>` | `8.5.12-nginx-85ad1de` | one build of a release, by commit | never |
 | `<x.y.z>-rcN-<variant>` | `8.5.13-rc1-nginx` | a prerelease, for trying a version before it is released | never moves a floating tag |
-| `snapshot-<variant>` | `snapshot-nginx` | the head of `main`, unreleased | at every merge on `main` |
+
+Nothing unreleased is published: the `snapshot-<variant>` tags stopped following `main` in 2026-11.
+To try `main`, build it (`make bake-nginx/prd`).
 
 **A release tag is re-published.** A non-PHP change (a security fix in a system package, an image
 change) ships by building the same PHP version again, so `8.5.12-nginx` can point to a new image. The
