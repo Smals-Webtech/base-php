@@ -125,15 +125,18 @@ teardown_file() {
     "${BATS_WEB_CONTAINER}-etc" "${BATS_WEB_CONTAINER}-fplock" >/dev/null 2>&1 || true
 }
 
+# bats test_tags=dev
 @test "[$TEST_FILE] The container reports healthy" {
   container_assert_healthy "${BATS_WEB_CONTAINER}"
 }
 
+# bats test_tags=dev
 @test "[$TEST_FILE] php-fpm runs the expected PHP version" {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" '<?php echo PHP_VERSION;'
   assert_line "${BATS_PHP_VERSION}"
 }
 
+# bats test_tags=dev
 @test "[$TEST_FILE] php-fpm answers requests over FastCGI, not as source" {
   run web_php "${BATS_WEB_CONTAINER}" "${BATS_WEB_PORT}" '<?php echo "executed";'
   assert_line "executed"
@@ -1398,6 +1401,7 @@ TMPL
 
 # Composer is what a dev image is for, and its install step chained commands
 # with `;` and no `set -e`: a failed install still produced an image.
+# bats test_tags=dev
 @test "[$TEST_FILE] Composer is the pinned version (dev only)" {
   [ "${BATS_TARGET}" = "dev" ] || skip "Composer ships in the dev images only"
 
