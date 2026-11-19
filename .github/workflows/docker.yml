@@ -22,6 +22,8 @@ on:
     paths-ignore:
       - "docs/**"
       - "*.md"
+      - "Makefile"
+      - ".vex/**"
       - "renovate.json"
       - ".github/renovate/**"
       - ".github/changelog-deps.sh"
@@ -33,15 +35,17 @@ on:
   push:
     branches:
       - main
-      # Version branches too: the build does not publish (push is false outside
-      # main, tags and workflow_dispatch), so it runs the image suites after a
-      # merge and writes the layer cache that pull requests into that branch read.
+      # Version branches too. A merge publishes nothing and tests nothing -- its
+      # pull request did both -- it only writes the layer cache that the next
+      # pull requests into that branch read.
       - "[0-9]+.[0-9]+"
     # Branch pushes only: GitHub does not apply path filters to tags, so a
     # release or retag always builds.
     paths-ignore:
       - "docs/**"
       - "*.md"
+      - "Makefile"
+      - ".vex/**"
       - "renovate.json"
       - ".github/renovate/**"
       - ".github/changelog-deps.sh"
@@ -69,23 +73,35 @@ permissions:
   contents: read
 
 env:
-  DOCKER_IMAGE_NAME: ${{ github.repository == 'Smals-Webtech/base-php' && ((github.event_name == 'workflow_dispatch' && inputs.version) || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && inputs.refresh != true)) && 'smalswebtech/base-php' || 'smalswebtech/base-php-dev' }}
+  # Only a release publishes: a tag, or a dispatch that names a version, from the
+  # canonical repository. A fork with Actions enabled would otherwise publish
+  # under the upstream production image name.
+  DOCKER_IMAGE_NAME: ${{ github.repository == 'Smals-Webtech/base-php' && ((github.event_name == 'workflow_dispatch' && inputs.version) || startsWith(github.ref, 'refs/tags/')) && 'smalswebtech/base-php' || 'smalswebtech/base-php-dev' }}
 
 jobs:
+  # Decides what this run is. Four kinds, and what each one builds:
+  #
+  #   pull request  amd64, all targets, the suites (dev ones narrowed to the dev tag)
+  #   merge         amd64, prd targets, no suites, writes the cache
+  #   refresh       amd64 + arm64, all targets, no cache, full suites (arm64: smoke), writes the cache
+  #   release       amd64 + arm64, all targets, no cache, full suites (arm64: smoke), publishes
+  #
+  # arm64 is built only by a release and the weekly refresh: nothing in a pull
+  # request has ever broken on one platform alone, and a release that would is
+  # stopped before it publishes, since the push job needs every build.
   prepare:
     runs-on: ubuntu-24.04
 
     outputs:
-      # Push if it's a tag, a workflow_dispatch with version, or a commit to the main branch --
-      # never a cache refresh, which only rebuilds and tests -- and only from the canonical
-      # repository. A fork that has Actions enabled would otherwise
-      # publish under the upstream production image name.
-      push: ${{ github.repository == 'Smals-Webtech/base-php' && ((github.event_name == 'workflow_dispatch' && inputs.version) || startsWith(github.ref, 'refs/tags/') || (github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && inputs.refresh != true)) && true || false }}
-      ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.version) || '' }}
-      platforms: ${{ steps.matrix.outputs.platforms }}
+      push: ${{ steps.kind.outputs.push }}
+      merge: ${{ steps.kind.outputs.merge }}
+      tests: ${{ steps.kind.outputs.tests }}
+      dev-filter: ${{ steps.kind.outputs.dev-filter }}
+      platforms: ${{ steps.kind.outputs.platforms }}
       targets: ${{ steps.matrix.outputs.targets }}
       variants: ${{ steps.matrix.outputs.variants }}
       metadata: ${{ steps.matrix.outputs.metadata }}
+      ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.version) || '' }}
 
     steps:
       - name: Checkout source
@@ -96,26 +112,64 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4
 
-      - name: Create platforms, targets and variants matrix
+      - name: Decide what this run builds
+        id: kind
+        shell: bash
+        run: |
+          set -e
+          release=false; refresh=false; merge=false
+          if [ "${REF_TYPE}" = tag ] || [ -n "${DISPATCH_VERSION}" ]; then release=true; fi
+          [ "${REFRESH}" = true ] && refresh=true
+          if [ "${EVENT}" = push ] && [ "${REF_TYPE}" = branch ]; then merge=true; fi
+
+          push=false
+          [ "${release}" = true ] && [ "${REPOSITORY}" = Smals-Webtech/base-php ] && push=true
+
+          if [ "${release}" = true ] || [ "${refresh}" = true ]; then
+            platforms='["linux/amd64","linux/arm64"]'
+          else
+            platforms='["linux/amd64"]'
+          fi
+
+          {
+            echo "push=${push}"
+            echo "merge=${merge}"
+            echo "tests=$([ "${merge}" = true ] && echo false || echo true)"
+            echo "dev-filter=$([ "${EVENT}" = pull_request ] && echo true || echo false)"
+            echo "platforms=${platforms}"
+          } >> "${GITHUB_OUTPUT}"
+          cat "${GITHUB_OUTPUT}"
+        env:
+          EVENT: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REPOSITORY: ${{ github.repository }}
+          DISPATCH_VERSION: ${{ (github.event_name == 'workflow_dispatch' && inputs.version) || '' }}
+          REFRESH: ${{ inputs.refresh == true }}
+
+      - name: List the targets
         id: matrix
         shell: bash
         run: |
           set -e
-          # shellcheck disable=SC2046,SC2086
           METADATA="$(docker buildx bake --print | jq -c)"
-          TARGET_KEYS=$(jq -r '.target | keys[]' <<<"${METADATA}" | grep -E '.+-.')
-          VARIANTS=$(echo "${TARGET_KEYS}" | cut -d'-' -f1 | sort -u)
-          TARGETS=$(echo "${TARGET_KEYS}" | cut -d'-' -f2 | sort -u)
+          TARGETS=$(jq -r '.target | keys[]' <<<"${METADATA}" | grep -E '.+-.')
+          # A merge only feeds the cache, and the dev images are built FROM the
+          # prd ones: the prd targets are enough to carry what changed.
+          [ "${MERGE}" = true ] && TARGETS=$(grep -E -- '-prd$' <<<"${TARGETS}")
+          VARIANTS=$(cut -d'-' -f1 <<<"${TARGETS}" | sort -u)
           {
             echo metadata="${METADATA}"
-            echo platforms="$(jq -c 'first(.target[]) | .platforms' <<< "${METADATA}")"
-            echo targets="$(jq -nc --argjson arr "$(printf '%s\n' "${TARGETS}" | jq -R . | jq -s .)" '$arr')"
-            echo variants="$(jq -nc --argjson arr "$(printf '%s\n' "${VARIANTS}" | jq -R . | jq -s .)" '$arr')"
+            echo targets="$(jq -Rnc '[inputs]' <<<"${TARGETS}")"
+            echo variants="$(jq -Rnc '[inputs]' <<<"${VARIANTS}")"
           } >> "${GITHUB_OUTPUT}"
         env:
+          MERGE: ${{ steps.kind.outputs.merge }}
           GIT_HASH: ${{ github.sha }}
           DOCKER_IMAGE_VERSION: ${{ (github.ref_type == 'tag' && github.ref_name) || (github.event_name == 'workflow_dispatch' && inputs.version) || 'snapshot' }}
 
+  # One job per platform builds every target in a single bake: BuildKit then
+  # builds each shared stage (fpm-prd under nginx, apache and every dev image)
+  # once, where one job per target built it six times on six runners.
   build:
     runs-on: ${{ startsWith(matrix.platform, 'linux/arm') && 'ubuntu-24.04-arm' || 'ubuntu-24.04' }}
 
@@ -126,8 +180,6 @@ jobs:
       fail-fast: false
       matrix:
         platform: ${{ fromJson(needs.prepare.outputs.platforms) }}
-        target: ${{ fromJson(needs.prepare.outputs.targets) }}
-        variant: ${{ fromJson(needs.prepare.outputs.variants) }}
 
     permissions:
       contents: read
@@ -167,7 +219,52 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Bake and push image
+      # The bake overrides, one line per target for the cache.
+      #
+      # A cache entry is readable from the ref that wrote it, from the default
+      # branch and, for a pull request, from its base branch. Every build reads
+      # main's scope and its branch's own, for the target and for its prd
+      # counterpart: no merge writes a dev scope any more, and a dev image is
+      # built FROM the prd one, so the prd scope carries most of its layers.
+      #
+      # Only a merge and the weekly refresh write, amd64 only: nothing else
+      # reads the cache on arm64, since a release builds without it.
+      - name: Compose the bake overrides
+        id: overrides
+        shell: bash
+        run: |
+          set -e
+          lines=("*.platform=${PLATFORM}")
+          if [ "${PUSH}" = true ]; then
+            # Tags are removed on the push path to prevent a "can't push tagged
+            # ref [...] by digest" error; the push job creates them.
+            lines+=("*.tags=" "*.output=type=image,name=${DOCKER_IMAGE_NAME},push-by-digest=true,name-canonical=true,push=true")
+          fi
+          for t in $(jq -r '.[]' <<<"${TARGETS}"); do
+            for s in $(printf '%s\n' "${t}" "${t%-*}-prd" | sort -u); do
+              lines+=("${t}.cache-from=type=gha,scope=${s}-refs/heads/main-${PLATFORM}")
+              if [ -n "${BRANCH}" ] && [ "${BRANCH}" != main ]; then
+                lines+=("${t}.cache-from=type=gha,scope=${s}-refs/heads/${BRANCH}-${PLATFORM}")
+              fi
+            done
+            if [ "${WRITE}" = true ] && [ "${PLATFORM}" = linux/amd64 ]; then
+              lines+=("${t}.cache-to=type=gha,scope=${t}-refs/heads/${BRANCH}-${PLATFORM},ignore-error=true")
+            fi
+          done
+          {
+            echo "set<<EOF"
+            printf '%s\n' "${lines[@]}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+          printf '%s\n' "${lines[@]}"
+        env:
+          PLATFORM: ${{ matrix.platform }}
+          PUSH: ${{ needs.prepare.outputs.push }}
+          TARGETS: ${{ needs.prepare.outputs.targets }}
+          BRANCH: ${{ github.base_ref || (github.ref_type == 'branch' && github.ref_name) || '' }}
+          WRITE: ${{ github.ref_type == 'branch' && (needs.prepare.outputs.merge == 'true' || inputs.refresh == true) }}
+
+      - name: Bake and push images
         id: build
         uses: docker/bake-action@59cb1203cd42bcefd40a1b6d73b589e48c86040e # v7
         with:
@@ -178,74 +275,52 @@ jobs:
           # an `apk add` layer stays valid until the base image changes, so a
           # re-publication meant to ship an Alpine fix (PostgreSQL 18.7, apache
           # 2.4.71 in 2026-11) reused the old packages from main's cache and
-          # published them again, without a word.
-          #
-          # Merges and pull requests read the cache: building every merge from
-          # scratch cost a full build each time (2026-11). The weekly refresh
-          # (cache-refresh.yml) instead rebuilds main and each version branch
-          # without it and writes it again (cache-to below), so the cache, and
-          # the snapshot a merge builds from it, is never more than a week behind.
+          # published them again, without a word. The weekly refresh
+          # (cache-refresh.yml) rebuilds each long-lived branch the same way and
+          # writes the cache again, so it is never more than a week behind.
           no-cache: ${{ github.ref_type == 'tag' || needs.prepare.outputs.ref != '' || inputs.refresh == true }}
-          load: ${{ !fromJson(needs.prepare.outputs.push) }}
+          # A merge runs no suite, so it loads nothing: the build is for the cache.
+          load: ${{ !fromJson(needs.prepare.outputs.push) && !fromJson(needs.prepare.outputs.merge) }}
           # Attestations only on the push path. With them the result is a manifest
           # list, which the docker exporter behind `load` refuses ("docker exporter
-          # does not currently support exporting manifest lists") -- what a push to
-          # a version branch, which builds without publishing, ran into.
+          # does not currently support exporting manifest lists").
           sbom: ${{ fromJson(needs.prepare.outputs.push) }}
           provenance: ${{ fromJson(needs.prepare.outputs.push) }}
-          targets: |
-            ${{ matrix.variant }}-${{ matrix.target }}
+          targets: ${{ join(fromJson(needs.prepare.outputs.targets), ',') }}
           files: |
             docker-bake.hcl
-          # Tags are removed on the push path to prevent a "can't push tagged ref
-          # [...] by digest" error. On the load path they are what gives the test
-          # step an image to run, so they are kept.
-          #
-          # Only a push to a long-lived branch (main, a version branch), or its
-          # weekly refresh, writes the layer cache, each into its own scope. A cache entry is readable from
-          # the ref that wrote it, from the default branch and, for a pull
-          # request, from its base branch -- so nobody could reuse what pull
-          # requests and tags used to write (7 GB of each), which pushed the
-          # repository past its 10 GB quota and evicted main's. Every build reads
-          # main's scope and, for a pull request or a branch push, the branch's
-          # own; a tag can read only main's. workflow_dispatch builds an
-          # arbitrary version, so it reads but does not write.
-          set: |
-            ${{ fromJson(needs.prepare.outputs.push) && '*.tags=' || '' }}
-            *.platform=${{ matrix.platform }}
-            ${{ matrix.variant }}-${{ matrix.target }}.cache-from=type=gha,scope=${{ matrix.variant }}-${{ matrix.target }}-refs/heads/main-${{ matrix.platform }}
-            ${{ (github.base_ref || (github.ref_type == 'branch' && github.ref_name)) && format('{0}-{1}.cache-from=type=gha,scope={0}-{1}-refs/heads/{2}-{3}', matrix.variant, matrix.target, github.base_ref || github.ref_name, matrix.platform) || '' }}
-            ${{ ((github.event_name == 'push' || inputs.refresh == true) && github.ref_type == 'branch') && format('{0}-{1}.cache-to=type=gha,scope={0}-{1}-refs/heads/{2}-{3},ignore-error=true', matrix.variant, matrix.target, github.ref_name, matrix.platform) || '' }}
-            ${{ fromJson(needs.prepare.outputs.push) && format('*.output=type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.DOCKER_IMAGE_NAME) || '' }}
+          set: ${{ steps.overrides.outputs.set }}
         env:
           GIT_HASH: ${{ github.sha }}
           DOCKER_IMAGE_VERSION: ${{ (github.ref_type == 'tag' && github.ref_name) || needs.prepare.outputs.ref || 'snapshot' }}
 
-      # The suites run on both paths, on one architecture, which is enough to
-      # exercise the configuration they assert on.
-      #
-      # On the push path they are the release gate. A release is built without
-      # the cache, so it installs that day's Alpine packages and compiles the
-      # PECL extensions again: an image no pull request has run. The image was
-      # just pushed by digest, untagged; it is pulled back and tested here, and
-      # the push job, which creates every tag, needs every build job to pass.
+      # On the push path the suites are the release gate, on both platforms. A release is built
+      # without the cache, so it installs that day's Alpine packages and compiles
+      # the PECL extensions again: an image no pull request has run. The images
+      # were just pushed by digest, untagged; they are pulled back and tested
+      # here, and the push job, which creates every tag, needs this job to pass.
       # A failure leaves the published tags where they were.
-      - name: Pull the pushed image for the suites
-        if: matrix.platform == 'linux/amd64' && fromJson(needs.prepare.outputs.push)
+      - name: Pull the pushed images for the suites
+        if: fromJson(needs.prepare.outputs.push)
+        shell: bash
         run: |
-          digest=$(jq -r --arg t "${TARGET}" '.[$t]."containerimage.digest"' <<< "${METADATA}")
-          docker pull --platform linux/amd64 "${DOCKER_IMAGE_NAME}@${digest}"
-          # A local name only: nothing is pushed under it.
-          docker tag "${DOCKER_IMAGE_NAME}@${digest}" "base-php-under-test:release-${VARIANT}${SUFFIX}"
+          set -e
+          for t in $(jq -r '.[]' <<<"${TARGETS}"); do
+            digest=$(jq -r --arg t "${t}" '.[$t]."containerimage.digest"' <<<"${METADATA}")
+            variant=${t%-*}; target=${t##*-}
+            suffix=""; [ "${target}" = dev ] && suffix="-dev"
+            docker pull --quiet --platform "${PLATFORM}" "${DOCKER_IMAGE_NAME}@${digest}"
+            # A local name only: nothing is pushed under it.
+            docker tag "${DOCKER_IMAGE_NAME}@${digest}" "base-php-under-test:release-${variant}${suffix}"
+          done
         env:
           METADATA: ${{ steps.build.outputs.metadata }}
-          TARGET: ${{ matrix.variant }}-${{ matrix.target }}
-          VARIANT: ${{ matrix.variant }}
-          SUFFIX: ${{ matrix.target == 'dev' && '-dev' || '' }}
+          TARGETS: ${{ needs.prepare.outputs.targets }}
+          PLATFORM: ${{ matrix.platform }}
 
       - name: Set up bats
         id: bats
-        if: matrix.platform == 'linux/amd64'
+        if: fromJson(needs.prepare.outputs.tests)
         uses: bats-core/bats-action@3566550e0f594451ac0f58fcbfdeca93aa29a45e # 4.1.0
         with:
           # Pinned so a local run and a CI run exercise the same bats and the
@@ -256,48 +331,89 @@ jobs:
           detik-install: false
           file-install: false
 
-      - name: Test image
-        if: matrix.platform == 'linux/amd64'
+      # One lane per variant, side by side: the suites publish on ephemeral ports
+      # and name their containers after the variant and the target. Within a lane
+      # prd runs before dev, since the cli suite creates fixed-name volumes. A
+      # pull request runs the dev suites narrowed to the tests tagged `dev` --
+      # what the dev images add over prd; a release and the refresh run them all.
+      #
+      # arm64 (release and refresh only) runs the same tagged subset on every
+      # target, on its native runner: versions, health, FastCGI. A smoke test,
+      # so that an arm64 image that builds but does not start is never published.
+      - name: Test images
+        if: fromJson(needs.prepare.outputs.tests)
         working-directory: test
+        shell: bash
         env:
-          # The loaded snapshot on the load path, the image pulled back above on
+          # The loaded snapshots on the load path, the images pulled back above on
           # the push path (see test/helpers/containers.bash image_tag).
           DOCKER_IMAGE_NAME: ${{ fromJson(needs.prepare.outputs.push) && 'base-php-under-test' || env.DOCKER_IMAGE_NAME }}
           DOCKER_IMAGE_VERSION: ${{ fromJson(needs.prepare.outputs.push) && 'release' || 'snapshot' }}
-          BATS_VARIANT: ${{ matrix.variant }}
-          BATS_TARGET: ${{ matrix.target }}
+          TARGETS: ${{ needs.prepare.outputs.targets }}
+          DEV_FILTER: ${{ needs.prepare.outputs.dev-filter }}
+          SMOKE: ${{ matrix.platform != 'linux/amd64' }}
           # The action exposes the install location as a step output rather than
           # exporting it, so the suites are handed it here.
           BATS_LIB_PATH: ${{ steps.bats.outputs.lib-path }}
         run: |
-          case "${BATS_VARIANT}" in
-            cli)          suite=tests.cli.bats ;;
-            nginx|apache) suite=tests.web.bats ;;
-            *)            echo "no image suite for the ${BATS_VARIANT} variant yet"; exit 0 ;;
-          esac
-          bats --print-output-on-failure "${suite}"
+          mkdir -p "${RUNNER_TEMP}/bats"
 
-      - # Workaround for https://github.com/actions/runner/pull/2477#issuecomment-1501003600
-        name: Export metadata
+          lane() {
+            local variant=$1 suite=$2 target status=0
+            for target in prd dev; do
+              jq -e --arg t "${variant}-${target}" 'any(.[]; . == $t)' <<<"${TARGETS}" >/dev/null || continue
+              local filter=()
+              if [ "${SMOKE}" = true ] || { [ "${target}" = dev ] && [ "${DEV_FILTER}" = true ]; }; then
+                filter=(--filter-tags dev)
+              fi
+              BATS_VARIANT=${variant} BATS_TARGET=${target} \
+                bats --print-output-on-failure "${filter[@]}" "${suite}" \
+                >"${RUNNER_TEMP}/bats/${variant}-${target}.log" 2>&1 || status=1
+            done
+            return "${status}"
+          }
+
+          lane cli tests.cli.bats & cli=$!
+          lane apache tests.web.bats & apache=$!
+          lane nginx tests.web.bats & nginx=$!
+
+          failed=0
+          for pid in "${cli}" "${apache}" "${nginx}"; do
+            wait "${pid}" || failed=1
+          done
+
+          for log in "${RUNNER_TEMP}"/bats/*.log; do
+            echo "::group::$(basename "${log}" .log)"
+            cat "${log}"
+            echo "::endgroup::"
+            grep -q '^not ok' "${log}" && echo "::error::$(basename "${log}" .log): $(grep -c '^not ok' "${log}") failing test(s)"
+          done
+          exit "${failed}"
+
+      - name: Export digests
         if: fromJson(needs.prepare.outputs.push)
+        shell: bash
         run: |
-          mkdir -p "/tmp/metadata/${TARGET}"
-          digest=$(jq -r --arg t "${TARGET}" '.[$t]."containerimage.digest"' <<< "${METADATA}")
-          touch "/tmp/metadata/${TARGET}/${digest#sha256:}"
+          mkdir -p /tmp/digests
+          jq -c 'with_entries(select(.value | type == "object" and has("containerimage.digest")) | .value = .value."containerimage.digest")' \
+            <<<"${METADATA}" > "/tmp/digests/${SANITIZED}.json"
+          cat "/tmp/digests/${SANITIZED}.json"
         env:
           METADATA: ${{ steps.build.outputs.metadata }}
-          TARGET: ${{ matrix.variant }}-${{ matrix.target }}
+          SANITIZED: ${{ steps.prepare.outputs.sanitized_platform }}
 
-      - name: Upload ${{ matrix.variant }}-${{ matrix.target }} metadata
+      - name: Upload digests
         if: fromJson(needs.prepare.outputs.push)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
-          name: metadata-${{ matrix.variant }}-${{ matrix.target }}-${{ steps.prepare.outputs.sanitized_platform }}-${{ github.sha }}
-          path: /tmp/metadata/${{ matrix.variant }}-${{ matrix.target }}/*
+          name: digests-${{ steps.prepare.outputs.sanitized_platform }}-${{ github.sha }}
+          path: /tmp/digests/${{ steps.prepare.outputs.sanitized_platform }}.json
           if-no-files-found: error
           retention-days: 1
 
   # Adapted from https://docs.docker.com/build/ci/github-actions/multi-platform/
+  # One job for every target: a manifest list per target, from the digest each
+  # platform pushed.
   push:
     runs-on: ubuntu-24.04
 
@@ -313,18 +429,12 @@ jobs:
 
     if: fromJson(needs.prepare.outputs.push)
 
-    strategy:
-      fail-fast: false
-      matrix:
-        target: ${{ fromJson(needs.prepare.outputs.targets) }}
-        variant: ${{ fromJson(needs.prepare.outputs.variants) }}
-
     steps:
-      - name: Download metadata
+      - name: Download digests
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
         with:
-          pattern: metadata-${{ matrix.variant }}-${{ matrix.target }}-*
-          path: /tmp/metadata
+          pattern: digests-*
+          path: /tmp/digests
           merge-multiple: true
 
       - name: Set up Docker Buildx
@@ -332,31 +442,35 @@ jobs:
 
       - name: Login to DockerHub
         uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4
-        if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
         with:
           registry: docker.io
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Create manifest list and push
-        working-directory: /tmp/metadata
+      - name: Create the manifest lists and push
+        working-directory: /tmp/digests
+        shell: bash
         run: |
-          set -x
-          # shellcheck disable=SC2046,SC2086
-          docker buildx imagetools create $(jq -cr --arg t "${TARGET}" '.target[$t].tags | map("-t " + .) | join(" ")' <<< ${METADATA}) \
-            $(printf "${DOCKER_IMAGE_NAME}@sha256:%s " *)
+          set -e
+          platforms=$(jq length <<<"${PLATFORMS}")
+          for t in $(jq -r '.[]' <<<"${TARGETS}"); do
+            mapfile -t tags < <(jq -r --arg t "${t}" '.target[$t].tags[]' <<<"${METADATA}")
+            mapfile -t digests < <(jq -r --arg t "${t}" '.[$t] // empty' ./*.json)
+            if [ "${#digests[@]}" -ne "${platforms}" ]; then
+              echo "::error::${t}: ${#digests[@]} digest(s) for ${platforms} platform(s)" >&2
+              exit 1
+            fi
+            echo "::group::${t}"
+            # shellcheck disable=SC2046
+            docker buildx imagetools create $(printf -- '-t %s ' "${tags[@]}") \
+              $(printf "${DOCKER_IMAGE_NAME}@%s " "${digests[@]}")
+            docker buildx imagetools inspect "${tags[0]}"
+            echo "::endgroup::"
+          done
         env:
           METADATA: ${{ needs.prepare.outputs.metadata }}
-          TARGET: ${{ matrix.variant }}-${{ matrix.target }}
-
-      - name: Inspect image
-        run: |
-          set -x
-          # shellcheck disable=SC2046,SC2086
-          docker buildx imagetools inspect $(jq -cr --arg t "${TARGET}" '.target[$t].tags | first' <<< ${METADATA})
-        env:
-          METADATA: ${{ needs.prepare.outputs.metadata }}
-          TARGET: ${{ matrix.variant }}-${{ matrix.target }}
+          TARGETS: ${{ needs.prepare.outputs.targets }}
+          PLATFORMS: ${{ needs.prepare.outputs.platforms }}
 
   # ── Vulnerability scan of the published prd images (Trivy → Security tab) ────────────────────────
   #
@@ -364,8 +478,8 @@ jobs:
   # what runs in production -- scanning them would double the job count for findings nobody acts on.
   #
   # The reference is the LAST tag of the target rather than the first: `first` is the floating
-  # `:<variant>` tag, `last` is the versioned one (`8.5.10-cli`, or `snapshot-cli` from main), so a
-  # result in the Security tab is attributable to a release instead of to a tag that moves.
+  # `:<variant>` tag, `last` is the versioned one (`8.5.10-cli`), so a result in the Security tab
+  # is attributable to a release instead of to a tag that moves.
   scan:
     runs-on: ubuntu-24.04
 

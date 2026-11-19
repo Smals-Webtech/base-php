@@ -41,11 +41,13 @@ teardown_file() {
   command ${BATS_CONTAINER_ENGINE} volume rm -f php_cli_app_tmp php_cli_opt_etc
 }
 
+# bats test_tags=dev
 @test "[$TEST_FILE] Test PHP version" {
   run_cli "${BATS_CLI_IMAGE}" -v
   assert_line --regexp "^PHP ${BATS_PHP_VERSION} \(cli\) \(.*\) \(NTS\)"
 }
 
+# bats test_tags=dev
 @test "[$TEST_FILE] Testing NPM Version (with unrecognized uid and anonymous volumes)" {
   run ${BATS_CONTAINER_ENGINE} run --pull=never -u 1000 --read-only --rm \
     -v /app/tmp \
@@ -81,6 +83,7 @@ teardown_file() {
 # uid npm failed on the cache before doing anything -- with the bare uid Docker
 # puts in gid 0, as the elasticms demo runs it, as much as with a uid:gid pair.
 # `npm cache verify` writes the cache and needs no network.
+# bats test_tags=dev
 @test "[$TEST_FILE] npm can write its cache under any uid" {
   local user
   for user in 1000 4242:4242; do
@@ -95,6 +98,7 @@ teardown_file() {
 # (and in the Dockerfile ARG defaults). Unpinned, a rebuild took whatever PECL
 # offered that day. The expected versions are read from docker-bake.hcl, so the
 # pins live in two places, not three.
+# bats test_tags=dev
 @test "[$TEST_FILE] The PECL extensions are the pinned versions" {
   local -r bake="${BATS_TEST_DIRNAME}/../docker-bake.hcl"
   pin() { sed -nE "/^variable \"$1\"/,/}/s/.*default *= *\"([^\"]+)\".*/\1/p" "${bake}"; }
@@ -112,6 +116,7 @@ teardown_file() {
   assert_line --regexp "^aws-cli/${BATS_AWS_CLI_VERSION} Python/.* .*$"
 }
 
+# bats test_tags=dev
 @test "[$TEST_FILE] Test GH cli version (dev only)" {
   [ "${BATS_TARGET}" = "dev" ] || skip "the GitHub CLI ships in cli-dev only"
 
@@ -286,6 +291,7 @@ teardown_file() {
 # Composer is what a dev image is for, and its install step chained commands
 # with `;` and no `set -e`: a failed install was masked by the commands after
 # it, and the build still produced an image.
+# bats test_tags=dev
 @test "[$TEST_FILE] Composer is the pinned version (dev only)" {
   [ "${BATS_TARGET}" = "dev" ] || skip "Composer ships in the dev images only"
 
