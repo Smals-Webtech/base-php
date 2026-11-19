@@ -22,6 +22,26 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+## [8.5.13]
+
+PHP 8.5.13, a security release. **Upgrade and restart every container that serves PHP.**
+
+### Security
+
+- **PHP 8.5.13** fixes 17 advisories. The ones that matter most here:
+  - remote code execution through sessions: CVE-2026-115560 (serializer mismatch with
+    `session.upload_progress`), CVE-2026-126714 (partially overwritten session files) and
+    CVE-2026-129481;
+  - use-after-free in the engine and the timezone cache that can lead to remote code execution:
+    CVE-2026-129474, CVE-2026-129182, CVE-2026-129496;
+  - php-fpm, in the `fpm` and `nginx` variants: request smuggling through an unread body
+    (CVE-2026-129289), an epoll use-after-free allowing local privilege escalation (CVE-2026-129291),
+    and an XSS on the status page (CVE-2026-129292), which the image serves only behind its
+    monitoring ACL;
+  - a Phar signature bypass (CVE-2026-128090), SOAP (CVE-2026-15353, CVE-2026-129506), DOM
+    (CVE-2026-129501), HTTP streams (CVE-2026-128064, CVE-2026-127960) and URI (CVE-2026-129438,
+    CVE-2026-48841).
+
 ## [8.5.12]
 
 PHP 8.5.12, a security release. **Upgrade and restart every container that serves PHP.**

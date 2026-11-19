@@ -17,7 +17,7 @@ variable "ALPINE_VERSION" {
 
 # renovate: datasource=docker depName=php versioning=semver extractVersion=^(?<version>\d+\.\d+\.\d+)-fpm-alpine3\.24$
 variable "PHP_VERSION" {
-  default = "8.5.12"
+  default = "8.5.13"
 }
 
 # renovate: datasource=docker depName=mlocati/php-extension-installer versioning=semver

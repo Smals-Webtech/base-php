@@ -2,7 +2,7 @@
 # renovate: datasource=docker depName=alpine versioning=docker
 ARG ALPINE_VERSION_ARG=3.24
 # renovate: datasource=docker depName=php versioning=semver extractVersion=^(?<version>\d+\.\d+\.\d+)-fpm-alpine3\.24$
-ARG PHP_VERSION_ARG=8.5.12
+ARG PHP_VERSION_ARG=8.5.13
 # renovate: datasource=docker depName=mlocati/php-extension-installer versioning=semver
 ARG PHP_EXT_INSTALLER_VERSION_ARG=2.13.2
 ARG NODE_VERSION_ARG=24
