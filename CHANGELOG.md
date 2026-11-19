@@ -22,6 +22,12 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
+### Security
+
+- **nginx 1.30.7**, up from 1.30.6: fixes CVE-2026-123007 and CVE-2026-123633 in the HTTP/2 module. The
+  image does not enable HTTP/2, so it was not exposed; Alpine 3.24 no longer ships 1.30.6, which broke
+  the build of the nginx variant.
+
 ### Changed
 
 - **`opentelemetry` 1.5.0**, up from 1.4.2 (dependency update).
