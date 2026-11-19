@@ -22,16 +22,6 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 ## [Unreleased]
 
-### Security
-
-- **nginx 1.30.7**, up from 1.30.6: fixes CVE-2026-123007 and CVE-2026-123633 in the HTTP/2 module. The
-  image does not enable HTTP/2, so it was not exposed; Alpine 3.24 no longer ships 1.30.6, which broke
-  the build of the nginx variant.
-
-### Changed
-
-- **`opentelemetry` 1.5.0**, up from 1.4.2 (dependency update).
-
 ## [8.5.12]
 
 PHP 8.5.12, a security release. **Upgrade and restart every container that serves PHP.**
@@ -47,8 +37,14 @@ and the fixes merged since (see _Security_, _Added_, _Changed_ and _Fixed_). PHP
 **Read _Changed_ before upgrading:** the entrypoint now writes to stderr, and `DEBUG=true` no longer
 traces the startup.
 
+Re-published on 2026-11-19 with nginx 1.30.7 (see _Security_), opentelemetry 1.5.0 and the
+Dockerfile frontend 1.29 (see _Changed_). PHP itself is unchanged.
+
 ### Security
 
+- **nginx 1.30.7**, up from 1.30.6: fixes CVE-2026-123007 and CVE-2026-123633 in the HTTP/2 module. The
+  image does not enable HTTP/2, so it was not exposed; Alpine 3.24 no longer ships 1.30.6, which broke
+  the build of the nginx variant.
 - **PostgreSQL client 18.7.** `libpq`, `libecpg` and `postgresql18-client` move from 18.6-r0 to 18.7-r0, a
   PostgreSQL security release with several HIGH fixes, among them code execution through a crafted
   archive in `pg_restore` and privilege escalation through an untrusted search path in `vacuumdb`. The
@@ -111,6 +107,8 @@ traces the startup.
 
 ### Changed
 
+- **`opentelemetry` 1.5.0**, up from 1.4.2 (dependency update).
+- **`docker/dockerfile` 1.29**, up from 1.28 (dependency update).
 - **The entrypoint writes to stderr.** Its log lines, the banner, and the `log` helper that hooks
   use went to stdout, so on the `cli` variant `$(docker run ... php script.php)` or a pipe received
   them along with the script's output. stdout now carries the command's output alone. A log
