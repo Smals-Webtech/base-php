@@ -104,7 +104,7 @@ FROM php:${PHP_VERSION_ARG}-fpm-alpine${ALPINE_VERSION_ARG} AS fpm-prd
 # renovate: datasource=repology depName=alpine_3_24/aws-cli versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
 ARG AWS_CLI_VERSION_ARG=2.34.63
 # renovate: datasource=repology depName=alpine_3_24/nginx versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
-ARG NGINX_VERSION_ARG=1.30.6
+ARG NGINX_VERSION_ARG=1.30.7
 
 USER root
 

@@ -27,7 +27,7 @@ variable "PHP_EXT_INSTALLER_VERSION" {
 
 # renovate: datasource=repology depName=alpine_3_24/nginx versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
 variable "NGINX_VERSION" {
-  default = "1.30.6"
+  default = "1.30.7"
 }
 
 variable "NODE_VERSION" {
