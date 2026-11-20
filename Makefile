@@ -175,7 +175,7 @@ _docker-bake/%:
 # edit in. CHANGELOG.md is the durable copy: `retag` and `notes` regenerate the GitHub
 # release notes from the previous tag and discard anything hand-written there.
 
-.PHONY: release-info sync release retag tag-restore notes build-version
+.PHONY: release-info sync release-prepare release retag tag-restore notes build-version
 
 # Canonical remote: 'upstream' when working from a fork, else 'origin' (the real repo).
 RELEASE_REMOTE              ?= $(shell git remote | grep -qx upstream && echo upstream || echo origin)
@@ -224,6 +224,13 @@ sync: ## sync : fast-forward main + 8.4 from the canonical remote, then push to 
 	   for b in main 8.4; do git show-ref --verify --quiet refs/heads/$$b && git push $(FORK_REMOTE) $$b || true; done; \
 	 fi
 
+# The CHANGELOG section is written by the tooling, not by a pull request: release-prepare fills
+# it from the dependency pins and the merged pull requests, it is read (prose optional), and
+# release or retag commits it with the tag.
+release-prepare: ## release-prepare VERSION=x.y.z [RETAG=1] : write the CHANGELOG section of a release (no commit)
+	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
+	@bash .github/release-prepare.sh $(VERSION) $(if $(RETAG),--retag)
+
 release: ## release VERSION=x.y.z : prepare commit + signed tag + push + GitHub release (new version)
 	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
 	@b=$$(git rev-parse --abbrev-ref HEAD); case "$$b" in main|[0-9]*.[0-9]*) ;; *) echo "release only from main or x.y (on $$b)" >&2; exit 1;; esac
@@ -257,6 +264,12 @@ release: ## release VERSION=x.y.z : prepare commit + signed tag + push + GitHub 
 retag: ## retag VERSION=x.y.z [REF=HEAD] : move an existing tag, fire the tag build, refresh the release
 	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
 	@b=$$(git rev-parse --abbrev-ref HEAD); case "$$b" in main|[0-9]*.[0-9]*) ;; *) echo "retag only from main or x.y (on $$b)" >&2; exit 1;; esac
+	@# The re-publication's CHANGELOG lines (make release-prepare RETAG=1) go in the commit the tag
+	@# moves to. Only when the tag moves to HEAD: an older REF cannot take a new commit.
+	@if ! git diff --quiet -- CHANGELOG.md; then \
+	   [ "$$(git rev-parse $(REF))" = "$$(git rev-parse HEAD)" ] || { echo "CHANGELOG.md has changes but REF is not HEAD" >&2; exit 1; }; \
+	   git commit -S -m "chore: re-publish $(VERSION)" -- CHANGELOG.md; \
+	 fi
 	@sha=$$(git rev-parse --short "$(REF)"); \
 	 echo "retag $(VERSION) -> $$sha on $(RELEASE_REMOTE) ($(REPO))"; \
 	 if [ -z "$(YES)" ]; then printf "Proceed (delete+recreate tag, triggers a DockerHub rebuild)? [y/N] "; read a; [ "$$a" = y ] || [ "$$a" = Y ] || { echo Aborted >&2; exit 1; }; fi
