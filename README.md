@@ -907,6 +907,9 @@ what was detected.
 
 Destructive targets prompt for confirmation; pass `YES=1` to skip. Requires `git` and `gh`.
 
+What the workflow builds, tests and publishes for a pull request, a merge, the weekly refresh and a
+release is in [docs/ci.md](docs/ci.md).
+
 When an advisory affects the image, [docs/cve-response.md](docs/cve-response.md) gives the order of
 things: triage, the fix on both lines, the release or retag, and how it reaches the child images.
 
