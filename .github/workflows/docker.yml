@@ -559,7 +559,7 @@ jobs:
       # One category per variant: GitHub indexes code-scanning results by category, so four uploads
       # sharing one would overwrite each other and the tab would only ever show the last variant.
       - name: Upload SARIF to GitHub Security
-        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4
+        uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
           sarif_file: trivy.sarif
           category: trivy-${{ matrix.variant }}
