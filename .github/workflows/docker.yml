@@ -15,22 +15,9 @@ on:
       # runs the linter only, so the change reaches its release tag having never
       # been built -- which is how the php-fpm memory cap shipped on 8.4.
       - "[0-9]+.[0-9]+"
-    # What cannot change the image: a change made of these files only builds
-    # nothing, and its merge rebuilds nothing. A change that also touches
-    # anything else still runs everything. Same list under push below
-    # (actionlint rejects a YAML anchor here).
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-      - "Makefile"
-      - ".vex/**"
-      - "renovate.json"
-      - ".github/renovate/**"
-      - ".github/changelog-deps.sh"
-      - ".github/workflows/lint.yaml"
-      - ".github/workflows/cache-refresh.yml"
-      - ".github/workflows/renovate.yml"
-      - ".github/workflows/scan-published.yml"
+    # No path filter here: a required check that never reports blocks the pull
+    # request. The `prepare` job decides instead whether the change can reach
+    # the image (see "Does the change reach the image"), and skips the build.
 
   push:
     branches:
@@ -39,20 +26,6 @@ on:
       # pull request did both -- it only writes the layer cache that the next
       # pull requests into that branch read.
       - "[0-9]+.[0-9]+"
-    # Branch pushes only: GitHub does not apply path filters to tags, so a
-    # release or retag always builds.
-    paths-ignore:
-      - "docs/**"
-      - "*.md"
-      - "Makefile"
-      - ".vex/**"
-      - "renovate.json"
-      - ".github/renovate/**"
-      - ".github/changelog-deps.sh"
-      - ".github/workflows/lint.yaml"
-      - ".github/workflows/cache-refresh.yml"
-      - ".github/workflows/renovate.yml"
-      - ".github/workflows/scan-published.yml"
     tags:
       - "[0-9]+.[0-9]+.[0-9]+*"
 
@@ -102,8 +75,50 @@ jobs:
       variants: ${{ steps.matrix.outputs.variants }}
       metadata: ${{ steps.matrix.outputs.metadata }}
       ref: ${{ (github.event_name == 'workflow_dispatch' && inputs.version) || '' }}
+      image: ${{ steps.changes.outputs.image }}
 
     steps:
+      # What cannot change the image: a change made only of these files builds
+      # nothing, and its merge rebuilds nothing. A change that also touches
+      # anything else builds as usual, and so does every tag, dispatch and
+      # refresh. When the list of changed files cannot be had (a new branch, an
+      # API error, more files than the comparison returns), it builds too.
+      - name: Does the change reach the image
+        id: changes
+        shell: bash
+        run: |
+          image=true
+          case "${EVENT}" in
+            pull_request) range="${BASE_SHA}...${HEAD_SHA}" ;;
+            push)         [ "${REF_TYPE}" = branch ] && [ "${BEFORE}" != 0000000000000000000000000000000000000000 ] && range="${BEFORE}...${HEAD_SHA}" ;;
+          esac
+          if [ -n "${range:-}" ] && files=$(gh api "repos/${REPOSITORY}/compare/${range}" --jq '.files | if length < 300 then .[].filename else error("too many files") end'); then
+            image=false
+            while IFS= read -r f; do
+              [ -n "${f}" ] || continue
+              case "${f}" in
+                docs/*|.vex/*|.github/renovate/*) continue ;;
+                Makefile|renovate.json|.github/changelog-deps.sh) continue ;;
+                .github/workflows/lint.yaml|.github/workflows/cache-refresh.yml) continue ;;
+                .github/workflows/renovate.yml|.github/workflows/scan-published.yml) continue ;;
+              esac
+              # *.md at the root only, as the former paths-ignore entry matched.
+              [[ "${f}" != */* && "${f}" == *.md ]] && continue
+              echo "reaches the image: ${f}"
+              image=true
+              break
+            done <<<"${files}"
+          fi
+          echo "image=${image}" | tee -a "${GITHUB_OUTPUT}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT: ${{ github.event_name }}
+          REF_TYPE: ${{ github.ref_type }}
+          REPOSITORY: ${{ github.repository }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          BEFORE: ${{ github.event.before }}
+
       - name: Checkout source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -175,6 +190,8 @@ jobs:
 
     needs:
       - prepare
+
+    if: fromJson(needs.prepare.outputs.image)
 
     strategy:
       fail-fast: false
@@ -561,3 +578,27 @@ jobs:
         env:
           TRIVY_VEX: ${{ github.workspace }}/.vex/gomplate.openvex.json
           TRIVY_SHOW_SUPPRESSED: "true"
+
+  # The one check branch protection requires. A skipped matrix job reports under
+  # its bare name (`build`), not `build (linux/amd64)`, so requiring the build
+  # itself would block every change that skips it. This job always runs: it
+  # passes when the build passed or was skipped, and fails otherwise.
+  image:
+    runs-on: ubuntu-24.04
+
+    needs:
+      - prepare
+      - build
+
+    if: always()
+
+    steps:
+      - name: Result
+        shell: bash
+        run: |
+          echo "prepare: ${PREPARE}, build: ${BUILD}"
+          [ "${PREPARE}" = success ] || exit 1
+          case "${BUILD}" in success|skipped) ;; *) exit 1 ;; esac
+        env:
+          PREPARE: ${{ needs.prepare.result }}
+          BUILD: ${{ needs.build.result }}
