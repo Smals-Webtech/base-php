@@ -33,7 +33,8 @@ PHP 8.4.28, a security release. **Upgrade and restart every container that serve
     `session.upload_progress`), CVE-2026-126714 (partially overwritten session files) and
     CVE-2026-129481;
   - a timezone cache use-after-free that can lead to remote code execution (CVE-2026-129496);
-  - php-fpm, in the `fpm` and `nginx` variants: request smuggling through an unread body
+  - php-fpm, which serves PHP in the `fpm`, `nginx` and `apache` variants: request smuggling
+    through an unread body
     (CVE-2026-129289), an epoll use-after-free allowing local privilege escalation (CVE-2026-129291),
     and an XSS on the status page (CVE-2026-129292), which the image serves only behind its
     monitoring ACL;
@@ -77,7 +78,8 @@ Dockerfile frontend 1.29 (see _Changed_). PHP itself is unchanged.
   unauthenticated HTTP request execute code, before any application code runs: request state left
   half-built when memory runs out during request start-up, and request state that outlives its memory
   and is reused by the next request on the same worker. Every SAPI that serves the web is affected —
-  php-fpm in the `fpm` and `nginx` variants, mod_php in `apache`. No `php.ini` setting mitigates it.
+  php-fpm, which serves PHP in the `fpm`, `nginx` and `apache` variants. No `php.ini` setting
+  mitigates it.
   Exploitation was reported in the wild before the coordinated release. A running container keeps
   the vulnerable PHP until it is recreated from the new image, and a child image pinned by digest
   keeps it until the pin is bumped.
