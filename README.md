@@ -937,8 +937,9 @@ what was detected.
 
 | Command | Purpose |
 | --- | --- |
+| `make release-prepare VERSION=x.y.z [RETAG=1]` | Write the CHANGELOG section (dependency pins + merged pull requests) for `release` or `retag` to commit. Nothing is committed. |
 | `make release VERSION=x.y.z` | New version: signed `chore: prepare release` commit + signed tag + push + GitHub release with generated notes. |
-| `make retag VERSION=x.y.z [REF=HEAD]` | Move an existing tag to a new commit (re-point a patch version), fire a fresh tag build, and refresh the release notes. |
+| `make retag VERSION=x.y.z [REF=HEAD]` | Move an existing tag to a new commit (re-point a patch version), committing a prepared CHANGELOG first, fire a fresh tag build, and refresh the release notes. |
 | `make sync` | Fast-forward `main` + `8.4` from the canonical remote. |
 | `make tag-restore VERSION=x.y.z` | Force-push the local tag to fix one that was moved to the wrong commit remotely. |
 | `make notes VERSION=x.y.z [SINCE=x.y.z]` | Regenerate a release's notes from the previous tag. |
