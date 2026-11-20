@@ -910,6 +910,14 @@ Destructive targets prompt for confirmation; pass `YES=1` to skip. Requires `git
 What the workflow builds, tests and publishes for a pull request, a merge, the weekly refresh and a
 release is in [docs/ci.md](docs/ci.md).
 
+**Repository settings are code.** The branch ruleset (`.github/rulesets/`) and the repository
+settings (`.github/repo-settings.json`) change through a pull request like anything else; a
+repository admin then runs `make gh-settings-diff` and `make gh-settings-apply`. `main` and the
+`8.x` branches take pull requests only, with signed commits, an up-to-date branch and the `Lint
+Code Base` and `image` checks green. Repository admins bypass the ruleset, which is what lets
+`make release` push its `chore: prepare release` commit. Vulnerabilities are reported privately
+(see [SECURITY.md](SECURITY.md)).
+
 When an advisory affects the image, [docs/cve-response.md](docs/cve-response.md) gives the order of
 things: triage, the fix on both lines, the release or retag, and how it reaches the child images.
 

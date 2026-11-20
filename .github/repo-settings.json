@@ -1,0 +1,7 @@
+{
+  "allow_rebase_merge": false,
+  "security_and_analysis": {
+    "secret_scanning_push_protection": { "status": "enabled" }
+  },
+  "private_vulnerability_reporting": true
+}
