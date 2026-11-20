@@ -97,8 +97,9 @@ jobs:
             while IFS= read -r f; do
               [ -n "${f}" ] || continue
               case "${f}" in
-                docs/*|.vex/*|.github/renovate/*) continue ;;
+                docs/*|.vex/*|.github/renovate/*|.github/rulesets/*) continue ;;
                 Makefile|renovate.json|.github/changelog-deps.sh) continue ;;
+                .github/CODEOWNERS|.github/gh-settings.sh|.github/repo-settings.json) continue ;;
                 .github/workflows/lint.yaml|.github/workflows/cache-refresh.yml) continue ;;
                 .github/workflows/renovate.yml|.github/workflows/scan-published.yml) continue ;;
               esac

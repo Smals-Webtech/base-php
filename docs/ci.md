@@ -25,8 +25,10 @@ in [cve-response.md](cve-response.md).
   it installs: a cached `apk add` would publish last week's packages again. The suites run on the
   images just pushed by digest, and the tags are created only once both platforms pass. A failure
   publishes nothing.
-- **Files that do not reach the image start nothing**: `docs/`, `*.md`, `Makefile`, `.vex/` and the
-  other workflows (the `paths-ignore` list in `docker.yml`). Tags always build.
+- **Files that do not reach the image build nothing**: `docs/`, `*.md`, `Makefile`, `.vex/`, the
+  repository settings and the other workflows (the list in the `prepare` job). The workflow still
+  starts, skips `build`, and its `image` job passes: `image` is the check branch protection
+  requires, since a skipped matrix job reports under its bare name. Tags always build.
 
 ## The cache
 

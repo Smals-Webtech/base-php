@@ -324,3 +324,19 @@ ci-cache-prune: ## ci-cache-prune [APPLY=1] : list (or delete) the Actions cache
 	   done < "$$t"; \
 	   echo "deleted $$n, failed $$f"; \
 	 fi
+
+# —— GitHub settings ——————————————————————————————————————————————————————————————————————————————————————————————————
+
+# Branch rulesets (.github/rulesets/) and repository settings (.github/repo-settings.json) live in
+# the repository and are reviewed like code; GitHub only follows them once a maintainer applies
+# them. `apply` needs admin rights on the repository: run it by hand after the change is merged,
+# never from CI.
+.PHONY: gh-settings-diff gh-settings-apply
+
+gh-settings-diff: ## gh-settings-diff : compare the repository's rulesets and settings with .github/ (read-only)
+	@bash .github/gh-settings.sh diff $(REPO)
+
+gh-settings-apply: ## gh-settings-apply [YES=1] : apply .github/rulesets and .github/repo-settings.json to the repository (admin)
+	@bash .github/gh-settings.sh diff $(REPO)
+	@if [ -z "$(YES)" ]; then printf "Apply these settings to $(REPO)? [y/N] "; read a; [ "$$a" = y ] || [ "$$a" = Y ] || { echo Aborted >&2; exit 1; }; fi
+	@bash .github/gh-settings.sh apply $(REPO)
