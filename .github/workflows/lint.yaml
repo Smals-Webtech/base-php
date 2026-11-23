@@ -1,16 +1,17 @@
 ---
 name: Lint Code Base
 
+# A pull request lints the files it changes; a merge lints nothing, its pull request
+# did. The whole tree is linted when the lint configuration itself changes, by hand
+# (workflow_dispatch), and locally before every release (make release-prepare, make
+# lint), which costs no Actions minutes.
 on:
   pull_request:
     branches:
       - main
       - 8.4
 
-  push:
-    branches:
-      - main
-      - 8.4
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -28,27 +29,48 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      # A rule that changes applies to every file, not only to the changed ones.
+      - name: Lint the whole tree?
+        id: scope
+        shell: bash
+        run: |
+          all=true
+          if [ "${EVENT}" = pull_request ]; then
+            all=false
+            files=$(git diff --name-only "${BASE_SHA}...${HEAD_SHA}")
+            grep -qxE '\.github/workflows/lint\.yaml|\.markdown-lint\.yml|\.github/lint-local\.sh' <<<"${files}" && all=true
+          fi
+          echo "all=${all}" | tee -a "${GITHUB_OUTPUT}"
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+
       - name: Lint Code Base
         uses: super-linter/super-linter/slim@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
         env:
-          VALIDATE_ALL_CODEBASE: true
-          DEFAULT_BRANCH: main
+          VALIDATE_ALL_CODEBASE: ${{ steps.scope.outputs.all }}
+          # The branch a pull request goes into: changed files are those against it.
+          DEFAULT_BRANCH: ${{ github.base_ref || github.ref_name }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           LINTER_RULES_PATH: /
           VALIDATE_JSCPD: false
           VALIDATE_DOCKERFILE_HADOLINT: false
-          # supervisord-event-listener.py is a vendored supervisord protocol
-          # helper (shared verbatim with base-nginx); pylint style rules do not
-          # apply to it.
+          # The same settings in every Smals-Webtech image repository; a repository
+          # adds a commented exception below, never a silent one.
+          #
+          # pylint's style rules do not fit the few helper scripts the images ship.
           VALIDATE_PYTHON_PYLINT: false
           # Conflicts with MARKDOWN
           VALIDATE_MARKDOWN_PRETTIER: false
-          # New in super-linter v9. Formatters only: BIOME_FORMAT would rewrite the
-          # VEX documents, and the Python scripts are shared verbatim with base-nginx.
+          # Formatters, new in super-linter v9: their style is not adopted here (the
+          # Python helpers are shared verbatim between base-php and base-nginx). The
+          # linters keep checking correctness.
           VALIDATE_BIOME_FORMAT: false
           VALIDATE_PYTHON_BLACK: false
           VALIDATE_PYTHON_RUFF: false
           VALIDATE_PYTHON_RUFF_FORMAT: false
-          # shfmt cannot parse an associative array key ending in ".enabled".
+          # A formatter too, and it cannot parse an associative array key ending in
+          # ".enabled" (base-php's entrypoint).
           VALIDATE_SHELL_SHFMT: false
           FILTER_REGEX_EXCLUDE: .*test.*

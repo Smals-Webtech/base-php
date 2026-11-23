@@ -20,12 +20,24 @@ retag=false
 file=${CHANGELOG:-CHANGELOG.md}
 dir=$(cd "$(dirname "$0")" && pwd)
 
-[[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] || { echo "not a version: ${version}" >&2; exit 1; }
-grep -q '^## \[Unreleased\]' "${file}" || { echo "no '## [Unreleased]' in ${file}" >&2; exit 1; }
+[[ "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+ ]] || {
+	echo "not a version: ${version}" >&2
+	exit 1
+}
+grep -q '^## \[Unreleased\]' "${file}" || {
+	echo "no '## [Unreleased]' in ${file}" >&2
+	exit 1
+}
 
 if [[ "${retag}" == "true" ]]; then
-	git rev-parse -q --verify "refs/tags/${version}" >/dev/null || { echo "no tag ${version} to re-publish" >&2; exit 1; }
-	grep -qF "## [${version}]" "${file}" || { echo "no '## [${version}]' section in ${file}" >&2; exit 1; }
+	git rev-parse -q --verify "refs/tags/${version}" >/dev/null || {
+		echo "no tag ${version} to re-publish" >&2
+		exit 1
+	}
+	grep -qF "## [${version}]" "${file}" || {
+		echo "no '## [${version}]' section in ${file}" >&2
+		exit 1
+	}
 	if awk -v version="## [${version}]" -v title="### Re-published on $(date -u +%Y-%m-%d)" '
 		index($0, version) == 1 { inside = 1; next } inside && /^## \[/ { inside = 0 } inside && $0 == title { found = 1 }
 		END { exit !found }' "${file}"; then
@@ -34,8 +46,14 @@ if [[ "${retag}" == "true" ]]; then
 	fi
 	since=${version}
 else
-	git rev-parse -q --verify "refs/tags/${version}" >/dev/null && { echo "tag ${version} exists: use --retag" >&2; exit 1; }
-	grep -qF "## [${version}]" "${file}" && { echo "'## [${version}]' is already in ${file}" >&2; exit 1; }
+	git rev-parse -q --verify "refs/tags/${version}" >/dev/null && {
+		echo "tag ${version} exists: use --retag" >&2
+		exit 1
+	}
+	grep -qF "## [${version}]" "${file}" && {
+		echo "'## [${version}]' is already in ${file}" >&2
+		exit 1
+	}
 	since=$(git describe --tags --abbrev=0 --match '[0-9]*.[0-9]*.[0-9]*')
 fi
 echo "changes since ${since}"
@@ -61,10 +79,10 @@ while IFS= read -r subject; do
 	[[ "${subject}" =~ ^([a-z]+)(\(([^\)]+)\))?!?:\ (.+)\ \(#([0-9]+)\)$ ]] || continue
 	type=${BASH_REMATCH[1]} scope=${BASH_REMATCH[3]} text=${BASH_REMATCH[4]} pr=${BASH_REMATCH[5]}
 	case "${type}" in
-		feat) heading=Added ;;
-		fix) heading=Fixed ;;
-		perf | refactor | revert) heading=Changed ;;
-		*) continue ;;
+	feat) heading=Added ;;
+	fix) heading=Fixed ;;
+	perf | refactor | revert) heading=Changed ;;
+	*) continue ;;
 	esac
 	entry="- ${scope:+\`${scope}\`: }${text} (#${pr})."
 	add_entry "${heading}" "${entry}" "(#${pr})"
@@ -74,7 +92,10 @@ done < <(git log --first-parent --format=%s "${since}..HEAD")
 # The [Unreleased] body, without its heading and its surrounding blank lines.
 body=$(awk '/^## \[Unreleased\]/ { inside = 1; next } inside && /^## \[/ { exit } inside' "${file}" |
 	sed -e '/./,$!d' | tac | sed -e '/./,$!d' | tac)
-[[ -n "${body}" ]] || { echo "nothing to record since ${since}" >&2; exit 1; }
+[[ -n "${body}" ]] || {
+	echo "nothing to record since ${since}" >&2
+	exit 1
+}
 
 if [[ "${retag}" == "true" ]]; then
 	# Under the version, after its introduction and before its first subsection; the subsection
@@ -96,14 +117,21 @@ else
 	' "${file}" >"${file}.tmp" && mv "${file}.tmp" "${file}"
 fi
 
-# The markdown checks the CI runs, on this file only, when Docker is there (LINT=0 skips them).
-if [[ "${LINT:-1}" == "1" ]] && command -v docker >/dev/null 2>&1; then
-	echo "linting ${file}..."
-	docker run --rm -e RUN_LOCAL=true -e VALIDATE_ALL_CODEBASE=true -e VALIDATE_MARKDOWN=true \
-		-e DEFAULT_BRANCH="$(git rev-parse --abbrev-ref HEAD)" \
-		-e VALIDATE_NATURAL_LANGUAGE=true -e FILTER_REGEX_INCLUDE="${file}" -e LOG_LEVEL=ERROR \
-		-v "$(pwd):/tmp/lint" ghcr.io/super-linter/super-linter:slim-v9.0.0 >/dev/null 2>&1 &&
-		echo "lint: clean" || echo "lint: findings -- run the linter on ${file} before releasing" >&2
-fi
-
 git --no-pager diff -- "${file}"
+
+# The whole tree, with the CI's super-linter version and settings: the CI lints only
+# the files a pull request changes, so this is where everything is checked before a
+# tag. A finding stops here, with the CHANGELOG written: fix, `make lint`, then
+# release. LINT=0 skips it (tests of this script).
+if [[ "${LINT:-1}" == "1" ]]; then
+	command -v docker >/dev/null 2>&1 || {
+		echo "docker is required for the release lint (LINT=0 skips it)" >&2
+		exit 1
+	}
+	bash "${dir}/lint-local.sh" >"${TMPDIR:-/tmp}/release-prepare-lint.log" 2>&1 || {
+		grep -E 'ERROR|error' "${TMPDIR:-/tmp}/release-prepare-lint.log" | tail -20 >&2
+		echo "lint: findings in the tree (full log: ${TMPDIR:-/tmp}/release-prepare-lint.log) -- fix them before releasing" >&2
+		exit 1
+	}
+	echo "lint: the whole tree is clean"
+fi

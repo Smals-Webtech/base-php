@@ -175,7 +175,7 @@ _docker-bake/%:
 # edit in. CHANGELOG.md is the durable copy: `retag` and `notes` regenerate the GitHub
 # release notes from the previous tag and discard anything hand-written there.
 
-.PHONY: release-info sync release-prepare release retag tag-restore notes build-version
+.PHONY: release-info sync lint release-prepare release retag tag-restore notes build-version
 
 # Canonical remote: 'upstream' when working from a fork, else 'origin' (the real repo).
 RELEASE_REMOTE              ?= $(shell git remote | grep -qx upstream && echo upstream || echo origin)
@@ -223,6 +223,9 @@ sync: ## sync : fast-forward main + 8.4 from the canonical remote, then push to 
 	@if [ "$(FORK_REMOTE)" != "$(RELEASE_REMOTE)" ]; then \
 	   for b in main 8.4; do git show-ref --verify --quiet refs/heads/$$b && git push $(FORK_REMOTE) $$b || true; done; \
 	 fi
+
+lint: ## lint : lint the whole tree locally, with the CI's super-linter version and settings
+	@bash .github/lint-local.sh
 
 # The CHANGELOG section is written by the tooling, not by a pull request: release-prepare fills
 # it from the dependency pins and the merged pull requests, it is read (prose optional), and
