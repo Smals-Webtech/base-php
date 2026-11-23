@@ -61,3 +61,15 @@ the subset.
 - **A failing suite**: each suite's log is a group at the end of the "Test images" step, and an
   annotation names the suite. The three variants run side by side, so the step prints nothing until
   they finish.
+
+## The lint
+
+`lint.yaml` runs super-linter on pull requests only, on the files the pull request changes; a merge
+lints nothing, since its pull request did. A pull request that changes the lint configuration
+(`lint.yaml`, `.markdown-lint.yml`, `.github/lint-local.sh`) lints the whole tree, and so does a
+`workflow_dispatch`.
+
+The whole tree is linted locally before every release: `make release-prepare` runs
+`.github/lint-local.sh` and stops on a finding, before the tag. `make lint` runs it on demand. The
+script reads the super-linter version and settings from `lint.yaml`, and lints the tracked files
+(the Git index), as the CI checks them out.
