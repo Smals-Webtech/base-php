@@ -848,18 +848,26 @@ make -C test demo-test CUSTOM_CA_BUNDLE=/etc/pki/corp-root-ca.pem
 
 ## 🧪 Example Usage
 
-Extend from this image in your own `Dockerfile`:
+Extend from this image in your own `Dockerfile`. Composer ships in the dev images only, so install
+the dependencies in a build stage and copy the result into the production variant:
 
 ```dockerfile
-FROM smalswebtech/base-php:8.5-fpm
+FROM smalswebtech/base-php:8.5-cli-dev AS builder
+USER root
+COPY . /src
+WORKDIR /src
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-COPY . /app
-WORKDIR /app
-
-RUN composer install
-
-CMD ["php-fpm"]
+FROM smalswebtech/base-php:8.5-nginx
+# Root's and read-only for the runtime user, like the image's own code.
+COPY --from=builder --chown=root:0 /src /app/src
+# Your vhost and other templates, rendered at every start.
+COPY config/ /opt/config/
 ```
+
+Keep the image's entrypoint and command: they render the configuration, then start supervisord,
+which runs nginx and php-fpm and answers the health check. A `CMD ["php-fpm"]` would skip all
+three. [docs/child-images.md](docs/child-images.md) lists the extension points and the contract.
 
 ## 🏷️ Tags
 
