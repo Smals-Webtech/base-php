@@ -103,6 +103,13 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 			CIDRS+=("$cidr")
 		done
 
+		# An empty list rendered `set_real_ip_from ;`, and nginx refused the whole
+		# configuration with a message that does not name the variable.
+		if [[ ${#CIDRS[@]} -eq 0 ]]; then
+			log "ERROR" "! NGINX_REAL_IP_ENABLED is on with an empty NGINX_REAL_IP_TRUSTED_PROXIES: list the proxy CIDRs, or switch it off."
+			exit 1
+		fi
+
 		mapfile -t CIDRS_UNIQ < <(
 			printf '%s\n' "${CIDRS[@]}" | sort -u
 		)
@@ -162,6 +169,11 @@ if [[ "${NGINX_ENABLED}" == "true" ]]; then
 	create-symlink /app/var/www/html /var/www/html
 
 	if [[ "${NGINX_BASIC_AUTH_ENABLED}" == "true" ]]; then
+		# A password everyone can read in the README protects nothing.
+		if [[ -z "${NGINX_BASIC_AUTH_PASSWORD}" || "${NGINX_BASIC_AUTH_PASSWORD}" == "pa55w0rd" ]]; then
+			log "ERROR" "! NGINX_BASIC_AUTH_ENABLED is on without a password: set NGINX_BASIC_AUTH_PASSWORD (not the former default)."
+			exit 1
+		fi
 		log "INFO" "Configure Basic Authentication ..."
 		htpasswd -bcB "${NGINX_BASIC_AUTH_FILE_PATH}" "${NGINX_BASIC_AUTH_USERNAME}" "${NGINX_BASIC_AUTH_PASSWORD}"
 	fi

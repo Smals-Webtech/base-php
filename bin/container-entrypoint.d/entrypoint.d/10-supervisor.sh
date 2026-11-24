@@ -5,13 +5,18 @@ SUPERVISOR_XMLRPC_UNIX_SOCKET_PATH_WCMTECH_DEFAULT="/app/var/run/supervisor.sock
 SUPERVISOR_XMLRPC_UNIX_SOCKET_CHMOD_WCMTECH_DEFAULT="0700"
 SUPERVISOR_XMLRPC_UNIX_SOCKET_AUTH_ENABLED_WCMTECH_DEFAULT="true"
 SUPERVISOR_XMLRPC_UNIX_SOCKET_USERNAME_WCMTECH_DEFAULT="admin"
-SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD_WCMTECH_DEFAULT="pa55w0rd"
+# Random at every start when none is given: supervisord, supervisorctl (the
+# health check) and the fail-fast listener all read it from the same rendered
+# configuration, and no person ever types it.
+SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD_WCMTECH_DEFAULT="$(head -c 24 /dev/urandom | base64 | tr -dc 'A-Za-z0-9')"
 
 SUPERVISOR_XMLRPC_INET_ENABLED_WCMTECH_DEFAULT="false"
 SUPERVISOR_XMLRPC_INET_HOST_WCMTECH_DEFAULT=""
 SUPERVISOR_XMLRPC_INET_PORT_WCMTECH_DEFAULT="9744"
 SUPERVISOR_XMLRPC_INET_USERNAME_WCMTECH_DEFAULT="admin"
-SUPERVISOR_XMLRPC_INET_PASSWORD_WCMTECH_DEFAULT="pa55w0rd"
+# No default: the TCP listener refuses to start without a password of its own
+# (base.d/10-supervisor.sh).
+SUPERVISOR_XMLRPC_INET_PASSWORD_WCMTECH_DEFAULT=""
 
 # Fail-fast: stop supervisord -- and therefore the container -- when one of the
 # programs below leaves unexpectedly. They run with autorestart=false, so
