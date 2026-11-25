@@ -52,15 +52,15 @@ the whole dev suite of a pull request and the arm64 smoke test. Tag a new test o
 there; every test runs in full on amd64 for a release and a refresh.
 
 A local run is not filtered: `bats tests.web.bats` runs everything, and `--filter-tags dev` gives
-the subset.
+the subset. `make test-images` runs the three suites the way the CI does.
 
 ## When a run fails
 
 - **A network error** while downloading (PECL, `proxy.golang.org`): re-run the failed job. On a
   release it rebuilds that platform from scratch, about 10 to 15 minutes.
 - **A failing suite**: each suite's log is a group at the end of the "Test images" step, and an
-  annotation names the suite. The three variants run side by side, so the step prints nothing until
-  they finish.
+  annotation names the suite. The three variants run side by side, each four tests at a time
+  (`bats --jobs 4`), so the step prints nothing until they finish.
 
 ## The lint
 
