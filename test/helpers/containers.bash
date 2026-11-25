@@ -23,12 +23,28 @@ function image_tag {
   echo "${DOCKER_IMAGE_NAME:-smalswebtech/base-php}:${DOCKER_IMAGE_VERSION:-snapshot}-${variant}${suffix}"
 }
 
-# Removes container $1
+# Docker probes a starting container at the image's start interval (5s by
+# default), so a container that answers after about 3s was reported healthy
+# after 5s, and most web tests wait for one. Probing every 250ms during a 30s
+# start period reports it as soon as the image's own health command passes;
+# after the first success the image's interval applies again. The image is not
+# changed: the options apply to the containers the suites start.
+if [ "${BATS_CONTAINER_ENGINE:-docker}" = "docker" ]; then
+  export BATS_FAST_HEALTH="--health-start-period=30s --health-start-interval=250ms"
+else
+  export BATS_FAST_HEALTH=""
+fi
+
+# Removes the containers named $@ (rm -f kills a running one first).
 function container_clean {
-  run ${BATS_CONTAINER_ENGINE} kill $1 &>/dev/null ||:
-  sleep .25s
-  run ${BATS_CONTAINER_ENGINE} rm -vf $1 &>/dev/null ||:
-  sleep .25s
+  ${BATS_CONTAINER_ENGINE} rm -vf "$@" &>/dev/null ||:
+}
+
+# Removes every container whose name starts with $1.
+function container_clean_prefix {
+  local ids
+  ids=$(${BATS_CONTAINER_ENGINE} ps -aq --filter "name=^/?$1" 2>/dev/null)
+  [ -z "${ids}" ] || ${BATS_CONTAINER_ENGINE} rm -vf ${ids} &>/dev/null ||:
 }
 
 # get the ip of container $1

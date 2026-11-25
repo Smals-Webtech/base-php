@@ -1,7 +1,7 @@
 #!/usr/bin/make -f
 
 .DEFAULT_GOAL := help
-.PHONY: help build test ini-directives
+.PHONY: help build test test-images ini-directives
 
 help: # Show help for each of the Makefile recipes.
 	@echo "Base PHP Build / Test"
@@ -78,6 +78,27 @@ build:
 
 test:
 	@$(MAKE) -C test demo-test
+
+TARGET ?= prd
+JOBS   ?= 4
+
+# The three suites side by side, each with JOBS tests at a time, on the images
+# `make bake-all/$(TARGET)` built (see test/helpers/containers.bash image_tag).
+# Each log lands in test/.logs/ and is printed when its suite fails.
+test-images: ## test-images [TARGET=prd|dev] [JOBS=4] : run the cli, apache and nginx suites on the images built here
+	@mkdir -p test/.logs; cd test; pids=""; \
+	 for v in cli apache nginx; do \
+	   s=tests.web.bats; [ "$$v" = cli ] && s=tests.cli.bats; \
+	   BATS_VARIANT=$$v BATS_TARGET=$(TARGET) bats --jobs $(JOBS) --print-output-on-failure $$s \
+	     > .logs/$$v-$(TARGET).log 2>&1 & pids="$$pids $$!"; \
+	 done; \
+	 failed=0; for p in $$pids; do wait $$p || failed=1; done; \
+	 for v in cli apache nginx; do \
+	   l=.logs/$$v-$(TARGET).log; \
+	   printf '%-7s %3s ok, %s not ok\n' $$v "$$(grep -c '^ok ' $$l)" "$$(grep -c '^not ok' $$l)"; \
+	   grep -q '^not ok' $$l && cat $$l; \
+	 done; \
+	 exit $$failed
 
 # The fixture is the drift witness: a PHP release that adds or removes an ini
 # directive moves this file, and the diff of the pull request names it. It is
