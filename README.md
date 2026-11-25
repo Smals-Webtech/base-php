@@ -284,12 +284,12 @@ application must not see.
 | `SUPERVISOR_XMLRPC_UNIX_SOCKET_CHMOD`        | "0700"                         | "0700"                         | [Link](https://supervisord.org/configuration.html#unix-http-server-section-settings) |
 | `SUPERVISOR_XMLRPC_UNIX_SOCKET_AUTH_ENABLED` | "true"                         | "true"                         | [Link](https://supervisord.org/configuration.html#supervisorctl-section-values)      |
 | `SUPERVISOR_XMLRPC_UNIX_SOCKET_USERNAME`     | "admin"                        | "admin"                        | [Link](https://supervisord.org/configuration.html#supervisorctl-section-values)      |
-| `SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD`     | "pa55w0rd"                     | "pa55w0rd"                     | [Link](https://supervisord.org/configuration.html#supervisorctl-section-values)      |
+| `SUPERVISOR_XMLRPC_UNIX_SOCKET_PASSWORD`     | random at every start          | random at every start          | [Link](https://supervisord.org/configuration.html#supervisorctl-section-values)      |
 | `SUPERVISOR_XMLRPC_INET_ENABLED`             | "false"                        | "false"                        | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
 | `SUPERVISOR_XMLRPC_INET_HOST`                | ""                             | ""                             | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
 | `SUPERVISOR_XMLRPC_INET_PORT`                | "9744"                         | "9744"                         | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
 | `SUPERVISOR_XMLRPC_INET_USERNAME`            | "admin"                        | "admin"                        | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
-| `SUPERVISOR_XMLRPC_INET_PASSWORD`            | "pa55w0rd"                     | "pa55w0rd"                     | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
+| `SUPERVISOR_XMLRPC_INET_PASSWORD`            | required when enabled          | required when enabled          | [Link](https://supervisord.org/configuration.html#inet-http-server-section-settings) |
 
 > **What the socket credentials do and do not protect.** Everything in the container runs as uid
 > `1001`, php-fpm included, and the socket is owned by that user. An application able to run code
@@ -656,7 +656,7 @@ location that answers with `return` is not throttled: `return` runs before the l
 |----------------------|---------|-------------|
 | `NGINX_BASIC_AUTH_ENABLED` | `false` | Generate an `.htpasswd` file at startup. |
 | `NGINX_BASIC_AUTH_USERNAME` | `default` | Username. |
-| `NGINX_BASIC_AUTH_PASSWORD` | `pa55w0rd` | Password — **change in production**. |
+| `NGINX_BASIC_AUTH_PASSWORD` | none | Password, **required** when basic auth is enabled: the container refuses to start without one. |
 | `NGINX_BASIC_AUTH_FILE_PATH` | `/opt/etc/nginx/.htpasswd` | Path to the generated `.htpasswd` file. |
 
 Reference in your site config:
@@ -848,18 +848,26 @@ make -C test demo-test CUSTOM_CA_BUNDLE=/etc/pki/corp-root-ca.pem
 
 ## 🧪 Example Usage
 
-Extend from this image in your own `Dockerfile`:
+Extend from this image in your own `Dockerfile`. Composer ships in the dev images only, so install
+the dependencies in a build stage and copy the result into the production variant:
 
 ```dockerfile
-FROM smalswebtech/base-php:8.5-fpm
+FROM smalswebtech/base-php:8.5-cli-dev AS builder
+USER root
+COPY . /src
+WORKDIR /src
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-COPY . /app
-WORKDIR /app
-
-RUN composer install
-
-CMD ["php-fpm"]
+FROM smalswebtech/base-php:8.5-nginx
+# Root's and read-only for the runtime user, like the image's own code.
+COPY --from=builder --chown=root:0 /src /app/src
+# Your vhost and other templates, rendered at every start.
+COPY config/ /opt/config/
 ```
+
+Keep the image's entrypoint and command: they render the configuration, then start supervisord,
+which runs nginx and php-fpm and answers the health check. A `CMD ["php-fpm"]` would skip all
+three. [docs/child-images.md](docs/child-images.md) lists the extension points and the contract.
 
 ## 🏷️ Tags
 

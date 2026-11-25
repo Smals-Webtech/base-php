@@ -1439,3 +1439,82 @@ TMPL
   refute_output --partial "bats-debug-rpc"
   refute_output --partial "bats-debug-secret"
 }
+
+# A9 (2026-11-24): the documented default password "pa55w0rd" protected the
+# supervisor TCP listener and nginx basic auth for anyone who read the README.
+@test "[$TEST_FILE] The supervisor TCP listener refuses to start without a password" {
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm \
+    --env SUPERVISOR_XMLRPC_INET_ENABLED=true \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "SUPERVISOR_XMLRPC_INET_ENABLED is on without a password"
+
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm \
+    --env SUPERVISOR_XMLRPC_INET_ENABLED=true --env SUPERVISOR_XMLRPC_INET_PASSWORD=pa55w0rd \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "not the former default"
+}
+
+@test "[$TEST_FILE] nginx basic auth refuses to start without a password" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "basic auth belongs to the nginx variant"
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm \
+    --env NGINX_BASIC_AUTH_ENABLED=true \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "NGINX_BASIC_AUTH_ENABLED is on without a password"
+}
+
+# Nobody types the socket password: supervisord, supervisorctl and the fail-fast
+# listener read it from the same rendered file, so it is random at every start.
+@test "[$TEST_FILE] The supervisor socket password is random at every start" {
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  local first second
+
+  first="$(${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint sh "${image}" -c \
+    '/usr/local/bin/container-entrypoint true >/dev/null 2>&1; grep -m1 "^password" /opt/etc/supervisord.conf')"
+  second="$(${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint sh "${image}" -c \
+    '/usr/local/bin/container-entrypoint true >/dev/null 2>&1; grep -m1 "^password" /opt/etc/supervisord.conf')"
+  [ -n "${first}" ]
+  [ "${first}" != "password = pa55w0rd" ]
+  [ "${first}" != "${second}" ]
+}
+
+# A reused /opt/etc (a volume, an emptyDir across a restart) kept the listener of
+# a previous start after SUPERVISOR_FAIL_FAST_ENABLED=false.
+@test "[$TEST_FILE] Switching fail-fast off removes the listener from a reused /opt/etc" {
+  local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  local -r volume="${BATS_WEB_CONTAINER}-fail-fast-etc"
+
+  ${BATS_CONTAINER_ENGINE} volume create "${volume}" >/dev/null
+  ${BATS_CONTAINER_ENGINE} run --pull=never --rm --volume "${volume}:/opt/etc" --entrypoint sh "${image}" -c \
+    '/usr/local/bin/container-entrypoint true >/dev/null 2>&1'
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --volume "${volume}:/opt/etc" \
+    --env SUPERVISOR_FAIL_FAST_ENABLED=false --entrypoint sh "${image}" -c \
+    '/usr/local/bin/container-entrypoint true >/dev/null 2>&1; ls /opt/etc/supervisor.d'
+  ${BATS_CONTAINER_ENGINE} volume rm "${volume}" >/dev/null
+  refute_output --partial "fail-fast.ini"
+}
+
+# A list of blanks gave no CIDR, rendered `set_real_ip_from ;`, and nginx refused
+# the configuration without naming the variable.
+@test "[$TEST_FILE] Real IP with a blank proxy list is refused at startup" {
+  [ "${BATS_VARIANT}" = "nginx" ] || skip "real IP belongs to the nginx variant"
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm \
+    --env NGINX_REAL_IP_ENABLED=true --env "NGINX_REAL_IP_TRUSTED_PROXIES= " \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
+  assert_failure
+  assert_output --partial "empty NGINX_REAL_IP_TRUSTED_PROXIES"
+}
+
+# An OpenShift pod runs as an arbitrary uid in group 0: the code and the
+# templates it renders must not be writable by that group. Symbolic links are
+# left out: their own mode is always rwxrwxrwx and means nothing (the upstream
+# image's /usr/local/bin/phar is one).
+@test "[$TEST_FILE] The code and the templates are not writable by group 0" {
+  run ${BATS_CONTAINER_ENGINE} run --pull=never --rm --entrypoint sh \
+    "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" -c \
+    'find /usr/local/bin /usr/bin/gomplate /opt/config ! -type l -perm -g+w 2>/dev/null | wc -l; stat -c %U /opt/config'
+  assert_line --index 0 "0"
+  assert_line --index 1 "root"
+}
