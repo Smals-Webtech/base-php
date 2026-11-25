@@ -196,7 +196,7 @@ _docker-bake/%:
 # edit in. CHANGELOG.md is the durable copy: `retag` and `notes` regenerate the GitHub
 # release notes from the previous tag and discard anything hand-written there.
 
-.PHONY: release-info sync lint release-prepare release retag tag-restore notes build-version
+.PHONY: release-info sync lint release-prepare release retag release-refresh tag-restore notes build-version
 
 # Canonical remote: 'upstream' when working from a fork, else 'origin' (the real repo).
 RELEASE_REMOTE              ?= $(shell git remote | grep -qx upstream && echo upstream || echo origin)
@@ -296,24 +296,38 @@ retag: ## retag VERSION=x.y.z [REF=HEAD] : move an existing tag, fire the tag bu
 	 fi
 	@sha=$$(git rev-parse --short "$(REF)"); \
 	 echo "retag $(VERSION) -> $$sha on $(RELEASE_REMOTE) ($(REPO))"; \
-	 if [ -z "$(YES)" ]; then printf "Proceed (delete+recreate tag, triggers a DockerHub rebuild)? [y/N] "; read a; [ "$$a" = y ] || [ "$$a" = Y ] || { echo Aborted >&2; exit 1; }; fi
+	 if [ -z "$(YES)" ]; then printf "Proceed (move the tag, triggers a DockerHub rebuild)? [y/N] "; read a; [ "$$a" = y ] || [ "$$a" = Y ] || { echo Aborted >&2; exit 1; }; fi
 	@if [ "$$(git rev-parse $(REF))" = "$$(git rev-parse HEAD)" ]; then \
 	   b=$$(git rev-parse --abbrev-ref HEAD); \
 	   git push $(RELEASE_REMOTE) $$b; \
 	   [ "$(FORK_REMOTE)" != "$(RELEASE_REMOTE)" ] && git push $(FORK_REMOTE) $$b || true; \
 	 fi
-	@git push $(RELEASE_REMOTE) :refs/tags/$(VERSION) 2>/dev/null || true
-	@git tag -d $(VERSION) 2>/dev/null || true
-	@git tag -s -m "Version $(VERSION)" $(VERSION) $(REF)
-	@git push $(RELEASE_REMOTE) refs/tags/$(VERSION)
+	@# The new tag is signed locally, then replaces the remote one in a single
+	@# --force push: deleting the remote tag first left a window without it (a
+	@# network error there, 2026-11-25, left 8.4.28 untagged and its release a
+	@# draft). -f replaces the local tag the same way: a failed signature leaves
+	@# both tags where they were.
+	@git tag -s -f -m "Version $(VERSION)" $(VERSION) $(REF)
+	@git push --force $(RELEASE_REMOTE) refs/tags/$(VERSION)
 	@echo "tag $(VERSION) pushed -> tag build triggered"
-	@if gh release view $(VERSION) --repo $(REPO) >/dev/null 2>&1; then \
-	   gh release edit $(VERSION) --repo $(REPO) --draft=false --latest=$$( $(IS_LATEST) ) >/dev/null; \
-	   prev=$$( $(PREV_TAG) ); \
-	   if [ -n "$$prev" ]; then \
-	     gh api repos/$(REPO)/releases/generate-notes -f tag_name=$(VERSION) -f previous_tag_name=$$prev --jq .body | gh release edit $(VERSION) --repo $(REPO) --notes-file - >/dev/null && echo "release $(VERSION) re-published, notes regenerated from $$prev"; \
-	   else echo "release $(VERSION) re-published (no previous tag for notes)"; fi; \
-	 else echo "no GitHub release $(VERSION) (skip refresh)"; fi
+	@$(MAKE) --no-print-directory release-refresh VERSION=$(VERSION)
+
+release-refresh: ## release-refresh VERSION=x.y.z : publish the GitHub release of a moved tag again (latest flag, notes)
+	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
+	@# A 404 means there is no release to refresh; any other failure (network,
+	@# auth) is reported with the command to run again, not taken for "no release".
+	@if ! out=$$(gh api repos/$(REPO)/releases/tags/$(VERSION) --jq .id 2>&1); then \
+	   case "$$out" in *"HTTP 404"*) echo "no GitHub release $(VERSION) (skip refresh)"; exit 0;; esac; \
+	   echo "release $(VERSION) not refreshed ($$out): run 'make release-refresh VERSION=$(VERSION)'" >&2; exit 1; \
+	 fi; \
+	 gh release edit $(VERSION) --repo $(REPO) --draft=false --latest=$$( $(IS_LATEST) ) >/dev/null || { \
+	   echo "release $(VERSION) not refreshed: run 'make release-refresh VERSION=$(VERSION)'" >&2; exit 1; }; \
+	 prev=$$( $(PREV_TAG) ); \
+	 if [ -z "$$prev" ]; then echo "release $(VERSION) re-published (no previous tag for notes)"; exit 0; fi; \
+	 notes=$$(gh api repos/$(REPO)/releases/generate-notes -f tag_name=$(VERSION) -f previous_tag_name=$$prev --jq .body) && \
+	   printf '%s\n' "$$notes" | gh release edit $(VERSION) --repo $(REPO) --notes-file - >/dev/null || { \
+	   echo "release $(VERSION) published, notes not regenerated: run 'make release-refresh VERSION=$(VERSION)'" >&2; exit 1; }; \
+	 echo "release $(VERSION) re-published, notes regenerated from $$prev"
 
 tag-restore: ## tag-restore VERSION=x.y.z : force-push the LOCAL tag to the canonical remote (fix a moved tag)
 	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
