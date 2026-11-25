@@ -196,7 +196,7 @@ _docker-bake/%:
 # edit in. CHANGELOG.md is the durable copy: `retag` and `notes` regenerate the GitHub
 # release notes from the previous tag and discard anything hand-written there.
 
-.PHONY: release-info sync lint release-prepare release retag release-refresh tag-restore notes build-version
+.PHONY: release-info sync lint tooling-check release-prepare release retag release-refresh tag-restore notes build-version
 
 # Canonical remote: 'upstream' when working from a fork, else 'origin' (the real repo).
 RELEASE_REMOTE              ?= $(shell git remote | grep -qx upstream && echo upstream || echo origin)
@@ -251,6 +251,22 @@ lint: ## lint : lint the whole tree locally, with the CI's super-linter version 
 # The CHANGELOG section is written by the tooling, not by a pull request: release-prepare fills
 # it from the dependency pins and the merged pull requests, it is read (prose optional), and
 # release or retag commits it with the tag.
+# The release tooling every image repository shares, byte for byte: base-php holds the reference
+# copy. tooling-check runs its tests and lists the sibling checkouts whose copy drifted (found next to
+# this one and under ../../smals; TOOLING_SIBLINGS="dir ..." to choose). Local only.
+TOOLING_FILES    = .github/release-prepare.sh .github/lint-local.sh
+TOOLING_SIBLINGS ?= $(patsubst %/.github/lint-local.sh,%,$(wildcard ../*/.github/lint-local.sh ../../smals/*/.github/lint-local.sh))
+
+tooling-check: ## tooling-check [TOOLING_SIBLINGS="dir ..."] : test the shared release tooling, list the repositories whose copy drifted
+	@cd test && bats release-prepare.bats
+	@drift=0; for d in $(TOOLING_SIBLINGS); do \
+	   for f in $(TOOLING_FILES); do \
+	     if [ ! -f "$$d/$$f" ]; then echo "missing  $$d/$$f"; drift=1; \
+	     elif ! cmp -s "$$f" "$$d/$$f"; then echo "differs  $$d/$$f"; drift=1; fi; \
+	   done; \
+	 done; \
+	 [ $$drift = 0 ] && echo "tooling: $(words $(TOOLING_SIBLINGS)) sibling checkouts in line" || { echo "tooling: copy $(TOOLING_FILES) from here"; exit 1; }
+
 release-prepare: ## release-prepare VERSION=x.y.z [RETAG=1] : write the CHANGELOG section of a release (no commit)
 	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
 	@bash .github/release-prepare.sh $(VERSION) $(if $(RETAG),--retag)
