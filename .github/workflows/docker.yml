@@ -312,6 +312,12 @@ jobs:
         env:
           GIT_HASH: ${{ github.sha }}
           DOCKER_IMAGE_VERSION: ${{ (github.ref_type == 'tag' && github.ref_name) || needs.prepare.outputs.ref || 'snapshot' }}
+          # The steps below read only the digests from the bake metadata. With
+          # attestations on (the push path), buildx also copies each target's
+          # provenance into it, the whole event payload included: 170 kB for the
+          # 8 targets, more than one environment variable can hold ("Argument
+          # list too long"). The attestations pushed with the images keep it.
+          BUILDX_METADATA_PROVENANCE: disabled
 
       # On the push path the suites are the release gate, on both platforms. A release is built
       # without the cache, so it installs that day's Alpine packages and compiles
