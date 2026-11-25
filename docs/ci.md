@@ -72,4 +72,6 @@ lints nothing, since its pull request did. A pull request that changes the lint 
 The whole tree is linted locally before every release: `make release-prepare` runs
 `.github/lint-local.sh` and stops on a finding, before the tag. `make lint` runs it on demand. The
 script reads the super-linter version and settings from `lint.yaml`, and lints the tracked files
-(the Git index), as the CI checks them out.
+as they are in the working copy, so the CHANGELOG `release-prepare` just wrote is linted too. The
+script and the release targets are shared with the other image repositories:
+[release-tooling.md](release-tooling.md).

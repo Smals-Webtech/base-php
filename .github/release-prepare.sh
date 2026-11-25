@@ -14,8 +14,9 @@
 #   - one line per pull request merged since the previous tag of the same major line, from its
 #     title: feat -> Added, fix -> Fixed, perf/refactor/revert -> Changed. chore, ci, docs, test and
 #     build titles do not change the image and are left out. Renovate's chore(deps) titles are the
-#     dependency lines already; without a changelog-deps.sh they are kept, under Changed, as the
-#     only record of the update.
+#     dependency lines already; without a changelog-deps.sh, or with CHANGELOG_DEPS_TITLES=keep
+#     (dependencies the script cannot read, such as Python packages), they are kept, under
+#     Changed, as the record of the update.
 #   A squash merge carries the title in its subject, "title (#N)"; a merge commit carries it in its
 #   body, after "Merge pull request #N from ...". Any other commit on the first-parent line (a
 #   rebase merge, a direct commit) is listed as "not recorded", for a line to be written by hand.
@@ -113,7 +114,8 @@ while IFS=$'\x1f' read -r -d $'\x1e' sha subject body; do
 	fix) heading=Fixed ;;
 	perf | refactor | revert) heading=Changed ;;
 	chore)
-		[[ "${deps_script}" == "false" && "${scope}" == "deps" ]] || continue
+		[[ "${scope}" == "deps" ]] || continue
+		[[ "${deps_script}" == "false" || "${CHANGELOG_DEPS_TITLES:-}" == "keep" ]] || continue
 		heading=Changed scope=""
 		;;
 	*) continue ;;

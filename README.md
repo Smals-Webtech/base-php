@@ -938,10 +938,11 @@ never moves `8-nginx`, and neither does a merge on `main` or a prerelease.
 Releases are SemVer and tied to **signed Git tags**. Pushing a tag triggers
 `.github/workflows/docker.yml`, which bakes and pushes the multi-arch images
 (with SBOM + provenance attestation). All release/tag operations are driven
-from the `Makefile` and must be run from `main` or an `x.y` branch. The
-canonical remote is auto-detected (`origin`, or `upstream` when working from a
-fork), so the same commands work everywhere — run `make release-info` to see
-what was detected.
+from the `Makefile` and must be run from `main` or `8.4`, and a release is named after the PHP
+version it ships. The canonical remote is auto-detected (`origin`, or `upstream` when working
+from a fork) — run `make release-info` to see what was detected. The targets come from
+`.github/release.mk`, which every image repository shares: [docs/release-tooling.md](docs/release-tooling.md)
+describes it and the checks `release` makes.
 
 | Command | Purpose |
 | --- | --- |
@@ -949,8 +950,8 @@ what was detected.
 | `make release VERSION=x.y.z` | New version: signed `chore: prepare release` commit + signed tag + push + GitHub release with generated notes. |
 | `make retag VERSION=x.y.z [REF=HEAD]` | Move an existing tag to a new commit (re-point a patch version) in one push, committing a prepared CHANGELOG first, fire a fresh tag build, and refresh the release notes. |
 | `make release-refresh VERSION=x.y.z` | Publish a release again (latest flag, notes) when `retag` could not reach the API. |
-| `make tooling-check` | Test `.github/release-prepare.sh` and list the sibling repositories whose copy of it, or of `.github/lint-local.sh`, differs from this one, the reference. |
-| `make sync` | Fast-forward `main` + `8.4` from the canonical remote. |
+| `make tooling-check` | Test the shared release tooling and list the sibling repositories whose copy of it differs from this one, the reference (see [docs/release-tooling.md](docs/release-tooling.md)). |
+| `make sync` | Fast-forward `main` + `8.4` from the canonical remote (a branch checked out in another worktree too). |
 | `make tag-restore VERSION=x.y.z` | Force-push the local tag to fix one that was moved to the wrong commit remotely. |
 | `make notes VERSION=x.y.z [SINCE=x.y.z]` | Regenerate a release's notes from the previous tag. |
 | `make build-version VERSION=x.y.z` | Trigger a build via `workflow_dispatch` without moving a tag. |

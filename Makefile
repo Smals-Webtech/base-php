@@ -22,7 +22,7 @@ help: # Show help for each of the Makefile recipes.
 	@echo ""
 	@echo "Targets:"
 	@echo ""
-	@grep -E '(^\S*:.*?##.*$$)|(^##)' Makefile | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
+	@grep -hE '(^\S*:.*?##.*$$)|(^##)' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}{printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}' | sed -e 's/\[32m##/[33m/'
 
 # —— Environment ——————————————————————————————————————————————————————————————————————————————————————————————————————
 
@@ -191,74 +191,26 @@ _docker-bake/%:
 
 # —— Release & Tag ————————————————————————————————————————————————————————————————————————————————————————————————————
 
-# Ritual: edit CHANGELOG.md first -- move what is under [Unreleased] beneath a new
-# [x.y.z] heading -- then run `make release VERSION=x.y.z`, whose commit sweeps that
-# edit in. CHANGELOG.md is the durable copy: `retag` and `notes` regenerate the GitHub
-# release notes from the previous tag and discard anything hand-written there.
+# The release targets are .github/release.mk, the file every image repository shares (see
+# docs/release-tooling.md); this Makefile only says what is particular to base-php. The release
+# flow: make release-prepare VERSION=x.y.z [RETAG=1], read CHANGELOG.md, then make release or
+# make retag. CHANGELOG.md is the durable copy: retag and notes regenerate the GitHub release
+# notes from the previous tag and discard anything hand-written there.
+RELEASE_BRANCHES    = main 8.4
+# A release is named after the PHP version it ships.
+VERSION_OF          = PHP_VERSION
 
-.PHONY: release-info sync lint tooling-check release-prepare release retag release-refresh tag-restore notes build-version
+include .github/release.mk
 
-# Canonical remote: 'upstream' when working from a fork, else 'origin' (the real repo).
-RELEASE_REMOTE              ?= $(shell git remote | grep -qx upstream && echo upstream || echo origin)
-# Fork remote we ALSO push branches to (no-op when it equals the canonical remote).
-FORK_REMOTE                 ?= origin
-# GitHub owner/repo slug derived from the canonical remote URL (for `gh --repo`).
-REPO                        ?= $(shell git config --get remote.$(RELEASE_REMOTE).url | sed -E 's#^(git@[^:]+:|https?://[^/]+/)##; s#\.git$$##')
-
-# Commit/ref a tag should point at (default: current HEAD).
-REF                         ?= HEAD
-# Previous tag for release notes (default: auto-detected as the next-lower semver tag).
-SINCE                       ?=
-# Set YES=1 to skip confirmation prompts on destructive operations.
-YES                         ?=
-
-# Shell snippet: print the semver tag immediately below VERSION (works whether or not VERSION is already a tag).
-PREV_TAG = (git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$$'; echo $(VERSION)) | sort -rV | uniq | awk -v v=$(VERSION) '$$0==v{p=1;next} p{print;exit}'
-
-# Shell snippet: print true when VERSION is the highest semver tag, else false. GitHub's "Latest"
-# release must follow it. Left to GitHub, creating or re-publishing a release marks it Latest
-# whatever its version: the 8.4.27 retag of 2026-11-16 took Latest from 8.5.12.
-IS_LATEST = [ "$$( (git tag | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$$'; echo $(VERSION)) | sort -V | tail -1)" = "$(VERSION)" ] && echo true || echo false
-
-##
-## Release & Tag (VERSION=x.y.z, REF=HEAD, SINCE=x.y.z, YES=1 to skip prompts; remote auto-detected):
-##
-
-release-info: ## release-info : show detected canonical remote, repo slug, branch and latest tags
-	@echo "canonical remote : $(RELEASE_REMOTE)"
-	@echo "fork remote      : $(FORK_REMOTE)"
-	@echo "gh repo slug     : $(REPO)"
-	@echo "current branch   : $$(git rev-parse --abbrev-ref HEAD)"
-	@echo "latest tags      : $$(git tag --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$$' | head -5 | tr '\n' ' ')"
-
-sync: ## sync : fast-forward main + 8.4 from the canonical remote, then push to the fork
-	@git fetch $(RELEASE_REMOTE) --no-tags --prune
-	@cur=$$(git rev-parse --abbrev-ref HEAD); \
-	 for b in main 8.4; do \
-	   git show-ref --verify --quiet refs/heads/$$b || continue; \
-	   git rev-parse --verify --quiet $(RELEASE_REMOTE)/$$b >/dev/null || continue; \
-	   if ! git merge-base --is-ancestor $$b $(RELEASE_REMOTE)/$$b; then echo "skip $$b (not fast-forwardable)"; continue; fi; \
-	   if [ "$$b" = "$$cur" ]; then git merge --ff-only $(RELEASE_REMOTE)/$$b >/dev/null; else git branch -f $$b $(RELEASE_REMOTE)/$$b; fi; \
-	   echo "FF $$b -> $$(git rev-parse --short $$b)"; \
-	 done
-	@if [ "$(FORK_REMOTE)" != "$(RELEASE_REMOTE)" ]; then \
-	   for b in main 8.4; do git show-ref --verify --quiet refs/heads/$$b && git push $(FORK_REMOTE) $$b || true; done; \
-	 fi
-
-lint: ## lint : lint the whole tree locally, with the CI's super-linter version and settings
-	@bash .github/lint-local.sh
-
-# The CHANGELOG section is written by the tooling, not by a pull request: release-prepare fills
-# it from the dependency pins and the merged pull requests, it is read (prose optional), and
-# release or retag commits it with the tag.
 # The release tooling every image repository shares, byte for byte: base-php holds the reference
 # copy. tooling-check runs its tests and lists the sibling checkouts whose copy drifted (found next to
 # this one and under ../../smals; TOOLING_SIBLINGS="dir ..." to choose). Local only.
-TOOLING_FILES    = .github/release-prepare.sh .github/lint-local.sh
+TOOLING_FILES    = .github/release.mk .github/release-prepare.sh .github/changelog-deps.sh .github/lint-local.sh
 TOOLING_SIBLINGS ?= $(patsubst %/.github/lint-local.sh,%,$(wildcard ../*/.github/lint-local.sh ../../smals/*/.github/lint-local.sh))
 
+.PHONY: tooling-check
 tooling-check: ## tooling-check [TOOLING_SIBLINGS="dir ..."] : test the shared release tooling, list the repositories whose copy drifted
-	@cd test && bats release-prepare.bats
+	@cd test && bats release-prepare.bats release-mk.bats
 	@drift=0; for d in $(TOOLING_SIBLINGS); do \
 	   for f in $(TOOLING_FILES); do \
 	     if [ ! -f "$$d/$$f" ]; then echo "missing  $$d/$$f"; drift=1; \
@@ -266,106 +218,6 @@ tooling-check: ## tooling-check [TOOLING_SIBLINGS="dir ..."] : test the shared r
 	   done; \
 	 done; \
 	 [ $$drift = 0 ] && echo "tooling: $(words $(TOOLING_SIBLINGS)) sibling checkouts in line" || { echo "tooling: copy $(TOOLING_FILES) from here"; exit 1; }
-
-release-prepare: ## release-prepare VERSION=x.y.z [RETAG=1] : write the CHANGELOG section of a release (no commit)
-	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
-	@bash .github/release-prepare.sh $(VERSION) $(if $(RETAG),--retag)
-
-release: ## release VERSION=x.y.z : prepare commit + signed tag + push + GitHub release (new version)
-	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
-	@b=$$(git rev-parse --abbrev-ref HEAD); case "$$b" in main|[0-9]*.[0-9]*) ;; *) echo "release only from main or x.y (on $$b)" >&2; exit 1;; esac
-	@git rev-parse "$(VERSION)" >/dev/null 2>&1 && { echo "tag $(VERSION) already exists -> use 'make retag VERSION=$(VERSION)'" >&2; exit 1; } || true
-	@# `git commit -a` stages tracked files only, so a new file that was never added
-	@# would be released without ever being committed. --exclude-standard honours
-	@# .git/info/exclude, so a deliberately untracked file does not trip this.
-	@u=$$(git ls-files --others --exclude-standard); [ -z "$$u" ] || { \
-		echo "untracked files present -- 'git commit -a' would SKIP them:" >&2; \
-		echo "$$u" | sed 's/^/  /' >&2; \
-		echo "git add them (or exclude them) before releasing" >&2; exit 1; }
-	@if [ -z "$(YES)" ]; then printf "Release $(VERSION) from $$(git rev-parse --abbrev-ref HEAD) to $(RELEASE_REMOTE) ($(REPO))? [y/N] "; read a; [ "$$a" = y ] || [ "$$a" = Y ] || { echo Aborted >&2; exit 1; }; fi
-	@# Only a genuinely clean tree may skip the commit. `git commit ... || echo` used
-	@# to swallow every failure: a locked GPG agent made the signature fail, printed
-	@# "No changes to commit", and the target carried on to tag a tree with no release
-	@# commit in it. Measured: the old form exits 0 on a signing failure, this one 128.
-	@if [ -n "$$(git status --porcelain --untracked-files=no)" ]; then \
-		git commit -S -a -m "chore: prepare release $(VERSION)"; \
-	else \
-		echo "Nothing to commit -- tagging the current HEAD."; \
-	fi
-	@git tag -s -m "Version $(VERSION)" $(VERSION)
-	@b=$$(git rev-parse --abbrev-ref HEAD); \
-	 git push $(RELEASE_REMOTE) $$b; \
-	 git push $(RELEASE_REMOTE) refs/tags/$(VERSION); \
-	 [ "$(FORK_REMOTE)" != "$(RELEASE_REMOTE)" ] && git push $(FORK_REMOTE) $$b || true
-	@prev=$$( $(PREV_TAG) ); \
-	 latest=$$( $(IS_LATEST) ); \
-	 gh release create $(VERSION) --repo $(REPO) --generate-notes --latest=$$latest $${prev:+--notes-start-tag $$prev} --verify-tag && echo "release $(VERSION) created"
-
-retag: ## retag VERSION=x.y.z [REF=HEAD] : move an existing tag, fire the tag build, refresh the release
-	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
-	@b=$$(git rev-parse --abbrev-ref HEAD); case "$$b" in main|[0-9]*.[0-9]*) ;; *) echo "retag only from main or x.y (on $$b)" >&2; exit 1;; esac
-	@# The re-publication's CHANGELOG lines (make release-prepare RETAG=1) go in the commit the tag
-	@# moves to. Only when the tag moves to HEAD: an older REF cannot take a new commit.
-	@if ! git diff --quiet -- CHANGELOG.md; then \
-	   [ "$$(git rev-parse $(REF))" = "$$(git rev-parse HEAD)" ] || { echo "CHANGELOG.md has changes but REF is not HEAD" >&2; exit 1; }; \
-	   git commit -S -m "chore: re-publish $(VERSION)" -- CHANGELOG.md; \
-	 fi
-	@sha=$$(git rev-parse --short "$(REF)"); \
-	 echo "retag $(VERSION) -> $$sha on $(RELEASE_REMOTE) ($(REPO))"; \
-	 if [ -z "$(YES)" ]; then printf "Proceed (move the tag, triggers a DockerHub rebuild)? [y/N] "; read a; [ "$$a" = y ] || [ "$$a" = Y ] || { echo Aborted >&2; exit 1; }; fi
-	@if [ "$$(git rev-parse $(REF))" = "$$(git rev-parse HEAD)" ]; then \
-	   b=$$(git rev-parse --abbrev-ref HEAD); \
-	   git push $(RELEASE_REMOTE) $$b; \
-	   [ "$(FORK_REMOTE)" != "$(RELEASE_REMOTE)" ] && git push $(FORK_REMOTE) $$b || true; \
-	 fi
-	@# The new tag is signed locally, then replaces the remote one in a single
-	@# --force push: deleting the remote tag first left a window without it (a
-	@# network error there, 2026-11-25, left 8.4.28 untagged and its release a
-	@# draft). -f replaces the local tag the same way: a failed signature leaves
-	@# both tags where they were.
-	@git tag -s -f -m "Version $(VERSION)" $(VERSION) $(REF)
-	@git push --force $(RELEASE_REMOTE) refs/tags/$(VERSION)
-	@echo "tag $(VERSION) pushed -> tag build triggered"
-	@$(MAKE) --no-print-directory release-refresh VERSION=$(VERSION)
-
-release-refresh: ## release-refresh VERSION=x.y.z : publish the GitHub release of a moved tag again (latest flag, notes)
-	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
-	@# A 404 means there is no release to refresh; any other failure (network,
-	@# auth) is reported with the command to run again, not taken for "no release".
-	@if ! out=$$(gh api repos/$(REPO)/releases/tags/$(VERSION) --jq .id 2>&1); then \
-	   case "$$out" in *"HTTP 404"*) echo "no GitHub release $(VERSION) (skip refresh)"; exit 0;; esac; \
-	   echo "release $(VERSION) not refreshed ($$out): run 'make release-refresh VERSION=$(VERSION)'" >&2; exit 1; \
-	 fi; \
-	 gh release edit $(VERSION) --repo $(REPO) --draft=false --latest=$$( $(IS_LATEST) ) >/dev/null || { \
-	   echo "release $(VERSION) not refreshed: run 'make release-refresh VERSION=$(VERSION)'" >&2; exit 1; }; \
-	 prev=$$( $(PREV_TAG) ); \
-	 if [ -z "$$prev" ]; then echo "release $(VERSION) re-published (no previous tag for notes)"; exit 0; fi; \
-	 notes=$$(gh api repos/$(REPO)/releases/generate-notes -f tag_name=$(VERSION) -f previous_tag_name=$$prev --jq .body) && \
-	   printf '%s\n' "$$notes" | gh release edit $(VERSION) --repo $(REPO) --notes-file - >/dev/null || { \
-	   echo "release $(VERSION) published, notes not regenerated: run 'make release-refresh VERSION=$(VERSION)'" >&2; exit 1; }; \
-	 echo "release $(VERSION) re-published, notes regenerated from $$prev"
-
-tag-restore: ## tag-restore VERSION=x.y.z : force-push the LOCAL tag to the canonical remote (fix a moved tag)
-	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
-	@git rev-parse "$(VERSION)" >/dev/null 2>&1 || { echo "no local tag $(VERSION)" >&2; exit 1; }
-	@sha=$$(git rev-parse --short "$(VERSION)^{commit}"); \
-	 echo "force-push local tag $(VERSION) ($$sha) -> $(RELEASE_REMOTE) ($(REPO))"; \
-	 if [ -z "$(YES)" ]; then printf "Proceed? [y/N] "; read a; [ "$$a" = y ] || [ "$$a" = Y ] || { echo Aborted >&2; exit 1; }; fi
-	@git push --force $(RELEASE_REMOTE) refs/tags/$(VERSION)
-	@echo "restored (note: a single tag push may NOT rebuild if that commit was already built -> use 'make build-version VERSION=$(VERSION)')"
-
-changelog: ## changelog [SINCE=x.y.z] [APPLY=1] : list (or write under [Unreleased]) the pinned dependencies changed since the last tag
-	@bash .github/changelog-deps.sh $(SINCE) $(if $(APPLY),--apply)
-
-notes: ## notes VERSION=x.y.z [SINCE=x.y.z] : regenerate GitHub release notes
-	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
-	@prev="$(SINCE)"; [ -n "$$prev" ] || prev=$$( $(PREV_TAG) ); \
-	 [ -n "$$prev" ] || { echo "no previous tag found; pass SINCE=x.y.z" >&2; exit 1; }; \
-	 gh api repos/$(REPO)/releases/generate-notes -f tag_name=$(VERSION) -f previous_tag_name=$$prev --jq .body | gh release edit $(VERSION) --repo $(REPO) --notes-file - >/dev/null && echo "notes for $(VERSION) regenerated from $$prev"
-
-build-version: ## build-version VERSION=x.y.z : trigger a docker build via workflow_dispatch (main path)
-	@[ -n "$(VERSION)" ] || { echo "VERSION=x.y.z required" >&2; exit 1; }
-	@gh workflow run docker.yml --repo $(REPO) -f version=$(VERSION) && echo "workflow_dispatch sent for $(VERSION) (runs the 'main' path, not the 'tag' path)"
 
 # —— CI cache —————————————————————————————————————————————————————————————————————————————————————————————————————————
 
