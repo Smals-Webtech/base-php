@@ -126,6 +126,12 @@
       ],
       "groupName": "bats",
       "semanticCommitType": "test"
+    },
+    {
+      "description": "aquasecurity's GitHub organization has an IP allow list (since the March 2026 trivy-action tag compromise) that GitHub applies to App-token API calls, so the github-tags lookup returns no result. Its tags are read over git instead, which needs no token.",
+      "matchPackageNames": ["aquasecurity/trivy-action"],
+      "overrideDatasource": "git-tags",
+      "overridePackageName": "https://github.com/aquasecurity/trivy-action"
     }
   ],
   "ignorePaths": ["**/node_modules/**", "**/vendor/**"]
