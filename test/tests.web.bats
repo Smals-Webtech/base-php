@@ -35,7 +35,7 @@ web_container_start() {
   local -r container=$1
   shift
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${container}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${container}" \
     --publish 127.0.0.1::9000 --publish 127.0.0.1::9090 \
     "$@" "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
 
@@ -60,7 +60,21 @@ web_php() {
   ${BATS_CONTAINER_ENGINE} exec -i "${container}" \
     sh -c "cat > /app/var/www/html/${script}" <<<"${snippet}"
 
-  curl --silent --fail --max-time 20 "http://127.0.0.1:${port}/${script}"
+  # On a failure, say what came back: with --fail alone an error answered
+  # nothing, and the assertion that followed reported an empty output.
+  local response code
+  response=$(curl --silent --show-error --max-time 20 --write-out '\n%{http_code}' \
+    "http://127.0.0.1:${port}/${script}" 2>&1) || {
+    echo "web_php: ${script}: ${response}" >&2
+    return 1
+  }
+  code=${response##*$'\n'}
+  response=${response%$'\n'*}
+  if [ "${code}" != "200" ]; then
+    echo "web_php: ${script}: HTTP ${code}: ${response}" >&2
+    return 1
+  fi
+  printf '%s\n' "${response}"
 }
 
 # Write a file into the docroot of container $1 under name $2.
@@ -88,39 +102,8 @@ setup_file() {
 }
 
 teardown_file() {
-  container_clean "${BATS_WEB_CONTAINER}"
-  container_clean "${BATS_WEB_CONTAINER}-memory"
-  container_clean "${BATS_WEB_CONTAINER}-inienv"
-  container_clean "${BATS_WEB_CONTAINER}-blocked"
-  container_clean "${BATS_WEB_CONTAINER}-drain"
-  container_clean "${BATS_WEB_CONTAINER}-logrotate"
-  container_clean "${BATS_WEB_CONTAINER}-failfast"
-  container_clean "${BATS_WEB_CONTAINER}-init1"
-  container_clean "${BATS_WEB_CONTAINER}-init2"
-  container_clean "${BATS_WEB_CONTAINER}-etc1"
-  container_clean "${BATS_WEB_CONTAINER}-etc2"
-  container_clean "${BATS_WEB_CONTAINER}-ro"
-  container_clean "${BATS_WEB_CONTAINER}-cfgmap"
-  container_clean "${BATS_WEB_CONTAINER}-httpd"
-  container_clean "${BATS_WEB_CONTAINER}-nocaps"
-  container_clean "${BATS_WEB_CONTAINER}-plain"
-  container_clean "${BATS_WEB_CONTAINER}-mounts"
-  container_clean "${BATS_WEB_CONTAINER}-hook0"
-  container_clean "${BATS_WEB_CONTAINER}-hooklock"
-  container_clean "${BATS_WEB_CONTAINER}-throttle"
-  container_clean "${BATS_WEB_CONTAINER}-nothrottle"
-  container_clean "${BATS_WEB_CONTAINER}-boot"
-  container_clean "${BATS_WEB_CONTAINER}-bootorder"
-  container_clean "${BATS_WEB_CONTAINER}-fp"
-  container_clean "${BATS_WEB_CONTAINER}-hookenv"
-  container_clean "${BATS_WEB_CONTAINER}-hookfn"
-  container_clean "${BATS_WEB_CONTAINER}-hookcleanup"
-  container_clean "${BATS_WEB_CONTAINER}-hooktmpl"
-  container_clean "${BATS_WEB_CONTAINER}-banner"
-  container_clean "${BATS_WEB_CONTAINER}-port"
-  container_clean "${BATS_WEB_CONTAINER}-remoteip"
-  container_clean "${BATS_WEB_CONTAINER}-slowlog"
-  container_clean "${BATS_WEB_CONTAINER}-stanza"
+  # Every container a test starts is named after BATS_WEB_CONTAINER.
+  container_clean_prefix "${BATS_WEB_CONTAINER}"
   ${BATS_CONTAINER_ENGINE} volume rm -f "${BATS_WEB_CONTAINER}-lock" "${BATS_WEB_CONTAINER}-log" \
     "${BATS_WEB_CONTAINER}-etc" "${BATS_WEB_CONTAINER}-fplock" >/dev/null 2>&1 || true
 }
@@ -611,7 +594,7 @@ count_429() {
   for n in 1 2; do
     ${BATS_CONTAINER_ENGINE} volume create "${lock}" >/dev/null
     ${BATS_CONTAINER_ENGINE} volume create "${logs}" >/dev/null
-    ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${BATS_WEB_CONTAINER}-init${n}" \
+    ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${BATS_WEB_CONTAINER}-init${n}" \
       --volume "${lock}:/app/var/lock" --volume "${logs}:/app/var/log" \
       --volume "${hook}:/opt/bin/container-entrypoint.d/10-slow.sh:ro" "${image}" >/dev/null &
   done
@@ -637,14 +620,14 @@ count_429() {
   local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
 
   ${BATS_CONTAINER_ENGINE} volume create "${etc}" >/dev/null
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${BATS_WEB_CONTAINER}-etc1" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${BATS_WEB_CONTAINER}-etc1" \
     --volume "${etc}:/opt/etc" --env PHP_MEMORY_LIMIT=512M "${image}" >/dev/null
   container_wait_for_healthy "${BATS_WEB_CONTAINER}-etc1" 60 >/dev/null
   ${BATS_CONTAINER_ENGINE} rm -f "${BATS_WEB_CONTAINER}-etc1" >/dev/null
 
   # Same volume, no override: the second boot has to render from the image
   # defaults rather than from what the first boot left behind.
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${BATS_WEB_CONTAINER}-etc2" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${BATS_WEB_CONTAINER}-etc2" \
     --volume "${etc}:/opt/etc" "${image}" >/dev/null
   container_wait_for_healthy "${BATS_WEB_CONTAINER}-etc2" 60 >/dev/null
 
@@ -698,7 +681,7 @@ count_429() {
 @test "[$TEST_FILE] A read-only container with the documented mounts is healthy" {
   local -r name="${BATS_WEB_CONTAINER}-ro"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" --read-only \
     --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
   container_wait_for_healthy "${name}" 60 >/dev/null
@@ -717,7 +700,7 @@ count_429() {
 
   ${BATS_CONTAINER_ENGINE} volume create "${volume}" >/dev/null
   for run in 1 2; do
-    ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only --user 12345:0 \
+    ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" --read-only --user 12345:0 \
       --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/tmp --volume "${volume}:/app/var" \
       "${image}" >/dev/null
     container_wait_for_healthy "${name}" 60 >/dev/null || true
@@ -763,7 +746,7 @@ count_429() {
   printf 'server {\n    listen 9100;\n    location / { return 200 "extra\\n"; }\n}\n' >"${tmpl}"
   chmod 644 "${tmpl}"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only --user 12345:0 \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" --read-only --user 12345:0 \
     --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
     --volume "${tmpl}:/opt/config/nginx/sites-enabled/extra.conf.tmpl:ro" \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
@@ -799,7 +782,7 @@ server {
 CONF
   chmod 644 "${dir}"/*.tmpl
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" --read-only --user 12345:0 \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" --read-only --user 12345:0 \
     --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
     --volume "${dir}/limits.conf.tmpl:/opt/config/nginx/http.d/limits.conf.tmpl:ro" \
     --volume "${dir}/app.conf.tmpl:/opt/config/nginx/sites-enabled/app.conf.tmpl:ro" \
@@ -920,7 +903,7 @@ CONF
   local -r name="${BATS_WEB_CONTAINER}-plain"
   local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" "${image}" >/dev/null
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" "${image}" >/dev/null
   container_wait_for_healthy "${name}" 60 >/dev/null
 
   run ${BATS_CONTAINER_ENGINE} exec "${name}" sh -c \
@@ -936,7 +919,7 @@ CONF
   local -r name="${BATS_WEB_CONTAINER}-mounts"
   local -r image="$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
     --tmpfs /opt/etc --tmpfs /opt/sbin:rw,exec --tmpfs /app/var --tmpfs /app/tmp \
     "${image}" >/dev/null
   container_wait_for_healthy "${name}" 60 >/dev/null
@@ -957,7 +940,7 @@ CONF
 
   printf '#!/bin/bash\necho "hook: doing my init"\nexit 0\n' >"${hook}"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
     --volume "${hook}:/opt/bin/container-entrypoint.d/10-exit0.sh:ro" \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
   container_wait_for_healthy "${name}" 60 >/dev/null
@@ -991,7 +974,7 @@ CONF
 
   printf '#!/bin/bash\nAPP_INIT_LOCK=/tmp/hijacked\necho "hook ran"\n' >"${hook}"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
     --volume "${hook}:/opt/bin/container-entrypoint.d/10-clobber.sh:ro" \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
   container_wait_for_healthy "${name}" 60 >/dev/null
@@ -1021,7 +1004,7 @@ CONF
   printf '#!/bin/bash\nmkdir -p /opt/etc/child\necho rendered > /opt/etc/child/app.conf\necho "boot hook ran"\n' >"${boot}"
   printf '#!/bin/bash\necho "late hook ran"\n' >"${late}"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
     --tmpfs /opt/etc:rw,mode=1777 \
     --volume "${boot}:/opt/bin/container-entrypoint.d/boot.d/10-render.sh:ro" \
     --volume "${late}:/opt/bin/container-entrypoint.d/10-once.sh:ro" \
@@ -1050,7 +1033,7 @@ CONF
   printf '#!/bin/bash\ntest -s /opt/etc/supervisord.conf && echo "boot saw the base rendering"\ntouch /app/tmp/boot-done\n' >"${boot}"
   printf '#!/bin/bash\ntest -e /app/tmp/boot-done && echo "late saw boot.d"\n' >"${late}"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
     --volume "${boot}:/opt/bin/container-entrypoint.d/boot.d/10-boot.sh:ro" \
     --volume "${late}:/opt/bin/container-entrypoint.d/10-late.sh:ro" \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
@@ -1094,7 +1077,7 @@ CONF
 
   start_fp() {
     ${BATS_CONTAINER_ENGINE} rm -f "${name}" >/dev/null 2>&1 || true
-    ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+    ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
       --volume "${lock}:/app/var/lock" \
       --volume "${hook}:/opt/bin/container-entrypoint.d/10-setup.sh:ro" \
       --volume "${steps}:/opt/bin/container-entrypoint.d/setup.d:ro" \
@@ -1153,7 +1136,7 @@ require-writable /app/tmp
 log "INFO" "hook: the parent helpers are available"
 HOOK
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
     --volume "${hook}:/opt/bin/container-entrypoint.d/10-helpers.sh:ro" \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
   container_wait_for_healthy "${name}" 60 >/dev/null
@@ -1209,7 +1192,7 @@ HOOK
   printf 'memory={{ .Env.PHP_MEMORY_LIMIT }}\n' >"${tmpl}"
   printf '#!/bin/bash\napply-template /opt/config/app.conf.tmpl /opt/etc/app.conf\n' >"${hook}"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
     --env PHP_MEMORY_LIMIT=256M \
     --volume "${tmpl}:/opt/config/app.conf.tmpl:ro" \
     --volume "${hook}:/opt/bin/container-entrypoint.d/10-render.sh:ro" \
@@ -1233,7 +1216,7 @@ HOOK
   printf '  MY APP    v2\n  two  runs  here\n' >"${motd}"
   printf '#!/bin/bash\nprint-banner /opt/config/child-motd\n' >"${hook}"
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
     --volume "${motd}:/opt/config/child-motd:ro" \
     --volume "${hook}:/opt/bin/container-entrypoint.d/10-banner.sh:ro" \
     "$(image_tag "${BATS_VARIANT}" "${BATS_TARGET}")" >/dev/null
@@ -1312,7 +1295,7 @@ HOOK
     *)      skip "no monitoring port on the ${BATS_VARIANT} variant" ;;
   esac
 
-  ${BATS_CONTAINER_ENGINE} run --pull=never --detach --name "${name}" \
+  ${BATS_CONTAINER_ENGINE} run --pull=never --detach ${BATS_FAST_HEALTH} --name "${name}" \
     --publish 127.0.0.1::8090 --publish 127.0.0.1::9090 \
     --env "${var}=8090" "${image}" >/dev/null
   container_wait_for_healthy "${name}" 60 >/dev/null

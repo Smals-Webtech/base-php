@@ -25,20 +25,14 @@ BATS_CLI_IMAGE="$(image_tag cli "${BATS_TARGET}")"
 
 # --pull=never keeps a missing local image an error instead of a silent pull of
 # the published one, which would test an image this build never produced.
+#
+# Each container gets writable paths of its own: the tests run side by side
+# (bats --jobs), and two containers rendering into one shared /opt/etc volume
+# overwrote each other's files.
 run_cli() {
   run ${BATS_CONTAINER_ENGINE} run --pull=never --read-only --rm \
-    -v php_cli_app_tmp:/app/tmp \
-    -v php_cli_opt_etc:/opt/etc \
+    --tmpfs /app/tmp --tmpfs /opt/etc \
     "$@"
-}
-
-setup_file() {
-  command ${BATS_CONTAINER_ENGINE} volume create php_cli_app_tmp
-  command ${BATS_CONTAINER_ENGINE} volume create php_cli_opt_etc
-}
-
-teardown_file() {
-  command ${BATS_CONTAINER_ENGINE} volume rm -f php_cli_app_tmp php_cli_opt_etc
 }
 
 # bats test_tags=dev
@@ -307,8 +301,7 @@ teardown_file() {
 # ... php script.php)` or a pipe received them along with the script's output.
 @test "[$TEST_FILE] stdout carries the command's output only" {
   run --separate-stderr ${BATS_CONTAINER_ENGINE} run --pull=never --read-only --rm \
-    -v php_cli_app_tmp:/app/tmp \
-    -v php_cli_opt_etc:/opt/etc \
+    --tmpfs /app/tmp --tmpfs /opt/etc \
     "${BATS_CLI_IMAGE}" php -r 'echo "only this";'
   assert_success
   assert_output "only this"
