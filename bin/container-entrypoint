@@ -39,4 +39,4 @@ log "INFO" "+---- PHP Container configured successfully -----"
 set -eu
 cmd="$1"
 shift
-exec $cmd "$@"
+exec "$cmd" "$@"
