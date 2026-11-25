@@ -160,3 +160,30 @@ section() {
   assert_failure
   assert_output --partial 'tag 1.0.0 exists: use --retag'
 }
+
+@test "chore(deps) titles are kept with a changelog-deps.sh when told to" {
+  printf '#!/bin/sh\nexit 0\n' >.github/changelog-deps.sh
+  git add -A && git commit -qm "chore: deps script"
+  squash "chore(deps): update dependency boto3 to v1.35.0 (#7)"
+
+  CHANGELOG_DEPS_TITLES=keep run bash .github/release-prepare.sh 1.0.1
+  assert_success
+  run section 1.0.1
+  assert_line '- update dependency boto3 to v1.35.0 (#7).'
+}
+
+@test "a version pinned in docker-bake.hcl only is a dependency line, named as told" {
+  cp "${BATS_TEST_DIRNAME%/}/../.github/changelog-deps.sh" .github/
+  printf 'FROM scratch\nARG RESTIC_VERSION_ARG=""\n' >Dockerfile
+  printf 'variable "RESTIC_VERSION" {\n  default = "0.19.1"\n}\nvariable "DOCKER_IMAGE_VERSION" {\n  default = "snapshot"\n}\n' >docker-bake.hcl
+  git add -A && git commit -qm "chore: pins" && git tag -f 1.0.0 >/dev/null
+  sed -i 's/0.19.1/0.20.0/' docker-bake.hcl
+  git commit -qam "chore(deps): update restic to v0.20.0 (#8)"
+
+  CHANGELOG_DEP_NAMES="RESTIC_VERSION_ARG=restic" run bash .github/release-prepare.sh 1.0.1
+  assert_success
+  run section 1.0.1
+  assert_line '- **`restic` 0.20.0**, up from 0.19.1 (dependency update).'
+  refute_output --partial 'snapshot'
+  refute_output --partial 'update restic to v0.20.0 (#8)'
+}
