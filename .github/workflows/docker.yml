@@ -377,11 +377,19 @@ jobs:
           TARGETS: ${{ needs.prepare.outputs.targets }}
           DEV_FILTER: ${{ needs.prepare.outputs.dev-filter }}
           SMOKE: ${{ matrix.platform != 'linux/amd64' }}
+          # Per suite; the three suites run at the same time on a 4-CPU runner.
+          BATS_JOBS: 4
           # The action exposes the install location as a step output rather than
           # exporting it, so the suites are handed it here.
           BATS_LIB_PATH: ${{ steps.bats.outputs.lib-path }}
         run: |
           mkdir -p "${RUNNER_TEMP}/bats"
+
+          # bats runs the tests of a suite side by side with GNU parallel (--jobs):
+          # most of them wait on a container of their own, not on the CPU.
+          command -v parallel >/dev/null || {
+            sudo apt-get update -qq && sudo apt-get install -y -qq parallel >/dev/null
+          }
 
           lane() {
             local variant=$1 suite=$2 target status=0
@@ -392,7 +400,7 @@ jobs:
                 filter=(--filter-tags dev)
               fi
               BATS_VARIANT=${variant} BATS_TARGET=${target} \
-                bats --print-output-on-failure "${filter[@]}" "${suite}" \
+                bats --jobs "${BATS_JOBS}" --print-output-on-failure "${filter[@]}" "${suite}" \
                 >"${RUNNER_TEMP}/bats/${variant}-${target}.log" 2>&1 || status=1
             done
             return "${status}"
