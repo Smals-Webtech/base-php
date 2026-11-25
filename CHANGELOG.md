@@ -26,6 +26,16 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 PHP 8.5.13, a security release. **Upgrade and restart every container that serves PHP.**
 
+### Re-published on 2026-11-25
+
+- **`mlocati/php-extension-installer` 2.13.4**, up from 2.13.2 (dependency update).
+- **`composer/composer` 2.11.3**, up from 2.11.2 (dependency update): fixes GHSA-374h-4mh9-7rpm.
+- no default passwords, no writable code, two boot-time traps (#253).
+- **Child images:** the supervisor TCP listener (`SUPERVISOR_XMLRPC_INET_ENABLED`) and nginx basic
+  auth (`NGINX_BASIC_AUTH_ENABLED`) now refuse to start without a password of their own: the former
+  default `pa55w0rd` is refused too. `/opt/config` is now root's and not group-writable: write your
+  templates there at build time, as root.
+
 ### Security
 
 - **PHP 8.5.13** fixes 17 advisories. The ones that matter most here:
