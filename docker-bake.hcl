@@ -22,7 +22,7 @@ variable "PHP_VERSION" {
 
 # renovate: datasource=docker depName=mlocati/php-extension-installer versioning=semver
 variable "PHP_EXT_INSTALLER_VERSION" {
-  default = "2.13.2"
+  default = "2.13.4"
 }
 
 # renovate: datasource=repology depName=alpine_3_24/nginx versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
@@ -36,7 +36,7 @@ variable "NODE_VERSION" {
 
 # renovate: datasource=github-releases depName=composer/composer versioning=semver
 variable "COMPOSER_VERSION" {
-  default = "2.11.2"
+  default = "2.11.3"
 }
 
 # renovate: datasource=repology depName=alpine_3_24/aws-cli versioning=loose extractVersion=^(?<version>.+?)(-r\d+)?$
