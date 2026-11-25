@@ -4,10 +4,10 @@ ARG ALPINE_VERSION_ARG=3.24
 # renovate: datasource=docker depName=php versioning=semver extractVersion=^(?<version>\d+\.\d+\.\d+)-fpm-alpine3\.24$
 ARG PHP_VERSION_ARG=8.5.13
 # renovate: datasource=docker depName=mlocati/php-extension-installer versioning=semver
-ARG PHP_EXT_INSTALLER_VERSION_ARG=2.13.2
+ARG PHP_EXT_INSTALLER_VERSION_ARG=2.13.4
 ARG NODE_VERSION_ARG=24
 # renovate: datasource=github-releases depName=composer/composer versioning=semver
-ARG COMPOSER_VERSION_ARG=2.11.2
+ARG COMPOSER_VERSION_ARG=2.11.3
 # renovate: datasource=github-releases depName=hairyhenderson/gomplate versioning=semver extractVersion=^v(?<version>.+)$
 ARG GOMPLATE_VERSION_ARG=5.3.1
 # The four extensions that come from PECL, pinned (see the install step of fpm-prd).
@@ -112,8 +112,8 @@ ENV GOMAXPROCS=1
 ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli opcache opentelemetry pcntl pdo_mysql pdo_pgsql pgsql redis soap sodium tidy xdebug xsl zip"
 ARG APCU_VERSION_ARG REDIS_VERSION_ARG XDEBUG_VERSION_ARG OPENTELEMETRY_VERSION_ARG
 
-COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
-COPY --from=gomplate --chmod=775 --chown=root:root /out/gomplate /usr/bin/gomplate
+COPY --from=php-ext-installer --chmod=755 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
+COPY --from=gomplate --chmod=755 --chown=root:root /out/gomplate /usr/bin/gomplate
 
 # HOME is world-writable and sticky, like the runtime directories: whatever uid
 # runs the container -- an arbitrary OpenShift uid, `-u 1000`, or
@@ -185,7 +185,7 @@ RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs
 
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/
-COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
+COPY --from=builder --chmod=755 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
 
 # The ini directives this image can be asked about, enumerated from PHP itself
 # rather than written by hand -- see bin/update-ini-directives for why the list
@@ -200,9 +200,16 @@ RUN update-ini-directives
 # falls back to gid 0 when the user is given as a bare uid.
 #
 # 1777 is the /tmp semantics: anyone may create, only the owner may remove. It
-# stays confined to the runtime directories, which ship empty; the configuration
-# templates under /opt/config keep 775 and stay out of reach.
-RUN find /opt/etc /opt/sbin /app/tmp /app/var -type d -exec chmod 1777 {} +
+# stays confined to the runtime directories, which ship empty.
+#
+# The configuration templates are root's and not group-writable: the uid an
+# OpenShift pod runs as is in group 0, so 775 owned 1001:0 let the running
+# container rewrite the templates it renders, as the code under /usr/local/bin
+# (755) cannot be. Nothing writes there at run time; a child image adds its
+# templates with COPY, at build time.
+RUN find /opt/etc /opt/sbin /app/tmp /app/var -type d -exec chmod 1777 {} + && \
+    chown -R root:root /opt/config && \
+    chmod -R go-w /opt/config
 
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/opt/etc/php/conf.d" \
@@ -219,7 +226,6 @@ ENTRYPOINT ["dumb-init","--","container-entrypoint"]
 EXPOSE 9000/tcp
 EXPOSE 9003/tcp
 EXPOSE 9090/tcp
-EXPOSE 6081/tcp 6082/tcp
 
 HEALTHCHECK --start-period=5s --interval=10s --timeout=2s --retries=3 \
   CMD supervisorctl -c /opt/etc/supervisord.conf status php-fpm | \
@@ -234,7 +240,7 @@ CMD ["/usr/bin/supervisord", "-c", "/opt/etc/supervisord.conf"]
 FROM fpm-prd AS fpm-dev
 
 # renovate: datasource=github-releases depName=composer/composer versioning=semver
-ARG COMPOSER_VERSION_ARG=2.11.2
+ARG COMPOSER_VERSION_ARG=2.11.3
 ARG NODE_VERSION_ARG=24
 
 ENV PHP_XDEBUG_ENABLED="true"
@@ -344,8 +350,8 @@ ENV GOMAXPROCS=1
 ENV PHP_EXT_INSTALL="apcu bcmath bz2 calendar exif gd gettext intl ldap mysqli opcache opentelemetry pcntl pdo_mysql pdo_pgsql pgsql redis soap sodium tidy xdebug xsl zip"
 ARG APCU_VERSION_ARG REDIS_VERSION_ARG XDEBUG_VERSION_ARG OPENTELEMETRY_VERSION_ARG
 
-COPY --from=php-ext-installer --chmod=775 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
-COPY --from=gomplate --chmod=775 --chown=root:root /out/gomplate /usr/bin/gomplate
+COPY --from=php-ext-installer --chmod=755 --chown=root:root /usr/bin/install-php-extensions /usr/local/bin/install-php-extensions
+COPY --from=gomplate --chmod=755 --chown=root:root /out/gomplate /usr/bin/gomplate
 
 # Copy only the Node.js runtime, never the node image's /usr/lib. Copying that
 # whole tree replaced this image's system libraries (libcrypto3, libssl3, ...)
@@ -401,7 +407,7 @@ RUN --mount=type=bind,from=ca-bundle,source=/ca-bundle.pem,target=/etc/ssl/certs
 
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/opt/ /opt/
 COPY --from=builder --chmod=775 --chown=1001:0 /rootfs/app/ /app/
-COPY --from=builder --chmod=775 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
+COPY --from=builder --chmod=755 --chown=root:root /rootfs/usr/local/bin/ /usr/local/bin/
 
 # The ini directives this image can be asked about, enumerated from PHP itself
 # rather than written by hand -- see bin/update-ini-directives for why the list
@@ -416,9 +422,16 @@ RUN update-ini-directives
 # falls back to gid 0 when the user is given as a bare uid.
 #
 # 1777 is the /tmp semantics: anyone may create, only the owner may remove. It
-# stays confined to the runtime directories, which ship empty; the configuration
-# templates under /opt/config keep 775 and stay out of reach.
-RUN find /opt/etc /opt/sbin /app/tmp /app/var -type d -exec chmod 1777 {} +
+# stays confined to the runtime directories, which ship empty.
+#
+# The configuration templates are root's and not group-writable: the uid an
+# OpenShift pod runs as is in group 0, so 775 owned 1001:0 let the running
+# container rewrite the templates it renders, as the code under /usr/local/bin
+# (755) cannot be. Nothing writes there at run time; a child image adds its
+# templates with COPY, at build time.
+RUN find /opt/etc /opt/sbin /app/tmp /app/var -type d -exec chmod 1777 {} + && \
+    chown -R root:root /opt/config && \
+    chmod -R go-w /opt/config
 
 ENV PYTHONWARNINGS="ignore" \
     PHP_INI_SCAN_DIR="/opt/etc/php/conf.d" \
@@ -437,7 +450,7 @@ ENTRYPOINT ["dumb-init","--","container-entrypoint-cli"]
 FROM cli-prd AS cli-dev
 
 # renovate: datasource=github-releases depName=composer/composer versioning=semver
-ARG COMPOSER_VERSION_ARG=2.11.2
+ARG COMPOSER_VERSION_ARG=2.11.3
 
 LABEL be.smals.webtech.base.composer-version="${COMPOSER_VERSION_ARG}"
 
