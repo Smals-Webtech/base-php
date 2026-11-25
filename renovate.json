@@ -132,6 +132,12 @@
       "matchPackageNames": ["aquasecurity/trivy-action"],
       "overrideDatasource": "git-tags",
       "overridePackageName": "https://github.com/aquasecurity/trivy-action"
+    },
+    {
+      "description": "The runners stay on Ubuntu 24.04 (decided 2026-11-25). actionlint, inside super-linter, does not know the ubuntu-26.04 labels (1.7.12, rhysd/actionlint#682), and docker.yml picks the build runner in an expression Renovate does not update. Revisit when actionlint knows the labels, or when GitHub announces the end of 24.04.",
+      "matchDatasources": ["github-runners"],
+      "matchPackageNames": ["ubuntu"],
+      "allowedVersions": "<26"
     }
   ],
   "ignorePaths": ["**/node_modules/**", "**/vendor/**"]
