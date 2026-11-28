@@ -26,6 +26,15 @@ tracks PHP 8.4, and a backport rewrites its section rather than cherry-picking i
 
 PHP 8.5.13, a security release. **Upgrade and restart every container that serves PHP.**
 
+### Re-published on 2026-11-28
+
+nginx 1.30.8 fixes CVE-2026-132779, excessive CPU use with `ssl_early_data` on TLS 1.3. The image
+terminates no TLS, so it was not exposed; Alpine 3.24 no longer ships 1.30.7, which broke the build of
+the nginx variant. PHP and the other images are unchanged.
+
+- **`alpine_3_24/nginx` 1.30.8**, up from 1.30.7 (dependency update).
+- `nginx`: 1.30.8 (CVE-2026-132779) (#265).
+
 ### Re-published on 2026-11-25
 
 - **`mlocati/php-extension-installer` 2.13.4**, up from 2.13.2 (dependency update).
